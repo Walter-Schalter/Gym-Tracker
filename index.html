@@ -61,20 +61,14 @@
           <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Ready</p>
         </div>
       </div>
-      <div class="flex items-center gap-1.5">
+      <div class="flex items-center gap-2">
         <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-2.5 py-1.5 rounded text-xs">
           📲 App installieren
         </button>
-        <div id="restTimerBadge" class="hidden items-center gap-1.5 bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded text-xs font-mono text-emerald-400">
-          <span>⏱</span>
-          <span id="restTimerDisplay">00:00</span>
-          <button onclick="App.stopRestTimer()" class="ml-1 text-zinc-400 hover:text-zinc-100 font-bold">×</button>
-        </div>
-        <button onclick="App.startRestTimer(90)" title="90s Satzpause starten" class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded text-xs font-mono">
-          90s ⏱
-        </button>
-        <button onclick="App.startRestTimer(180)" title="180s Satzpause starten" class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded text-xs font-mono">
-          3m ⏱
+        <button id="headerBackupBtn" onclick="App.switchTab('backup')" title="Backup & Einstellungen"
+          class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+          <span>⚙️</span>
+          <span class="hidden sm:inline">Backup</span>
         </button>
       </div>
     </div>
@@ -96,7 +90,7 @@
       </div>
 
       <!-- Active Exercises Container -->
-      <div id="workoutExercisesContainer" class="space-y-4"></div>
+      <div id="workoutExercisesContainer" class="space-y-3"></div>
 
       <!-- Quick Add Exercise to current session & Finish Buttons -->
       <div id="workoutFooterActions" class="space-y-3 pt-2">
@@ -117,167 +111,194 @@
       </div>
     </section>
 
-    <!-- TAB 2: PROGRESSION (TIMELINE VIEW) -->
-    <section id="tab-progression" class="hidden space-y-4">
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Progression & Zeitachsen-Analyse</h2>
-            <p class="text-[11px] text-zinc-400">Zeigt alle jemals getrackten Übungen mit „Heute" am rechten Rand</p>
-          </div>
-          <!-- Timeframe Buttons (1M, 1Y, ALL) -->
-          <div class="inline-flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 self-start sm:self-auto">
-            <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-              1 Monat
-            </button>
-            <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-              1 Jahr
-            </button>
-            <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-              Gesamt
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <!-- Dropdown: Every ever tracked exercise -->
-          <div class="sm:col-span-2">
-            <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung auswählen</label>
-            <select id="progressionExerciseSelect" onchange="App.onProgressionExerciseChange()"
-              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
-          </div>
-          <!-- Metric Selector -->
-          <div>
-            <label class="block text-[11px] text-zinc-400 mb-1">Metrik</label>
-            <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
-              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
-              <option value="e1rm">Estimated 1RM (Epley)</option>
-              <option value="maxWeight">Max Weight (kg)</option>
-              <option value="volume">Total Volume (kg)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Machine Filter Pills inside Progression -->
-        <div id="progressionMachineFilterBar" class="flex flex-wrap gap-1.5 pt-1"></div>
-      </div>
-
-      <!-- Progression Chart Box -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+    <!-- TAB 2: STATS (WEEKLY VOLUME + PROGRESSION + MACHINE DETAILS) -->
+    <section id="tab-stats" class="hidden space-y-4">
+      <!-- Weekly Muscle Group Volume Card -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
-          <span id="progressionChartTitle" class="text-xs font-semibold text-zinc-200">Entwicklungsdiagramm</span>
-          <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Wochenvolumen pro Muskelgruppe</h2>
+            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono">Aktuelle Woche (Mo – So, ohne Warmup-Sätze)</p>
+          </div>
+          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded text-emerald-400">0 Sätze</span>
         </div>
-        <div class="relative h-72 w-full">
-          <canvas id="progressionChartCanvas"></canvas>
-          <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-zinc-900/95">
-            <p id="progressionEmptyTitle" class="text-sm text-zinc-300 font-semibold">Noch keine getrackten Übungen vorhanden.</p>
-            <p id="progressionEmptySub" class="text-xs text-zinc-500 mt-1">Schließe dein erstes Training ab oder lade im Tab „Backup" die Demo-Daten.</p>
+        <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1"></div>
+      </div>
+
+      <!-- Segment Switcher: Timeline vs Machine Details -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 grid grid-cols-2 gap-1.5">
+        <button id="statsBtnProgression" onclick="App.switchStatsSubTab('progression')"
+          class="py-2 px-3 rounded-md text-xs font-bold transition-none bg-emerald-500 text-zinc-950">
+          📈 Zeitachse
+        </button>
+        <button id="statsBtnAnalytics" onclick="App.switchStatsSubTab('analytics')"
+          class="py-2 px-3 rounded-md text-xs font-bold transition-none text-zinc-400 hover:text-zinc-200">
+          ⚙️ Maschinen-Details
+        </button>
+      </div>
+
+      <!-- SUB-VIEW 2A: PROGRESSION (TIMELINE VIEW) -->
+      <div id="stats-view-progression" class="space-y-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Progression & Zeitachsen-Analyse</h2>
+              <p class="text-[11px] text-zinc-400">Zeigt alle jemals getrackten Übungen mit „Heute" am rechten Rand</p>
+            </div>
+            <!-- Timeframe Buttons (1M, 1Y, ALL) -->
+            <div class="inline-flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 self-start sm:self-auto">
+              <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+                1 Monat
+              </button>
+              <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+                1 Jahr
+              </button>
+              <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+                Gesamt
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <!-- Dropdown: Every ever tracked exercise -->
+            <div class="sm:col-span-2">
+              <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung auswählen</label>
+              <select id="progressionExerciseSelect" onchange="App.onProgressionExerciseChange()"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+            </div>
+            <!-- Metric Selector -->
+            <div>
+              <label class="block text-[11px] text-zinc-400 mb-1">Metrik</label>
+              <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                <option value="e1rm">Estimated 1RM (Epley)</option>
+                <option value="maxWeight">Max Weight (kg)</option>
+                <option value="volume">Total Volume (kg)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Machine Filter Pills inside Progression -->
+          <div id="progressionMachineFilterBar" class="flex flex-wrap gap-1.5 pt-1"></div>
+        </div>
+
+        <!-- Progression Chart Box -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span id="progressionChartTitle" class="text-xs font-semibold text-zinc-200">Entwicklungsdiagramm</span>
+            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+          </div>
+          <div class="relative h-72 w-full">
+            <canvas id="progressionChartCanvas"></canvas>
+            <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-zinc-900/95">
+              <p id="progressionEmptyTitle" class="text-sm text-zinc-300 font-semibold">Noch keine getrackten Übungen vorhanden.</p>
+              <p id="progressionEmptySub" class="text-xs text-zinc-500 mt-1">Schließe dein erstes Training ab oder lade über „⚙️ Backup" die Demo-Daten.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progression Summary Stats -->
+        <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2.5">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Startwert (Zeitraum)</div>
+            <div id="progStartVal" class="text-base font-bold font-mono text-zinc-200 mt-0.5">—</div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Aktuell / Letzter Wert</div>
+            <div id="progEndVal" class="text-base font-bold font-mono text-emerald-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Steigerung (Delta)</div>
+            <div id="progDeltaVal" class="text-base font-bold font-mono text-zinc-100 mt-0.5">—</div>
           </div>
         </div>
       </div>
 
-      <!-- Progression Summary Stats -->
-      <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2.5">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Startwert (Zeitraum)</div>
-          <div id="progStartVal" class="text-base font-bold font-mono text-zinc-200 mt-0.5">—</div>
+      <!-- SUB-VIEW 2B: ANALYTICS / CHARTS (MACHINE-ISOLATED DETAILS) -->
+      <div id="stats-view-analytics" class="hidden space-y-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-zinc-400 mb-1">1. Übung auswählen</label>
+              <select id="analyticsExerciseSelect" onchange="App.onAnalyticsExerciseChange()"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-zinc-400 mb-1">2. Spezifische Maschine / Gerät</label>
+              <select id="analyticsMachineSelect" onchange="App.renderAnalytics()"
+                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+            </div>
+          </div>
+
+          <!-- Metric Switcher -->
+          <div class="pt-1">
+            <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="metricButtonsContainer">
+              <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm"
+                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+                Est. 1RM (Epley)
+              </button>
+              <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight"
+                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+                Max Weight
+              </button>
+              <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet"
+                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+                Top-Set Perf.
+              </button>
+              <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume"
+                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+                Total Volume
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Aktuell / Letzter Wert</div>
-          <div id="progEndVal" class="text-base font-bold font-mono text-emerald-400 mt-0.5">—</div>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="analyticsKpiGrid">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Bestes e1RM</div>
+            <div id="kpiE1rm" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Max Gewicht</div>
+            <div id="kpiMaxWeight" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Max Volumen</div>
+            <div id="kpiMaxVolume" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+            <div class="text-[11px] text-zinc-400">Sessions (Gerät)</div>
+            <div id="kpiSessions" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">0</div>
+          </div>
         </div>
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Steigerung (Delta)</div>
-          <div id="progDeltaVal" class="text-base font-bold font-mono text-zinc-100 mt-0.5">—</div>
+
+        <!-- Chart Container -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <span id="chartTitleLabel" class="text-xs font-semibold text-zinc-300">Progress-Verlauf</span>
+            <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="progressChart"></canvas>
+            <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+              <p class="text-sm text-zinc-400 font-medium">Noch keine Arbeitssätze für diese Übung + Maschine gespeichert.</p>
+              <p class="text-xs text-zinc-500 mt-1">Logge eine Einheit oder lade über „⚙️ Backup" Testdaten zum Ausprobieren.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Machine Session Log Table -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
+          <div id="analyticsHistoryList" class="space-y-2"></div>
         </div>
       </div>
     </section>
 
-    <!-- TAB 3: ANALYTICS / CHARTS (MACHINE-ISOLATED DETAILS) -->
-    <section id="tab-analytics" class="hidden space-y-4">
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] text-zinc-400 mb-1">1. Übung auswählen</label>
-            <select id="analyticsExerciseSelect" onchange="App.onAnalyticsExerciseChange()"
-              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
-          </div>
-          <div>
-            <label class="block text-[11px] text-zinc-400 mb-1">2. Spezifische Maschine / Gerät</label>
-            <select id="analyticsMachineSelect" onchange="App.renderAnalytics()"
-              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
-          </div>
-        </div>
-
-        <!-- Metric Switcher -->
-        <div class="pt-1">
-          <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik</label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="metricButtonsContainer">
-            <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm"
-              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-              Est. 1RM (Epley)
-            </button>
-            <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight"
-              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-              Max Weight
-            </button>
-            <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet"
-              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-              Top-Set Perf.
-            </button>
-            <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume"
-              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-              Total Volume
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- KPI Summary Cards -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="analyticsKpiGrid">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Bestes e1RM</div>
-          <div id="kpiE1rm" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">—</div>
-        </div>
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Max Gewicht</div>
-          <div id="kpiMaxWeight" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
-        </div>
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Max Volumen</div>
-          <div id="kpiMaxVolume" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
-        </div>
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-          <div class="text-[11px] text-zinc-400">Sessions (Gerät)</div>
-          <div id="kpiSessions" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">0</div>
-        </div>
-      </div>
-
-      <!-- Chart Container -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
-        <div class="flex items-center justify-between mb-2">
-          <span id="chartTitleLabel" class="text-xs font-semibold text-zinc-300">Progress-Verlauf</span>
-          <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
-        </div>
-        <div class="relative h-64 w-full">
-          <canvas id="progressChart"></canvas>
-          <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-            <p class="text-sm text-zinc-400 font-medium">Noch keine Arbeitssätze für diese Übung + Maschine gespeichert.</p>
-            <p class="text-xs text-zinc-500 mt-1">Logge eine Einheit oder lade im Tab "Backup" Testdaten zum Ausprobieren.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Detailed Machine Session Log Table -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
-        <div id="analyticsHistoryList" class="space-y-2"></div>
-      </div>
-    </section>
-
-    <!-- TAB 4: HISTORY (VERLAUF) -->
+    <!-- TAB 3: HISTORY (VERLAUF) -->
     <section id="tab-history" class="hidden space-y-3">
       <div class="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-lg p-3">
         <div>
@@ -289,7 +310,7 @@
       <div id="historySessionsContainer" class="space-y-3"></div>
     </section>
 
-    <!-- TAB 5: PLAN & GERÄTE VERWALTUNG -->
+    <!-- TAB 4: PLAN & GERÄTE VERWALTUNG -->
     <section id="tab-manage" class="hidden space-y-6">
       <!-- Exercises & Machines Manager -->
       <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
@@ -322,7 +343,7 @@
       </div>
     </section>
 
-    <!-- TAB 6: BACKUP & PWA APP SETUP -->
+    <!-- HEADER VIEW: BACKUP & PWA APP SETUP -->
     <section id="tab-backup" class="hidden space-y-4">
       <!-- PWA App Setup Card -->
       <div class="bg-zinc-900 border border-emerald-800/60 rounded-lg p-4 space-y-3">
@@ -367,7 +388,7 @@
       <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
         <h2 class="text-sm font-bold text-zinc-100">Diagnose & Datenbank-Tools</h2>
         <p class="text-xs text-zinc-400">
-          Teste das Zeitachsen-Diagramm unter „Progression" mit realistischen Demo-Daten (über mehrere Monate) oder setze die Datenbank zurück.
+          Teste das Zeitachsen-Diagramm unter „Stats" mit realistischen Demo-Daten (über mehrere Monate) oder setze die Datenbank zurück.
         </p>
         <div class="flex flex-wrap gap-2 pt-1">
           <button onclick="App.seedDemoSessions()"
@@ -402,39 +423,31 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toastBanner" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-zinc-950 font-bold text-xs px-4 py-2 rounded shadow-lg"></div>
 
-  <!-- BOTTOM NAVIGATION (6 TABS) -->
+  <!-- BOTTOM NAVIGATION (4 TABS) -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]">
-    <div class="max-w-3xl mx-auto grid grid-cols-6">
+    <div class="max-w-3xl mx-auto grid grid-cols-4">
       <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-emerald-500 text-emerald-400">
         <span class="text-base leading-none mb-1">🏋️</span>
         <span>Training</span>
       </button>
-      <button onclick="App.switchTab('progression')" data-tab="progression" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">🚀</span>
-        <span>Progression</span>
-      </button>
-      <button onclick="App.switchTab('analytics')" data-tab="analytics" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">📈</span>
-        <span>Details</span>
+      <button onclick="App.switchTab('stats')" data-tab="stats" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">📊</span>
+        <span>Stats</span>
       </button>
       <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
         <span class="text-base leading-none mb-1">🗂</span>
         <span>Verlauf</span>
       </button>
       <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">⚙️</span>
+        <span class="text-base leading-none mb-1">🛠️</span>
         <span>Geräte</span>
-      </button>
-      <button onclick="App.switchTab('backup')" data-tab="backup" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">💾</span>
-        <span>Backup</span>
       </button>
     </div>
   </nav>
 
   <script>
     /*************************************************************************
-     * 1. INITIAL TRAINING PLAN & BASE CATALOG
+     * 1. INITIAL TRAINING PLAN, MUSCLE GROUPS & BASE CATALOG
      *************************************************************************/
     const INITIAL_EXERCISES = [
       { id: 'ex_shoulder_press', name: 'Schulterdrücken Maschine' },
@@ -458,6 +471,41 @@
       { id: 'ex_single_triceps_pushdown', name: 'Single-Arm Trizeps Pushdowns' },
       { id: 'ex_incline_hammer_curls', name: 'Incline Hammer Curls' }
     ];
+
+    const MUSCLE_GROUP_ORDER = [
+      'Brust',
+      'Rücken',
+      'Schultern',
+      'Trizeps',
+      'Bizeps',
+      'Quads',
+      'Beinbeuger',
+      'Waden',
+      'Adduktoren/Abduktoren'
+    ];
+
+    const EXERCISE_MUSCLE_MAP = {
+      ex_chest_press: 'Brust',
+      ex_lat_pulldown: 'Rücken',
+      ex_chest_row: 'Rücken',
+      ex_shoulder_press: 'Schultern',
+      ex_lat_raise: 'Schultern',
+      ex_rev_pec_deck: 'Schultern',
+      ex_facepulls: 'Schultern',
+      ex_oh_triceps: 'Trizeps',
+      ex_triceps_pushdown: 'Trizeps',
+      ex_single_triceps_pushdown: 'Trizeps',
+      ex_preacher_curls: 'Bizeps',
+      ex_hammer_curls: 'Bizeps',
+      ex_incline_hammer_curls: 'Bizeps',
+      ex_squat_legpress: 'Quads',
+      ex_leg_extension: 'Quads',
+      ex_seated_leg_curl: 'Beinbeuger',
+      ex_rdl: 'Beinbeuger',
+      ex_calf_raise: 'Waden',
+      ex_adductor: 'Adduktoren/Abduktoren',
+      ex_abductor: 'Adduktoren/Abduktoren'
+    };
 
     const INITIAL_MACHINES = [
       { id: 'm_sp_1', exerciseId: 'ex_shoulder_press', name: 'Gym80 Schulterpresse (Pin)', setupNote: 'Sitz auf 4, Griff eng' },
@@ -659,12 +707,11 @@
         analyticsMetric: 'e1rm',
         progressionRange: '1M', // '1M' | '1Y' | 'ALL'
         progressionMachineFilter: 'ALL',
+        statsSubTab: 'progression', // 'progression' | 'analytics'
         currentTab: 'workout'
       },
       chartInstance: null,
       progressionChartInstance: null,
-      restTimerInterval: null,
-      restTimerRemaining: 0,
       deferredPwaPrompt: null,
 
       async init() {
@@ -685,7 +732,6 @@
           this.state.machines = await StorageEngine.getAll('machines');
           this.state.splits = await StorageEngine.getAll('splits');
           this.state.sessions = await StorageEngine.getAll('sessions');
-          // Ensure splits are strictly sorted Monday -> Sunday even on older IndexedDBs
           this.sortSplits();
           await StorageEngine.putAll('splits', this.state.splits);
         }
@@ -786,17 +832,17 @@
         document.getElementById('pwaManifestLink').href = URL.createObjectURL(manifestBlob);
 
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:')) {
-  navigator.serviceWorker.register('./sw.js').then((reg) => {
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          App.showToast('🚀 Neues Update installiert! Starte die App neu.');
+          navigator.serviceWorker.register('./sw.js').then((reg) => {
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  App.showToast('🚀 Neues Update installiert! Starte die App neu.');
+                }
+              });
+            });
+          }).catch(() => {});
         }
-      });
-    });
-  }).catch(() => {});
-}
 
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
@@ -1052,8 +1098,7 @@ self.addEventListener('fetch', (event) => {
         this.populateAnalyticsFilters();
         if (this.state.currentTab === 'workout') this.renderWorkoutTab();
         if (this.state.currentTab === 'manage') this.renderManageTab();
-        if (this.state.currentTab === 'progression') this.renderProgressionTab();
-        if (this.state.currentTab === 'analytics') this.renderAnalytics();
+        if (this.state.currentTab === 'stats') this.renderStatsTab();
         if (this.state.currentTab === 'history') this.renderHistoryTab();
 
         this.showToast(`Gerät „${machine.name}" gelöscht`);
@@ -1139,6 +1184,7 @@ self.addEventListener('fetch', (event) => {
             targetRepRange: item.targetRepRange || `${item.targetSets || 2} Sätze`,
             targetSets: item.targetSets || 2,
             machineId: validMachineId,
+            collapsed: false,
             sets: this.buildSetRowsForExercise(item.exerciseId, validMachineId, item.targetSets || 2)
           };
         });
@@ -1187,8 +1233,47 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 9. WORKOUT UI RENDERING & INTERACTION
+       * 9. WORKOUT UI RENDERING & INTERACTION (ACCORDION, REORDER, STEPPERS)
        ***********************************************************************/
+      toggleExerciseCollapse(entryIdx) {
+        const entry = this.state.activeDraft?.entries?.[entryIdx];
+        if (!entry) return;
+        entry.collapsed = !entry.collapsed;
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      moveDraftExercise(entryIdx, direction) {
+        const entries = this.state.activeDraft?.entries;
+        if (!entries) return;
+        const targetIdx = entryIdx + direction;
+        if (targetIdx < 0 || targetIdx >= entries.length) return;
+        const temp = entries[entryIdx];
+        entries[entryIdx] = entries[targetIdx];
+        entries[targetIdx] = temp;
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      stepSetWeight(entryIdx, setIdx, delta) {
+        const entry = this.state.activeDraft?.entries?.[entryIdx];
+        if (!entry) return;
+        const set = entry.sets[setIdx];
+        if (!set) return;
+
+        let currentVal = this.parseNum(set.weight);
+        if (currentVal === null) {
+          const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+          const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+          currentVal = prevSet && this.parseNum(prevSet.weight) !== null ? this.parseNum(prevSet.weight) : 0;
+        }
+
+        const nextVal = Math.max(0, Math.round((currentVal + delta) * 100) / 100);
+        set.weight = String(nextVal);
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
       renderWorkoutTab() {
         this.sortSplits();
         const draft = this.state.activeDraft;
@@ -1240,7 +1325,13 @@ self.addEventListener('fetch', (event) => {
           const selectedMachine = machines.find(m => m.id === entry.machineId) || machines[0];
           const lastPerf = this.getLastPerformance(entry.exerciseId, selectedMachine.id);
 
-          let lastPerfHtml = `<span class="text-zinc-500">Keine bisherigen Daten an genau diesem Gerät</span>`;
+          const totalSetsCount = entry.sets.length;
+          const completedSetsCount = entry.sets.filter(s => s.completed).length;
+          const targetCount = entry.targetSets || totalSetsCount || 1;
+          const isAllCompleted = totalSetsCount > 0 && completedSetsCount >= Math.min(totalSetsCount, targetCount) && entry.sets.every(s => s.completed);
+          const isCollapsed = !!entry.collapsed;
+
+          let lastPerfHtml = `<span class="text-zinc-500 text-[11px]">Keine bisherigen Daten an diesem Gerät</span>`;
           if (lastPerf && lastPerf.sets.length > 0) {
             const pills = lastPerf.sets.map((s, idx) => {
               const typeTag = s.type === 'warmup' ? 'W' : (s.type === 'dropset' ? 'D' : `${idx + 1}`);
@@ -1261,179 +1352,214 @@ self.addEventListener('fetch', (event) => {
           }
 
           return `
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <!-- Exercise Header -->
-              <div class="p-3.5 bg-zinc-925 border-b border-zinc-800 space-y-2.5">
-                <div class="flex items-start justify-between gap-2">
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(displayTitle)}</h3>
-                      <span class="text-[11px] font-mono bg-zinc-800 text-emerald-400 px-2 py-0.5 rounded">${this.escapeHtml(entry.targetRepRange || '2 Sätze')}</span>
+            <div class="bg-zinc-900 border ${isAllCompleted ? 'border-emerald-600/70' : 'border-zinc-800'} rounded-xl overflow-hidden">
+              <!-- Exercise Header (Clickable for Accordion) -->
+              <div class="p-3 bg-zinc-925 ${isCollapsed ? '' : 'border-b border-zinc-800'} space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
+                    class="flex-1 flex items-center gap-2 text-left min-w-0">
+                    <span class="text-xs font-mono text-zinc-400 shrink-0">${isCollapsed ? '▸' : '▾'}</span>
+                    <h3 class="text-sm font-bold truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
+                      ${isAllCompleted ? '✓ ' : ''}${this.escapeHtml(displayTitle)}
+                    </h3>
+                    <span class="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                      isAllCompleted
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-600/50'
+                        : 'bg-zinc-800 text-zinc-300'
+                    }">
+                      ${completedSetsCount}/${totalSetsCount} (${this.escapeHtml(entry.targetRepRange || '2 Sätze')})
+                    </span>
+                  </button>
+
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" onclick="App.moveDraftExercise(${entryIdx}, -1)"
+                      title="Übung nach oben verschieben"
+                      ${entryIdx === 0 ? 'disabled' : ''}
+                      class="bg-zinc-950 hover:bg-zinc-800 disabled:opacity-30 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[10px] font-mono">
+                      ▲
+                    </button>
+                    <button type="button" onclick="App.moveDraftExercise(${entryIdx}, 1)"
+                      title="Übung nach unten verschieben"
+                      ${entryIdx === draft.entries.length - 1 ? 'disabled' : ''}
+                      class="bg-zinc-950 hover:bg-zinc-800 disabled:opacity-30 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[10px] font-mono">
+                      ▼
+                    </button>
+                    <button type="button" onclick="App.removeExerciseFromDraft(${entryIdx})"
+                      title="Übung aus heutiger Einheit entfernen"
+                      class="bg-zinc-950 hover:bg-red-950/60 border border-zinc-800 text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                ${!isCollapsed ? `
+                  <!-- Compact Machine Dropdown + Setup Note on 1 Row -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                    <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
+                      class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                      ${machines.map(m => `
+                        <option value="${m.id}" ${m.id === selectedMachine.id ? 'selected' : ''}>
+                          ⚙ ${this.escapeHtml(m.name)}
+                        </option>
+                      `).join('')}
+                    </select>
+
+                    <div class="flex items-center gap-1.5 bg-zinc-950/80 border border-zinc-800/90 rounded-lg px-2.5 py-1.5">
+                      <span class="text-[11px] text-zinc-400 shrink-0">📌</span>
+                      <input type="text"
+                        value="${this.escapeAttr(selectedMachine.setupNote || '')}"
+                        placeholder="Sitz/Setup-Notiz..."
+                        onchange="App.updateMachineSetupNote('${selectedMachine.id}', this.value)"
+                        class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
                     </div>
                   </div>
-                  <button onclick="App.removeExerciseFromDraft(${entryIdx})" title="Übung aus heutiger Einheit entfernen"
-                    class="text-zinc-500 hover:text-red-400 text-xs px-1.5 py-0.5">✕</button>
-                </div>
 
-                <!-- Machine Selection, Quick Add & Delete Machine -->
-                <div class="flex items-center gap-1.5">
-                  <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
-                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
-                    ${machines.map(m => `
-                      <option value="${m.id}" ${m.id === selectedMachine.id ? 'selected' : ''}>
-                        ⚙ ${this.escapeHtml(m.name)}
-                      </option>
-                    `).join('')}
-                  </select>
-                  <button onclick="App.promptAddMachineFromWorkout(${entryIdx}, '${entry.exerciseId}')"
-                    title="Neues Gerät für diese Übung anlegen"
-                    class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 font-bold px-2.5 py-2 rounded-lg text-xs shrink-0">
-                    + Gerät
-                  </button>
-                  <button onclick="App.deleteMachine('${selectedMachine.id}')"
-                    title="Aktuell ausgewähltes Gerät löschen"
-                    class="bg-zinc-950 hover:bg-red-950/60 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-400 px-2.5 py-2 rounded-lg text-xs shrink-0">
-                    🗑
-                  </button>
-                </div>
-
-                <!-- Machine Setup Note -->
-                <div class="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/90 rounded-lg px-2.5 py-1.5">
-                  <span class="text-[11px] text-zinc-400 shrink-0">📌 Sitz/Setup:</span>
-                  <input type="text"
-                    value="${this.escapeAttr(selectedMachine.setupNote || '')}"
-                    placeholder="z.B. Sitz auf 4, Brustpolster 2..."
-                    onchange="App.updateMachineSetupNote('${selectedMachine.id}', this.value)"
-                    class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
-                </div>
-
-                <!-- Last Session Reference Box -->
-                <div class="bg-zinc-950 border border-zinc-800/80 rounded-lg p-2">
-                  ${lastPerfHtml}
-                </div>
+                  <!-- Last Session Reference Box -->
+                  <div class="bg-zinc-950 border border-zinc-800/80 rounded-lg px-2.5 py-1.5">
+                    ${lastPerfHtml}
+                  </div>
+                ` : `
+                  <div onclick="App.toggleExerciseCollapse(${entryIdx})" class="flex items-center justify-between text-[11px] text-zinc-400 font-mono px-1 cursor-pointer">
+                    <span class="truncate">⚙ ${this.escapeHtml(selectedMachine.name)}${selectedMachine.setupNote ? ` • 📌 ${this.escapeHtml(selectedMachine.setupNote)}` : ''}</span>
+                    <span class="text-zinc-500 shrink-0 ml-2">Aufklappen</span>
+                  </div>
+                `}
               </div>
 
-              <!-- Sets Table -->
-              <div class="p-3 space-y-2">
-                <div class="grid grid-cols-12 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">
-                  <div class="col-span-2">Typ</div>
-                  <div class="col-span-3 text-center">kg</div>
-                  <div class="col-span-3 text-center">Reps</div>
-                  <div class="col-span-2 text-center" title="Forced Reps / Teilwiederholungen">+Part.</div>
-                  <div class="col-span-2 text-right">Log</div>
-                </div>
+              <!-- Collapsible Sets Area -->
+              ${!isCollapsed ? `
+                <div class="p-3 space-y-2">
+                  <div class="grid grid-cols-12 gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">
+                    <div class="col-span-2">Typ</div>
+                    <div class="col-span-4 text-center">kg (-/+ 2.5)</div>
+                    <div class="col-span-2 text-center">Reps</div>
+                    <div class="col-span-2 text-center" title="Forced Reps / Teilwiederholungen">+Part.</div>
+                    <div class="col-span-2 text-right">Log</div>
+                  </div>
 
-                ${entry.sets.map((s, setIdx) => {
-                  const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
-                  const weightPlaceholder = prevSet ? prevSet.weight : 'kg';
-                  const repsPlaceholder = prevSet ? prevSet.reps : 'Reps';
-                  const rowBg = s.completed
-                    ? 'bg-emerald-950/30 border-emerald-700/60'
-                    : 'bg-zinc-950 border-zinc-800';
+                  ${entry.sets.map((s, setIdx) => {
+                    const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+                    const weightPlaceholder = prevSet ? prevSet.weight : 'kg';
+                    const repsPlaceholder = prevSet ? prevSet.reps : 'Reps';
+                    const rowBg = s.completed
+                      ? 'bg-emerald-950/30 border-emerald-700/60'
+                      : 'bg-zinc-950 border-zinc-800';
 
-                  return `
-                    <div class="border rounded-lg p-2 space-y-2 ${rowBg}">
-                      <div class="grid grid-cols-12 gap-1.5 items-center">
-                        <div class="col-span-2">
-                          <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
-                            class="w-full bg-zinc-900 border border-zinc-700 rounded px-1 py-2 text-[11px] font-bold ${
-                              s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-zinc-200')
-                            } focus:outline-none">
-                            <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>#${setIdx + 1} Norm</option>
-                            <option value="warmup" ${s.type === 'warmup' ? 'selected' : ''}>Warm</option>
-                            <option value="dropset" ${s.type === 'dropset' ? 'selected' : ''}>Drop</option>
-                          </select>
-                        </div>
+                    return `
+                      <div class="border rounded-lg p-2 space-y-2 ${rowBg}">
+                        <div class="grid grid-cols-12 gap-1 items-center">
+                          <div class="col-span-2">
+                            <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
+                              class="w-full bg-zinc-900 border border-zinc-700 rounded px-1 py-2 text-[11px] font-bold ${
+                                s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-zinc-200')
+                              } focus:outline-none">
+                              <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>#${setIdx + 1}</option>
+                              <option value="warmup" ${s.type === 'warmup' ? 'selected' : ''}>Warm</option>
+                              <option value="dropset" ${s.type === 'dropset' ? 'selected' : ''}>Drop</option>
+                            </select>
+                          </div>
 
-                        <div class="col-span-3">
-                          <input type="text" inputmode="decimal"
-                            value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
-                            placeholder="${weightPlaceholder}"
-                            oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
-                            class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-2 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
-                        </div>
-
-                        <div class="col-span-3">
-                          <input type="number" inputmode="numeric"
-                            value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
-                            placeholder="${repsPlaceholder}"
-                            oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
-                            class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-2 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
-                        </div>
-
-                        <div class="col-span-2 flex items-center justify-center">
-                          <button onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
-                            title="Forced Reps / Teilwiederholungen antippen zum Erhöhen"
-                            class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded py-2 text-xs font-mono font-bold ${
-                              (s.partials || 0) > 0 ? 'text-amber-400 border-amber-600/60' : 'text-zinc-500'
-                            }">
-                            +${s.partials || 0}P
-                          </button>
-                        </div>
-
-                        <div class="col-span-2 flex items-center justify-end gap-1">
-                          <button onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
-                            class="flex-1 py-2 rounded font-bold text-xs ${
-                              s.completed
-                                ? 'bg-emerald-500 text-zinc-950'
-                                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                            }">
-                            ✓
-                          </button>
-                          <button onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
-                            title="Satz löschen"
-                            class="text-zinc-600 hover:text-red-400 px-1 py-1 text-xs">
-                            ×
-                          </button>
-                        </div>
-                      </div>
-
-                      ${s.type === 'dropset' ? `
-                        <div class="pl-3 border-l-2 border-purple-500/60 space-y-1.5 pt-1">
-                          <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
-                            <button onclick="App.addDropStage(${entryIdx}, ${setIdx})"
-                              class="text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-300 px-2 py-0.5 rounded font-semibold">
-                              + Drop anhängen
+                          <!-- Weight Input with -2.5 / +2.5 Quick Steppers -->
+                          <div class="col-span-4 flex items-center gap-0.5">
+                            <button type="button" onclick="App.stepSetWeight(${entryIdx}, ${setIdx}, -2.5)"
+                              title="-2,5 kg"
+                              class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded px-1.5 py-2 text-[10px] font-mono font-bold text-zinc-300 shrink-0">
+                              -2.5
+                            </button>
+                            <input type="text" inputmode="decimal"
+                              value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
+                              placeholder="${weightPlaceholder}"
+                              oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
+                              class="w-full min-w-0 bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-1 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                            <button type="button" onclick="App.stepSetWeight(${entryIdx}, ${setIdx}, 2.5)"
+                              title="+2,5 kg"
+                              class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded px-1.5 py-2 text-[10px] font-mono font-bold text-emerald-400 shrink-0">
+                              +2.5
                             </button>
                           </div>
-                          ${(s.drops || []).map((drop, dropIdx) => {
-                            const prevDrop = prevSet && prevSet.drops && prevSet.drops[dropIdx] ? prevSet.drops[dropIdx] : null;
-                            return `
-                              <div class="grid grid-cols-12 gap-1.5 items-center">
-                                <div class="col-span-2 text-[11px] font-mono text-purple-300">Drop ${dropIdx + 1}</div>
-                                <div class="col-span-4">
-                                  <input type="text" inputmode="decimal"
-                                    value="${drop.weight !== '' ? drop.weight : ''}"
-                                    placeholder="${prevDrop ? prevDrop.weight + ' kg' : 'kg'}"
-                                    oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
-                                    class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
-                                </div>
-                                <div class="col-span-4">
-                                  <input type="number" inputmode="numeric"
-                                    value="${drop.reps !== '' ? drop.reps : ''}"
-                                    placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
-                                    oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
-                                    class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
-                                </div>
-                                <div class="col-span-2 text-right">
-                                  <button onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
-                                    class="text-zinc-500 hover:text-red-400 text-xs px-2 py-1">✕</button>
-                                </div>
-                              </div>
-                            `;
-                          }).join('')}
-                        </div>
-                      ` : ''}
-                    </div>
-                  `;
-                }).join('')}
 
-                <button onclick="App.addSetRow(${entryIdx})"
-                  class="w-full bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-2 rounded-lg text-xs font-semibold">
-                  + Satz hinzufügen
-                </button>
-              </div>
+                          <div class="col-span-2">
+                            <input type="number" inputmode="numeric"
+                              value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
+                              placeholder="${repsPlaceholder}"
+                              oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
+                              class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-1 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                          </div>
+
+                          <div class="col-span-2 flex items-center justify-center">
+                            <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
+                              title="Forced Reps / Teilwiederholungen antippen zum Erhöhen"
+                              class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded py-2 text-xs font-mono font-bold ${
+                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-600/60' : 'text-zinc-500'
+                              }">
+                              +${s.partials || 0}P
+                            </button>
+                          </div>
+
+                          <div class="col-span-2 flex items-center justify-end gap-1">
+                            <button type="button" onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
+                              class="flex-1 py-2 rounded font-bold text-xs ${
+                                s.completed
+                                  ? 'bg-emerald-500 text-zinc-950'
+                                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                              }">
+                              ✓
+                            </button>
+                            <button type="button" onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
+                              title="Satz löschen"
+                              class="text-zinc-500 hover:text-red-400 px-1 py-1 text-xs font-bold">
+                              ×
+                            </button>
+                          </div>
+                        </div>
+
+                        ${s.type === 'dropset' ? `
+                          <div class="pl-3 border-l-2 border-purple-500/60 space-y-1.5 pt-1">
+                            <div class="flex items-center justify-between">
+                              <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
+                              <button type="button" onclick="App.addDropStage(${entryIdx}, ${setIdx})"
+                                class="text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-300 px-2 py-0.5 rounded font-semibold">
+                                + Drop anhängen
+                              </button>
+                            </div>
+                            ${(s.drops || []).map((drop, dropIdx) => {
+                              const prevDrop = prevSet && prevSet.drops && prevSet.drops[dropIdx] ? prevSet.drops[dropIdx] : null;
+                              return `
+                                <div class="grid grid-cols-12 gap-1.5 items-center">
+                                  <div class="col-span-2 text-[11px] font-mono text-purple-300">Drop ${dropIdx + 1}</div>
+                                  <div class="col-span-4">
+                                    <input type="text" inputmode="decimal"
+                                      value="${drop.weight !== '' ? drop.weight : ''}"
+                                      placeholder="${prevDrop ? prevDrop.weight + ' kg' : 'kg'}"
+                                      oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
+                                      class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                  </div>
+                                  <div class="col-span-4">
+                                    <input type="number" inputmode="numeric"
+                                      value="${drop.reps !== '' ? drop.reps : ''}"
+                                      placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
+                                      oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
+                                      class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                  </div>
+                                  <div class="col-span-2 text-right">
+                                    <button type="button" onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
+                                      class="text-zinc-500 hover:text-red-400 text-xs px-2 py-1">✕</button>
+                                  </div>
+                                </div>
+                              `;
+                            }).join('')}
+                          </div>
+                        ` : ''}
+                      </div>
+                    `;
+                  }).join('')}
+
+                  <button type="button" onclick="App.addSetRow(${entryIdx})"
+                    class="w-full bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-2 rounded-lg text-xs font-semibold">
+                    + Satz hinzufügen
+                  </button>
+                </div>
+              ` : ''}
             </div>
           `;
         }).join('');
@@ -1458,22 +1584,6 @@ self.addEventListener('fetch', (event) => {
         machine.setupNote = noteText.trim();
         StorageEngine.putAll('machines', this.state.machines);
         this.showToast('Sitzeinstellung gespeichert');
-      },
-
-      promptAddMachineFromWorkout(entryIdx, exerciseId) {
-        const name = prompt('Name der neuen Maschine / Ausführung (z.B. "Turm B - eng" oder "Hammer Strength"):');
-        if (!name || !name.trim()) return;
-        const setupNote = prompt('Optionale Sitz-/Polsternotiz (z.B. "Sitz auf 4, Polster 2"):', '') || '';
-        const newMachine = {
-          id: this.uid('m'),
-          exerciseId,
-          name: name.trim(),
-          setupNote: setupNote.trim()
-        };
-        this.state.machines.push(newMachine);
-        StorageEngine.putAll('machines', this.state.machines);
-        this.onWorkoutMachineChange(entryIdx, newMachine.id);
-        this.showToast(`Gerät "${newMachine.name}" angelegt`);
       },
 
       onSetTypeChange(entryIdx, setIdx, newType) {
@@ -1578,6 +1688,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       removeSetRow(entryIdx, setIdx) {
+        if (!confirm('Sicher, dass du diesen Satz entfernen möchtest?')) return;
         const entry = this.state.activeDraft.entries[entryIdx];
         entry.sets.splice(setIdx, 1);
         this.saveDraft();
@@ -1585,6 +1696,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       removeExerciseFromDraft(entryIdx) {
+        if (!confirm('Sicher, dass du diese Übung aus der Einheit entfernen möchtest?')) return;
         this.state.activeDraft.entries.splice(entryIdx, 1);
         this.saveDraft();
         this.renderWorkoutTab();
@@ -1628,6 +1740,7 @@ self.addEventListener('fetch', (event) => {
           targetRepRange: '2 Sätze',
           targetSets: 2,
           machineId,
+          collapsed: false,
           sets: this.buildSetRowsForExercise(exerciseId, machineId, 2)
         });
         this.saveDraft();
@@ -1694,8 +1807,130 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 10. PROGRESSION TAB (EVER-TRACKED DROPDOWN + TIMELINE X-AXIS)
+       * 10. STATS TAB: WEEKLY VOLUME + SEGMENT SWITCHER + PROGRESSION
        ***********************************************************************/
+      getMuscleGroupForExercise(exerciseId) {
+        if (EXERCISE_MUSCLE_MAP[exerciseId]) return EXERCISE_MUSCLE_MAP[exerciseId];
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        const name = (ex ? ex.name : exerciseId).toLowerCase();
+
+        if (name.includes('brust') || name.includes('chest') || name.includes('bankdrücken') || name.includes('fly')) return 'Brust';
+        if (name.includes('lat') || name.includes('ruder') || name.includes('row') || name.includes('pull') || name.includes('rücken')) return 'Rücken';
+        if (name.includes('schulter') || name.includes('seitheben') || name.includes('facepull') || name.includes('reverse pec')) return 'Schultern';
+        if (name.includes('trizeps') || name.includes('triceps') || name.includes('pushdown') || name.includes('dip')) return 'Trizeps';
+        if (name.includes('bizeps') || name.includes('curl')) return 'Bizeps';
+        if (name.includes('squat') || name.includes('beinpresse') || name.includes('beinstrecker') || name.includes('quad') || name.includes('hack')) return 'Quads';
+        if (name.includes('beinbeuger') || name.includes('rdl') || name.includes('deadlift') || name.includes('hamstring')) return 'Beinbeuger';
+        if (name.includes('wade') || name.includes('calf')) return 'Waden';
+        if (name.includes('adduktor') || name.includes('abduktor') || name.includes('bauch') || name.includes('abs')) return 'Adduktoren/Abduktoren';
+
+        return 'Schultern';
+      },
+
+      getCurrentWeekDateBounds() {
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
+        const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+
+        const toIso = (d) => {
+          const tzOffset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+        };
+
+        return {
+          mondayIso: toIso(monday),
+          sundayIso: toIso(sunday),
+          mondayShort: this.formatShortDateFromTs(monday.getTime(), false),
+          sundayShort: this.formatShortDateFromTs(sunday.getTime(), false)
+        };
+      },
+
+      renderWeeklyVolume() {
+        const { mondayIso, sundayIso, mondayShort, sundayShort } = this.getCurrentWeekDateBounds();
+        const counts = {};
+        MUSCLE_GROUP_ORDER.forEach(mg => { counts[mg] = 0; });
+
+        let totalSets = 0;
+        for (const sess of this.state.sessions) {
+          if (sess.date >= mondayIso && sess.date <= sundayIso) {
+            for (const entry of (sess.entries || [])) {
+              const workingSets = (entry.sets || []).filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
+              if (workingSets.length > 0) {
+                const group = this.getMuscleGroupForExercise(entry.exerciseId);
+                counts[group] = (counts[group] || 0) + workingSets.length;
+                totalSets += workingSets.length;
+              }
+            }
+          }
+        }
+
+        const dateLabel = document.getElementById('weeklyVolumeDateLabel');
+        if (dateLabel) {
+          dateLabel.textContent = `Aktuelle KW (${mondayShort} – ${sundayShort}, Arbeitssätze)`;
+        }
+        const totalBadge = document.getElementById('weeklyTotalSetsBadge');
+        if (totalBadge) {
+          totalBadge.textContent = `${totalSets} Sätze gesamt`;
+        }
+
+        const gridEl = document.getElementById('weeklyVolumeGrid');
+        if (!gridEl) return;
+
+        gridEl.innerHTML = MUSCLE_GROUP_ORDER.map(group => {
+          const count = counts[group] || 0;
+          const pct = Math.min(100, Math.round((count / 12) * 100));
+          return `
+            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-zinc-200 truncate pr-1">${this.escapeHtml(group)}</span>
+                <span class="font-mono font-bold ${count > 0 ? 'text-emerald-400' : 'text-zinc-500'} shrink-0">${count} Sätze</span>
+              </div>
+              <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                <div class="h-full ${count > 0 ? 'bg-emerald-500' : 'bg-zinc-800'}" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      switchStatsSubTab(subTab) {
+        this.state.statsSubTab = subTab;
+        const progView = document.getElementById('stats-view-progression');
+        const anaView = document.getElementById('stats-view-analytics');
+        const btnProg = document.getElementById('statsBtnProgression');
+        const btnAna = document.getElementById('statsBtnAnalytics');
+
+        const isProg = subTab === 'progression';
+        if (progView) progView.classList.toggle('hidden', !isProg);
+        if (anaView) anaView.classList.toggle('hidden', isProg);
+
+        if (btnProg) {
+          btnProg.className = `py-2 px-3 rounded-md text-xs font-bold transition-none ${
+            isProg ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
+          }`;
+        }
+        if (btnAna) {
+          btnAna.className = `py-2 px-3 rounded-md text-xs font-bold transition-none ${
+            !isProg ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
+          }`;
+        }
+
+        if (isProg) {
+          this.renderProgressionTab();
+        } else {
+          this.populateAnalyticsFilters();
+          this.renderAnalytics();
+        }
+      },
+
+      renderStatsTab() {
+        this.renderWeeklyVolume();
+        this.switchStatsSubTab(this.state.statsSubTab || 'progression');
+      },
+
       getEverTrackedExercises() {
         const counts = new Map();
         for (const sess of this.state.sessions) {
@@ -1754,7 +1989,7 @@ self.addEventListener('fetch', (event) => {
           selectEl.innerHTML = `<option value="">— Noch keine Übung getrackt —</option>`;
           document.getElementById('progressionMachineFilterBar').innerHTML = '';
           emptyTitle.textContent = 'Noch keine Übung getrackt.';
-          emptySub.textContent = 'Sobald du deine erste Einheit speicherst (oder unter Backup die Demo-Daten lädst), erscheinen hier alle jemals getrackten Übungen.';
+          emptySub.textContent = 'Sobald du deine erste Einheit speicherst (oder über „⚙️ Backup" die Demo-Daten lädst), erscheinen hier alle jemals getrackten Übungen.';
           emptyOverlay.classList.remove('hidden');
           document.getElementById('progStartVal').textContent = '—';
           document.getElementById('progEndVal').textContent = '—';
@@ -2022,7 +2257,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 11. ANALYTICS TAB (MACHINE-ISOLATED DETAILS)
+       * 11. ANALYTICS SUB-VIEW (MACHINE-ISOLATED DETAILS)
        ***********************************************************************/
       populateAnalyticsFilters() {
         const exSelect = document.getElementById('analyticsExerciseSelect');
@@ -2381,7 +2616,10 @@ self.addEventListener('fetch', (event) => {
           return `
             <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-zinc-100">${this.escapeHtml(ex.name)}</span>
+                <div>
+                  <span class="text-xs font-bold text-zinc-100">${this.escapeHtml(ex.name)}</span>
+                  <span class="ml-1.5 text-[10px] font-mono bg-zinc-900 border border-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">${this.escapeHtml(this.getMuscleGroupForExercise(ex.id))}</span>
+                </div>
                 <div class="flex items-center gap-1.5">
                   <button onclick="App.promptAddMachine('${ex.id}')"
                     class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2 py-0.5 rounded font-semibold">
@@ -2808,11 +3046,19 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 15. NAVIGATION & REST TIMER
+       * 15. NAVIGATION
        ***********************************************************************/
       switchTab(tabName) {
+        if (tabName === 'progression') {
+          this.state.statsSubTab = 'progression';
+          tabName = 'stats';
+        } else if (tabName === 'analytics') {
+          this.state.statsSubTab = 'analytics';
+          tabName = 'stats';
+        }
+
         this.state.currentTab = tabName;
-        ['workout', 'progression', 'analytics', 'history', 'manage', 'backup'].forEach(t => {
+        ['workout', 'stats', 'history', 'manage', 'backup'].forEach(t => {
           const el = document.getElementById(`tab-${t}`);
           if (el) el.classList.toggle('hidden', t !== tabName);
         });
@@ -2824,46 +3070,19 @@ self.addEventListener('fetch', (event) => {
           }`;
         });
 
-        if (tabName === 'workout') this.renderWorkoutTab();
-        if (tabName === 'progression') this.renderProgressionTab();
-        if (tabName === 'analytics') {
-          this.populateAnalyticsFilters();
-          this.renderAnalytics();
+        const headerBackupBtn = document.getElementById('headerBackupBtn');
+        if (headerBackupBtn) {
+          headerBackupBtn.className = `px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border ${
+            tabName === 'backup'
+              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+              : 'bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border-zinc-800 text-zinc-300'
+          }`;
         }
+
+        if (tabName === 'workout') this.renderWorkoutTab();
+        if (tabName === 'stats') this.renderStatsTab();
         if (tabName === 'history') this.renderHistoryTab();
         if (tabName === 'manage') this.renderManageTab();
-      },
-
-      startRestTimer(seconds) {
-        clearInterval(this.restTimerInterval);
-        this.restTimerRemaining = seconds;
-        const badge = document.getElementById('restTimerBadge');
-        badge.classList.remove('hidden');
-        badge.classList.add('flex');
-        this.updateRestTimerDisplay();
-
-        this.restTimerInterval = setInterval(() => {
-          this.restTimerRemaining--;
-          if (this.restTimerRemaining <= 0) {
-            this.stopRestTimer();
-            this.showToast('⏱ Satzpause abgelaufen – nächster Satz!');
-          } else {
-            this.updateRestTimerDisplay();
-          }
-        }, 1000);
-      },
-
-      updateRestTimerDisplay() {
-        const mins = String(Math.floor(this.restTimerRemaining / 60)).padStart(2, '0');
-        const secs = String(this.restTimerRemaining % 60).padStart(2, '0');
-        document.getElementById('restTimerDisplay').textContent = `${mins}:${secs}`;
-      },
-
-      stopRestTimer() {
-        clearInterval(this.restTimerInterval);
-        const badge = document.getElementById('restTimerBadge');
-        badge.classList.add('hidden');
-        badge.classList.remove('flex');
       },
 
       escapeHtml(str) {
