@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,9 +20,15 @@
       theme: {
         extend: {
           colors: {
+            oled: {
+              bg: '#000000',
+              card: '#0b0b0e',
+              surface: '#121216',
+              border: '#222228'
+            },
             zinc: {
-              925: '#121215',
-              950: '#09090b'
+              925: '#101014',
+              950: '#070709'
             }
           }
         }
@@ -31,13 +37,15 @@
   </script>
   <style>
     * { -webkit-tap-highlight-color: transparent; }
-    body {
-      background-color: #09090b;
+    html, body {
+      background-color: #000000;
       color: #f4f4f5;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overscroll-behavior-y: none;
+    }
+    body {
       padding-top: env(safe-area-inset-top);
-      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom));
     }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
@@ -47,252 +55,303 @@
     input[type="number"] { -moz-appearance: textfield; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .touch-target { min-height: 44px; }
   </style>
 </head>
-<body class="min-h-screen selection:bg-emerald-500 selection:text-zinc-950">
+<body class="min-h-screen bg-black selection:bg-emerald-500 selection:text-black">
 
   <!-- TOP HEADER -->
-  <header class="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+  <header class="sticky top-0 z-30 bg-black/95 backdrop-blur border-b border-zinc-800/90 px-3.5 py-3">
     <div class="max-w-3xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-2.5">
-        <div class="w-2.5 h-6 bg-emerald-500 rounded-sm"></div>
+        <div class="w-2.5 h-6 bg-emerald-500 rounded-sm shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
         <div>
-          <h1 class="text-base font-bold tracking-wider uppercase text-zinc-100 leading-none">IRONLOG</h1>
+          <h1 class="text-base font-extrabold tracking-wider uppercase text-zinc-100 leading-none">IRONLOG</h1>
           <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Ready</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-2.5 py-1.5 rounded text-xs">
-          📲 App installieren
+        <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-3 py-2 rounded-lg text-xs">
+          📲 Installieren
         </button>
         <button id="headerBackupBtn" onclick="App.switchTab('backup')" title="Backup & Einstellungen"
-          class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+          class="bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 min-h-[40px]">
           <span>⚙️</span>
-          <span class="hidden sm:inline">Backup</span>
+          <span>Backup</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="max-w-3xl mx-auto px-3 pt-4">
+  <main class="max-w-3xl mx-auto px-3 pt-3.5">
 
     <!-- TAB 1: WORKOUT -->
-    <section id="tab-workout" class="space-y-4">
+    <section id="tab-workout" class="space-y-3.5">
       <!-- Split Selector Bar -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-        <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Trainingstag / Split</label>
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3">
+        <div class="flex items-center justify-between mb-2.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Trainingstag / Datum</label>
           <input type="date" id="workoutDateInput" onchange="App.updateActiveWorkoutDate(this.value)"
-            class="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500">
+            class="bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
         </div>
-        <div id="splitSelectorButtons" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+        <div id="splitSelectorButtons" class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
       </div>
 
       <!-- Active Exercises Container -->
-      <div id="workoutExercisesContainer" class="space-y-3"></div>
+      <div id="workoutExercisesContainer" class="space-y-3.5"></div>
 
       <!-- Quick Add Exercise to current session & Finish Buttons -->
-      <div id="workoutFooterActions" class="space-y-3 pt-2">
+      <div id="workoutFooterActions" class="space-y-3 pt-1">
         <div class="flex gap-2">
           <button onclick="App.openAddExerciseToWorkoutModal()"
-            class="flex-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-lg text-sm font-semibold">
+            class="flex-1 touch-target bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-200 py-3 rounded-xl text-xs font-bold">
             + Übung zur Einheit hinzufügen
           </button>
           <button onclick="App.resetActiveDraft()"
-            class="bg-zinc-900 hover:bg-red-950/60 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-300 px-4 py-3 rounded-lg text-xs font-semibold">
+            class="touch-target bg-oled-card active:bg-red-950/60 border border-zinc-800 text-zinc-400 px-4 py-3 rounded-xl text-xs font-bold">
             Reset
           </button>
         </div>
-        <button onclick="App.finishWorkout()"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wider shadow-lg">
-          Training abschließen & speichern
+        <button id="finishWorkoutMainBtn" onclick="App.finishWorkout()"
+          class="w-full touch-target bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-black font-extrabold py-4 rounded-xl text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.25)]">
+          ✓ Training abschließen & abhaken
         </button>
       </div>
     </section>
 
-    <!-- TAB 2: STATS (WEEKLY VOLUME + PROGRESSION + MACHINE DETAILS) -->
+    <!-- TAB 2: STATS (CALENDAR + PROGRESSION + MACHINE DETAILS) -->
     <section id="tab-stats" class="hidden space-y-4">
-      <!-- Weekly Muscle Group Volume Card -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2.5">
+      <!-- Segment Switcher: Calendar vs Timeline vs Machine Details -->
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-1.5 grid grid-cols-3 gap-1.5">
+        <button id="statsBtnCalendar" onclick="App.switchStatsSubTab('calendar')"
+          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none bg-emerald-500 text-black">
+          📅 Kalender
+        </button>
+        <button id="statsBtnProgression" onclick="App.switchStatsSubTab('progression')"
+          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none text-zinc-400">
+          📈 Zeitachse
+        </button>
+        <button id="statsBtnAnalytics" onclick="App.switchStatsSubTab('analytics')"
+          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none text-zinc-400">
+          ⚙️ Maschinen
+        </button>
+      </div>
+
+      <!-- Weekly Muscle Group Volume Card (Strictly excludes Warmups) -->
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Wochenvolumen pro Muskelgruppe</h2>
-            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono">Aktuelle Woche (Mo – So, ohne Warmup-Sätze)</p>
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Wochenvolumen (Arbeitssätze)</h2>
+            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono">Aktuelle KW (ohne Warmups)</p>
           </div>
-          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded text-emerald-400">0 Sätze</span>
+          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0 WS</span>
         </div>
         <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1"></div>
       </div>
 
-      <!-- Segment Switcher: Timeline vs Machine Details -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-1.5 grid grid-cols-2 gap-1.5">
-        <button id="statsBtnProgression" onclick="App.switchStatsSubTab('progression')"
-          class="py-2 px-3 rounded-md text-xs font-bold transition-none bg-emerald-500 text-zinc-950">
-          📈 Zeitachse
-        </button>
-        <button id="statsBtnAnalytics" onclick="App.switchStatsSubTab('analytics')"
-          class="py-2 px-3 rounded-md text-xs font-bold transition-none text-zinc-400 hover:text-zinc-200">
-          ⚙️ Maschinen-Details
-        </button>
+      <!-- SUB-VIEW 2A: TRAINING CALENDAR -->
+      <div id="stats-view-calendar" class="space-y-3.5">
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3.5">
+          <!-- Month Navigation -->
+          <div class="flex items-center justify-between">
+            <button onclick="App.changeCalendarMonth(-1)"
+              class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">
+              ◀
+            </button>
+            <div class="text-center">
+              <h3 id="calendarMonthLabel" class="text-sm font-extrabold uppercase tracking-wider text-zinc-100">Monat</h3>
+              <p class="text-[11px] text-zinc-400">Tippe auf einen Tag zum Nachtragen / Bearbeiten</p>
+            </div>
+            <button onclick="App.changeCalendarMonth(1)"
+              class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">
+              ▶
+            </button>
+          </div>
+
+          <!-- Monthly Summary Pills -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-black border border-emerald-900/60 rounded-xl p-2.5 text-center">
+              <div class="text-[10px] uppercase font-bold text-zinc-400">Abgehakt</div>
+              <div id="calCompletedCount" class="text-base font-extrabold font-mono text-emerald-400 mt-0.5">0</div>
+            </div>
+            <div class="bg-black border border-red-900/60 rounded-xl p-2.5 text-center">
+              <div class="text-[10px] uppercase font-bold text-zinc-400">Vergessen</div>
+              <div id="calMissedCount" class="text-base font-extrabold font-mono text-red-400 mt-0.5">0</div>
+            </div>
+            <div class="bg-black border border-zinc-800 rounded-xl p-2.5 text-center">
+              <div class="text-[10px] uppercase font-bold text-zinc-400">Quote</div>
+              <div id="calRateBadge" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">0%</div>
+            </div>
+          </div>
+
+          <!-- Weekday Headers (Mo - So) -->
+          <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-bold uppercase text-zinc-500 pt-1">
+            <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+          </div>
+
+          <!-- Calendar Days Grid -->
+          <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-[11px] text-zinc-400">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500 inline-block"></span>
+              <span>Training / Pause erledigt</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-red-950/80 border border-red-700 inline-block"></span>
+              <span>Vergessen (antippen zum Nachtragen)</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- SUB-VIEW 2A: PROGRESSION (TIMELINE VIEW) -->
-      <div id="stats-view-progression" class="space-y-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+      <!-- SUB-VIEW 2B: PROGRESSION (TIMELINE VIEW) -->
+      <div id="stats-view-progression" class="hidden space-y-4">
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Progression & Zeitachsen-Analyse</h2>
-              <p class="text-[11px] text-zinc-400">Zeigt alle jemals getrackten Übungen mit „Heute" am rechten Rand</p>
+              <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Progression & Zeitachse</h2>
+              <p class="text-[11px] text-zinc-400">Exklusive Warmup-Sätze • „Heute" am rechten Rand</p>
             </div>
-            <!-- Timeframe Buttons (1M, 1Y, ALL) -->
-            <div class="inline-flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 self-start sm:self-auto">
-              <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-                1 Monat
+            <div class="grid grid-cols-3 bg-black border border-zinc-800 rounded-xl p-1 gap-1">
+              <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">
+                1M
               </button>
-              <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-                1 Jahr
+              <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">
+                1J
               </button>
-              <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
-                Gesamt
+              <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">
+                Alle
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-            <!-- Dropdown: Every ever tracked exercise -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
             <div class="sm:col-span-2">
-              <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung auswählen</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung</label>
               <select id="progressionExerciseSelect" onchange="App.onProgressionExerciseChange()"
-                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
-            <!-- Metric Selector -->
             <div>
-              <label class="block text-[11px] text-zinc-400 mb-1">Metrik</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">Metrik (ohne Warmup)</label>
               <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
-                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
-                <option value="e1rm">Estimated 1RM (Epley)</option>
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                <option value="e1rm">Est. 1RM (Epley)</option>
                 <option value="maxWeight">Max Weight (kg)</option>
-                <option value="volume">Total Volume (kg)</option>
+                <option value="volume">Volumen (nur WS/Drop)</option>
               </select>
             </div>
           </div>
 
-          <!-- Machine Filter Pills inside Progression -->
           <div id="progressionMachineFilterBar" class="flex flex-wrap gap-1.5 pt-1"></div>
         </div>
 
-        <!-- Progression Chart Box -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2">
           <div class="flex items-center justify-between">
-            <span id="progressionChartTitle" class="text-xs font-semibold text-zinc-200">Entwicklungsdiagramm</span>
-            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+            <span id="progressionChartTitle" class="text-xs font-bold text-zinc-200">Entwicklungsdiagramm</span>
+            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-zinc-800"></span>
           </div>
-          <div class="relative h-72 w-full">
+          <div class="relative h-64 w-full">
             <canvas id="progressionChartCanvas"></canvas>
-            <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-zinc-900/95">
-              <p id="progressionEmptyTitle" class="text-sm text-zinc-300 font-semibold">Noch keine getrackten Übungen vorhanden.</p>
-              <p id="progressionEmptySub" class="text-xs text-zinc-500 mt-1">Schließe dein erstes Training ab oder lade über „⚙️ Backup" die Demo-Daten.</p>
+            <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-oled-card/95">
+              <p id="progressionEmptyTitle" class="text-sm text-zinc-300 font-bold">Noch keine Arbeitssätze vorhanden.</p>
+              <p id="progressionEmptySub" class="text-xs text-zinc-500 mt-1">Schließe ein Training ab oder lade Demo-Daten unter „⚙️ Backup".</p>
             </div>
           </div>
         </div>
 
-        <!-- Progression Summary Stats -->
-        <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2.5">
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <div class="text-[11px] text-zinc-400">Startwert (Zeitraum)</div>
-            <div id="progStartVal" class="text-base font-bold font-mono text-zinc-200 mt-0.5">—</div>
+        <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2">
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+            <div class="text-[10px] uppercase text-zinc-400">Startwert</div>
+            <div id="progStartVal" class="text-sm font-extrabold font-mono text-zinc-200 mt-0.5">—</div>
           </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <div class="text-[11px] text-zinc-400">Aktuell / Letzter Wert</div>
-            <div id="progEndVal" class="text-base font-bold font-mono text-emerald-400 mt-0.5">—</div>
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+            <div class="text-[10px] uppercase text-zinc-400">Aktuell</div>
+            <div id="progEndVal" class="text-sm font-extrabold font-mono text-emerald-400 mt-0.5">—</div>
           </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <div class="text-[11px] text-zinc-400">Steigerung (Delta)</div>
-            <div id="progDeltaVal" class="text-base font-bold font-mono text-zinc-100 mt-0.5">—</div>
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+            <div class="text-[10px] uppercase text-zinc-400">Delta</div>
+            <div id="progDeltaVal" class="text-sm font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
           </div>
         </div>
       </div>
 
-      <!-- SUB-VIEW 2B: ANALYTICS / CHARTS (MACHINE-ISOLATED DETAILS) -->
+      <!-- SUB-VIEW 2C: ANALYTICS / CHARTS (MACHINE-ISOLATED DETAILS) -->
       <div id="stats-view-analytics" class="hidden space-y-4">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label class="block text-[11px] text-zinc-400 mb-1">1. Übung auswählen</label>
               <select id="analyticsExerciseSelect" onchange="App.onAnalyticsExerciseChange()"
-                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
             <div>
-              <label class="block text-[11px] text-zinc-400 mb-1">2. Spezifische Maschine / Gerät</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">2. Maschine / Gerät</label>
               <select id="analyticsMachineSelect" onchange="App.renderAnalytics()"
-                class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
           </div>
 
-          <!-- Metric Switcher -->
           <div class="pt-1">
-            <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik</label>
+            <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik (Warmup-Sätze ausgeschlossen)</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="metricButtonsContainer">
               <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm"
-                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-                Est. 1RM (Epley)
+                class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border transition-none">
+                Est. 1RM
               </button>
               <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight"
-                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+                class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border transition-none">
                 Max Weight
               </button>
               <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet"
-                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-                Top-Set Perf.
+                class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border transition-none">
+                Top-Set
               </button>
               <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume"
-                class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
-                Total Volume
+                class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border transition-none">
+                Volumen (WS)
               </button>
             </div>
           </div>
         </div>
 
-        <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="analyticsKpiGrid">
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="analyticsKpiGrid">
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
             <div class="text-[11px] text-zinc-400">Bestes e1RM</div>
-            <div id="kpiE1rm" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">—</div>
+            <div id="kpiE1rm" class="text-base font-extrabold font-mono text-emerald-400 mt-0.5">—</div>
           </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
             <div class="text-[11px] text-zinc-400">Max Gewicht</div>
-            <div id="kpiMaxWeight" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+            <div id="kpiMaxWeight" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
           </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <div class="text-[11px] text-zinc-400">Max Volumen</div>
-            <div id="kpiMaxVolume" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+            <div class="text-[11px] text-zinc-400">Max Volumen (WS)</div>
+            <div id="kpiMaxVolume" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
           </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <div class="text-[11px] text-zinc-400">Sessions (Gerät)</div>
-            <div id="kpiSessions" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">0</div>
+          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+            <div class="text-[11px] text-zinc-400">Sessions</div>
+            <div id="kpiSessions" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">0</div>
           </div>
         </div>
 
-        <!-- Chart Container -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
           <div class="flex items-center justify-between mb-2">
-            <span id="chartTitleLabel" class="text-xs font-semibold text-zinc-300">Progress-Verlauf</span>
-            <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+            <span id="chartTitleLabel" class="text-xs font-bold text-zinc-300">Progress-Verlauf</span>
+            <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-zinc-800"></span>
           </div>
           <div class="relative h-64 w-full">
             <canvas id="progressChart"></canvas>
             <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-              <p class="text-sm text-zinc-400 font-medium">Noch keine Arbeitssätze für diese Übung + Maschine gespeichert.</p>
-              <p class="text-xs text-zinc-500 mt-1">Logge eine Einheit oder lade über „⚙️ Backup" Testdaten zum Ausprobieren.</p>
+              <p class="text-sm text-zinc-400 font-bold">Noch keine Arbeitssätze für dieses Gerät gespeichert.</p>
             </div>
           </div>
         </div>
 
-        <!-- Detailed Machine Session Log Table -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
+        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
           <div id="analyticsHistoryList" class="space-y-2"></div>
         </div>
       </div>
@@ -300,42 +359,40 @@
 
     <!-- TAB 3: HISTORY (VERLAUF) -->
     <section id="tab-history" class="hidden space-y-3">
-      <div class="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+      <div class="flex items-center justify-between bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
         <div>
-          <h2 class="text-sm font-bold text-zinc-100">Gespeicherte Einheiten</h2>
-          <p class="text-xs text-zinc-400">Kompletter Trainingsverlauf aus der IndexedDB</p>
+          <h2 class="text-sm font-extrabold text-zinc-100">Gespeicherte Einheiten & Pausentage</h2>
+          <p class="text-xs text-zinc-400">Kompletter Trainingsverlauf aus deiner IndexedDB</p>
         </div>
-        <span id="historyCountBadge" class="text-xs font-mono bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded text-zinc-300">0</span>
+        <span id="historyCountBadge" class="text-xs font-mono font-bold bg-black border border-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0</span>
       </div>
       <div id="historySessionsContainer" class="space-y-3"></div>
     </section>
 
     <!-- TAB 4: PLAN & GERÄTE VERWALTUNG -->
-    <section id="tab-manage" class="hidden space-y-6">
-      <!-- Exercises & Machines Manager -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+    <section id="tab-manage" class="hidden space-y-5">
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-bold text-zinc-100">Übungen & Spezifische Geräte</h2>
-            <p class="text-xs text-zinc-400">Maschinen anlegen, umbenennen, löschen oder Sitzeinstellungen ändern</p>
+            <h2 class="text-sm font-extrabold text-zinc-100">Übungen & Geräte</h2>
+            <p class="text-xs text-zinc-400">Maschinen verwalten & Sitzeinstellungen speichern</p>
           </div>
           <button onclick="App.promptCreateExercise()"
-            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs">
+            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs">
             + Neue Übung
           </button>
         </div>
         <div id="manageExercisesList" class="space-y-2.5"></div>
       </div>
 
-      <!-- Split & Days Manager -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-bold text-zinc-100">Trainingsplan / Split-Struktur (Mo – So)</h2>
-            <p class="text-xs text-zinc-400">Tage bearbeiten, Reihenfolge anpassen oder Übungen zuordnen</p>
+            <h2 class="text-sm font-extrabold text-zinc-100">Trainingsplan / Split (Mo – So)</h2>
+            <p class="text-xs text-zinc-400">Tage sortieren oder Übungen zuordnen</p>
           </div>
           <button onclick="App.promptCreateSplitDay()"
-            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold px-3 py-1.5 rounded text-xs border border-zinc-700">
+            class="touch-target bg-black active:bg-zinc-800 text-zinc-100 font-bold px-3.5 py-2 rounded-xl text-xs border border-zinc-700">
             + Neuer Tag
           </button>
         </div>
@@ -343,79 +400,55 @@
       </div>
     </section>
 
-    <!-- HEADER VIEW: BACKUP & PWA APP SETUP -->
+    <!-- HEADER VIEW: BACKUP & UPDATES -->
     <section id="tab-backup" class="hidden space-y-4">
       <!-- App Version & Update Checker Card -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-        <div class="flex items-center justify-between">
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between gap-2">
           <div>
-            <h2 class="text-sm font-bold text-zinc-100">App-Version & Updates</h2>
-            <p class="text-xs text-zinc-400">Aktuell installiert: <span id="currentVersionLabel" class="text-emerald-400 font-mono font-bold">Lade...</span></p>
+            <h2 class="text-sm font-extrabold text-zinc-100">App-Version & Updates</h2>
+            <p class="text-xs text-zinc-400">Installiert: <span id="currentVersionLabel" class="text-emerald-400 font-mono font-bold">Lade...</span></p>
           </div>
           <button onclick="App.checkForUpdates()"
-            class="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
+            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5">
             <span>🔄</span>
             <span>Auf Update prüfen</span>
           </button>
         </div>
       </div>
 
-      <!-- PWA App Setup Card -->
-      <div class="bg-zinc-900 border border-emerald-800/60 rounded-lg p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-bold text-emerald-400">📱 Als echte Offline-App installieren (Handy & PC)</h2>
-          <span class="text-[10px] font-mono uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">PWA Ready</span>
-        </div>
-        <p class="text-xs text-zinc-300 leading-relaxed">
-          Damit dein Smartphone (Android / iOS) oder PC diese Datei wie eine native App im Vollbild und <strong>100% offline im Flugmodus</strong> (inkl. gecachtem Tailwind & Chart.js) ausführt, kannst du hier die zwei winzigen PWA-Begleitdateien (<code class="text-emerald-400">manifest.json</code> und <code class="text-emerald-400">sw.js</code>) herunterladen und in denselben Ordner wie deine <code class="text-emerald-400">index.html</code> legen.
-        </p>
-        <div class="flex flex-wrap gap-2 pt-1">
-          <button id="pwaInstallBackupBtn" onclick="App.triggerPwaInstall()"
-            class="hidden bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider">
-            📲 Direkt als App installieren
-          </button>
-          <button onclick="App.downloadPwaFiles()"
-            class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 font-semibold py-2.5 px-3.5 rounded-lg text-xs">
-            ⚙ PWA-Dateien (sw.js & manifest.json) herunterladen
-          </button>
-        </div>
-      </div>
-
       <!-- JSON Backup Card -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-        <h2 class="text-sm font-bold text-zinc-100">JSON-Backup (Export & Import)</h2>
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
+        <h2 class="text-sm font-extrabold text-zinc-100">JSON-Backup (Export & Import)</h2>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Alle Daten (Splits, Übungen, Maschinen, Sitzeinstellungen und sämtliche Sessions) liegen lokal in deiner Browser-<code class="text-emerald-400">IndexedDB</code>. Exportiere regelmäßig ein JSON-Backup, um deinen Progress zu sichern oder zwischen PC und Handy zu übertragen.
+          Alle Daten liegen lokal in deiner <code class="text-emerald-400">IndexedDB</code>. Exportiere ab und zu ein Backup in deinen Download-Ordner.
         </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
           <button onclick="App.exportDatabaseJson()"
-            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-3 px-4 rounded-lg text-xs uppercase tracking-wider">
-            ⬇ Backup als JSON exportieren
+            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider">
+            ⬇ Backup exportieren
           </button>
-          <label class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold py-3 px-4 rounded-lg text-xs uppercase tracking-wider text-center cursor-pointer">
-            ⬆ JSON-Backup importieren
+          <label class="touch-target bg-black active:bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider text-center cursor-pointer flex items-center justify-center">
+            ⬆ Backup importieren
             <input type="file" accept=".json,application/json" onchange="App.importDatabaseJson(event)" class="hidden">
           </label>
         </div>
       </div>
 
       <!-- Demo Data & Factory Reset -->
-      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
-        <h2 class="text-sm font-bold text-zinc-100">Diagnose & Datenbank-Tools</h2>
-        <p class="text-xs text-zinc-400">
-          Teste das Zeitachsen-Diagramm unter „Stats" mit realistischen Demo-Daten (über mehrere Monate) oder setze die Datenbank zurück.
-        </p>
-        <div class="flex flex-wrap gap-2 pt-1">
+      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
+        <h2 class="text-sm font-extrabold text-zinc-100">Diagnose & Datenbank-Tools</h2>
+        <div class="flex flex-col sm:flex-row gap-2 pt-1">
           <button onclick="App.seedDemoSessions()"
-            class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
-            Demo-Verlauf generieren (inkl. Jahresverlauf)
+            class="touch-target bg-black active:bg-zinc-800 border border-zinc-700 text-zinc-200 px-3.5 py-3 rounded-xl text-xs font-bold">
+            Demo-Verlauf generieren
           </button>
           <button onclick="App.clearAllSessionsOnly()"
-            class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
-            Nur Sessions löschen (Plan & Geräte behalten)
+            class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-amber-400 px-3.5 py-3 rounded-xl text-xs font-bold">
+            Nur Sessions leeren
           </button>
           <button onclick="App.factoryResetDatabase()"
-            class="bg-zinc-950 hover:bg-red-950 border border-red-900/60 text-red-400 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
+            class="touch-target bg-black active:bg-red-950 border border-red-900/60 text-red-400 px-3.5 py-3 rounded-xl text-xs font-bold">
             Kompletter Werksreset
           </button>
         </div>
@@ -424,37 +457,38 @@
 
   </main>
 
-  <!-- MODAL: ADD EXERCISE TO ACTIVE WORKOUT OR SPLIT -->
-  <div id="modalOverlay" class="hidden fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-xl sm:rounded-xl w-full max-w-md p-4 space-y-3 max-h-[85vh] flex flex-col">
+  <!-- MOBILE BOTTOM SHEET MODAL -->
+  <div id="modalOverlay" onclick="if(event.target === this) App.closeModal()" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-oled-card border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-1 sm:hidden"></div>
       <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-        <h3 id="modalTitle" class="text-sm font-bold text-zinc-100">Auswahl</h3>
-        <button onclick="App.closeModal()" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2">×</button>
+        <h3 id="modalTitle" class="text-sm font-extrabold text-zinc-100">Auswahl</h3>
+        <button onclick="App.closeModal()" class="touch-target text-zinc-400 hover:text-zinc-100 text-xl font-bold px-3">×</button>
       </div>
-      <div id="modalBody" class="overflow-y-auto space-y-2 py-1 flex-1"></div>
+      <div id="modalBody" class="overflow-y-auto space-y-2 py-1 flex-1 no-scrollbar"></div>
     </div>
   </div>
 
   <!-- TOAST NOTIFICATION -->
-  <div id="toastBanner" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-zinc-950 font-bold text-xs px-4 py-2 rounded shadow-lg"></div>
+  <div id="toastBanner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap"></div>
 
-  <!-- BOTTOM NAVIGATION (4 TABS) -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]">
+  <!-- BOTTOM NAVIGATION (4 TABS - LARGE MOBILE TARGETS) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur border-t border-zinc-800/90 pb-[env(safe-area-inset-bottom)]">
     <div class="max-w-3xl mx-auto grid grid-cols-4">
-      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-emerald-500 text-emerald-400">
-        <span class="text-base leading-none mb-1">🏋️</span>
+      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-extrabold border-t-2 border-emerald-500 text-emerald-400">
+        <span class="text-lg leading-none mb-1">🏋️</span>
         <span>Training</span>
       </button>
-      <button onclick="App.switchTab('stats')" data-tab="stats" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">📊</span>
+      <button onclick="App.switchTab('stats')" data-tab="stats" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-lg leading-none mb-1">📊</span>
         <span>Stats</span>
       </button>
-      <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">🗂</span>
+      <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-lg leading-none mb-1">🗂</span>
         <span>Verlauf</span>
       </button>
-      <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
-        <span class="text-base leading-none mb-1">🛠️</span>
+      <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-lg leading-none mb-1">🛠️</span>
         <span>Geräte</span>
       </button>
     </div>
@@ -543,7 +577,7 @@
       { id: 'm_sq_1', exerciseId: 'ex_squat_legpress', name: '45° Beinpresse (Plate-Loaded)', setupNote: 'Rückenlehne Stufe 2' },
       { id: 'm_sq_2', exerciseId: 'ex_squat_legpress', name: 'Hackenschmidt / Pendulum Squat', setupNote: 'Schulterpolster Standard' },
       { id: 'm_sq_3', exerciseId: 'ex_squat_legpress', name: 'Langhantel Rack (Frei)', setupNote: 'Safety Pins auf 8' },
-      { id: 'm_rdl_1', exerciseId: 'ex_rdl', name: 'Langhantel (Olympia 20kg)', setupNote: 'Zughilfen ab Arbeitssatz 1' },
+      { id: 'm_rdl_1', exerciseId: 'ex_rdl', name: 'Langhantel (Olympia 20kg)', setupNote: 'Zughilfen ab WS 1' },
       { id: 'm_le_1', exerciseId: 'ex_leg_extension', name: 'Beinstrecker Maschine', setupNote: 'Rücken 3, Schienbeinrolle 4' },
       { id: 'm_add_1', exerciseId: 'ex_adductor', name: 'Adduktoren Maschine', setupNote: 'Startweite maximal, Rücken 2' },
       { id: 'm_abd_1', exerciseId: 'ex_abductor', name: 'Abduktoren Maschine', setupNote: 'Startweite 1' },
@@ -560,11 +594,11 @@
         name: 'Montag – Push',
         isRest: false,
         items: [
-          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sp_1' },
-          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel', targetSets: 3, targetRepRange: '2–3 Sätze', defaultMachineId: 'm_lr_1' },
-          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_oht_1' },
-          { exerciseId: 'ex_triceps_pushdown', labelOverride: 'Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_tp_1' },
-          { exerciseId: 'ex_chest_press', labelOverride: 'Brustpresse', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cp_1' }
+          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_sp_1' },
+          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel', targetSets: 3, targetRepRange: '2–3 WS', defaultMachineId: 'm_lr_1' },
+          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_oht_1' },
+          { exerciseId: 'ex_triceps_pushdown', labelOverride: 'Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_tp_1' },
+          { exerciseId: 'ex_chest_press', labelOverride: 'Brustpresse', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_cp_1' }
         ]
       },
       {
@@ -573,11 +607,11 @@
         name: 'Dienstag – Pull',
         isRest: false,
         items: [
-          { exerciseId: 'ex_lat_pulldown', labelOverride: 'Latzug', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_lp_1' },
-          { exerciseId: 'ex_chest_row', labelOverride: 'Brustgestütztes Rudern', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cr_1' },
-          { exerciseId: 'ex_rev_pec_deck', labelOverride: 'Reverse Pec Deck', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_rpd_1' },
-          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_pc_1' },
-          { exerciseId: 'ex_hammer_curls', labelOverride: 'Hammer Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_hc_1' }
+          { exerciseId: 'ex_lat_pulldown', labelOverride: 'Latzug', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_lp_1' },
+          { exerciseId: 'ex_chest_row', labelOverride: 'Brustgestütztes Rudern', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_cr_1' },
+          { exerciseId: 'ex_rev_pec_deck', labelOverride: 'Reverse Pec Deck', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_rpd_1' },
+          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_pc_1' },
+          { exerciseId: 'ex_hammer_curls', labelOverride: 'Hammer Curls', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_hc_1' }
         ]
       },
       {
@@ -593,13 +627,13 @@
         name: 'Donnerstag – Beine',
         isRest: false,
         items: [
-          { exerciseId: 'ex_seated_leg_curl', labelOverride: 'Beinbeuger sitzend', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_slc_1' },
-          { exerciseId: 'ex_squat_legpress', labelOverride: 'Squats (oder Beinpresse)', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sq_1' },
-          { exerciseId: 'ex_rdl', labelOverride: 'Romanian Deadlift', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_rdl_1' },
-          { exerciseId: 'ex_leg_extension', labelOverride: 'Beinstrecker', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_le_1' },
-          { exerciseId: 'ex_adductor', labelOverride: 'Adduktoren-Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_add_1' },
-          { exerciseId: 'ex_abductor', labelOverride: 'Abduktoren-Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_abd_1' },
-          { exerciseId: 'ex_calf_raise', labelOverride: 'Wadenheben', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cr_calf_1' }
+          { exerciseId: 'ex_seated_leg_curl', labelOverride: 'Beinbeuger sitzend', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_slc_1' },
+          { exerciseId: 'ex_squat_legpress', labelOverride: 'Squats (oder Beinpresse)', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_sq_1' },
+          { exerciseId: 'ex_rdl', labelOverride: 'Romanian Deadlift', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_rdl_1' },
+          { exerciseId: 'ex_leg_extension', labelOverride: 'Beinstrecker', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_le_1' },
+          { exerciseId: 'ex_adductor', labelOverride: 'Adduktoren-Maschine', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_add_1' },
+          { exerciseId: 'ex_abductor', labelOverride: 'Abduktoren-Maschine', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_abd_1' },
+          { exerciseId: 'ex_calf_raise', labelOverride: 'Wadenheben', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_cr_calf_1' }
         ]
       },
       {
@@ -608,13 +642,13 @@
         name: 'Freitag – Schultern & Arme',
         isRest: false,
         items: [
-          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sp_1' },
-          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel (oder Maschine)', targetSets: 3, targetRepRange: '2–3 Sätze', defaultMachineId: 'm_lr_1' },
-          { exerciseId: 'ex_facepulls', labelOverride: 'Facepulls (oder hintere Schulter am Kabel)', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_fp_1' },
-          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_oht_1' },
-          { exerciseId: 'ex_single_triceps_pushdown', labelOverride: 'Single-Arm Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_satp_1' },
-          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_pc_1' },
-          { exerciseId: 'ex_incline_hammer_curls', labelOverride: 'Incline Hammer Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_ihc_1' }
+          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_sp_1' },
+          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel (oder Maschine)', targetSets: 3, targetRepRange: '2–3 WS', defaultMachineId: 'm_lr_1' },
+          { exerciseId: 'ex_facepulls', labelOverride: 'Facepulls (oder hintere Schulter am Kabel)', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_fp_1' },
+          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_oht_1' },
+          { exerciseId: 'ex_single_triceps_pushdown', labelOverride: 'Single-Arm Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_satp_1' },
+          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_pc_1' },
+          { exerciseId: 'ex_incline_hammer_curls', labelOverride: 'Incline Hammer Curls', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_ihc_1' }
         ]
       },
       {
@@ -627,7 +661,7 @@
     ];
 
     /*************************************************************************
-     * 2. INDEXEDDB STORAGE ENGINE (WITH LOCALSTORAGE MIRROR FALLBACK)
+     * 2. INDEXEDDB STORAGE ENGINE
      *************************************************************************/
     const StorageEngine = {
       dbName: 'GymProgressDB',
@@ -720,9 +754,11 @@
         activeSplitId: 'day_mon_push',
         activeDraft: null,
         analyticsMetric: 'e1rm',
-        progressionRange: '1M', // '1M' | '1Y' | 'ALL'
+        progressionRange: '1M',
         progressionMachineFilter: 'ALL',
-        statsSubTab: 'progression', // 'progression' | 'analytics'
+        statsSubTab: 'calendar', // 'calendar' | 'progression' | 'analytics'
+        calendarYear: new Date().getFullYear(),
+        calendarMonth: new Date().getMonth(),
         currentTab: 'workout'
       },
       chartInstance: null,
@@ -730,15 +766,13 @@
       deferredPwaPrompt: null,
 
       async init() {
-        // Prüfen, ob gerade ein Update durchgeführt wurde
         const updateMsg = sessionStorage.getItem('ironlog_update_msg');
         if (updateMsg) {
           this.showToast(updateMsg);
           sessionStorage.removeItem('ironlog_update_msg');
         }
 
-        // Aktuelle Version im Backup-Tab setzen
-        const currentVer = localStorage.getItem('ironlog_version') || 'v1.3';
+        const currentVer = localStorage.getItem('ironlog_version') || 'v1.4';
         const verLabel = document.getElementById('currentVersionLabel');
         if (verLabel) verLabel.textContent = currentVer;
 
@@ -783,14 +817,13 @@
       async checkForUpdates() {
         this.showToast('🔍 Prüfe auf Updates...');
         try {
-          // Bypass für den WebView-Cache mit dynamischem Zeitstempel
           const res = await fetch('./sw.js?t=' + Date.now(), { cache: 'no-store' });
           if (!res.ok) throw new Error('Server nicht erreichbar');
 
           const text = await res.text();
           const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
           const remoteVersion = match ? match[1].replace('ironlog-', '').replace('offline-', '') : 'Unbekannt';
-          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.3';
+          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.4';
 
           if (remoteVersion !== currentVersion) {
             if (confirm(`Neues Update gefunden!\n\nAktuell: ${currentVersion}\nNeu: ${remoteVersion}\n\nJetzt installieren und neu laden?`)) {
@@ -803,7 +836,7 @@
               window.location.reload();
             }
           } else {
-            if (confirm(`Du bist bereits auf dem neuesten Stand (${currentVersion}).\n\nMöchtest du den Cache trotzdem erzwingen und neu laden?`)) {
+            if (confirm(`Du bist bereits auf dem neuesten Stand (${currentVersion}).\n\nTrotzdem Cache leeren und neu laden?`)) {
               if ('caches' in window) {
                 const keys = await caches.keys();
                 await Promise.all(keys.map(k => caches.delete(k)));
@@ -816,13 +849,9 @@
         }
       },
 
-      /***********************************************************************
-       * 4. STRICT MONDAY -> SUNDAY SPLIT ORDERING
-       ***********************************************************************/
       getWeekdayRank(split) {
         const id = String(split.id || '').toLowerCase();
         const name = String(split.name || '').toLowerCase();
-
         if (id === 'day_mon_push' || name.startsWith('montag')) return 1;
         if (id === 'day_tue_pull' || name.startsWith('dienstag')) return 2;
         if (id === 'day_wed_rest' || name.startsWith('mittwoch')) return 3;
@@ -830,7 +859,6 @@
         if (id === 'day_fri_shoulders_arms' || name.startsWith('freitag')) return 5;
         if (id === 'day_weekend_rest' || name.startsWith('samstag')) return 6;
         if (name.startsWith('sonntag')) return 7;
-
         return typeof split.order === 'number' ? split.order : 50;
       },
 
@@ -839,13 +867,9 @@
           const rankA = this.getWeekdayRank(a);
           const rankB = this.getWeekdayRank(b);
           if (rankA !== rankB) return rankA - rankB;
-          const orderA = typeof a.order === 'number' ? a.order : 99;
-          const orderB = typeof b.order === 'number' ? b.order : 99;
-          return orderA - orderB;
+          return (a.order || 99) - (b.order || 99);
         });
-        this.state.splits.forEach((s, idx) => {
-          s.order = idx + 1;
-        });
+        this.state.splits.forEach((s, idx) => { s.order = idx + 1; });
       },
 
       async moveSplitDay(index, direction) {
@@ -860,12 +884,9 @@
         this.renderWorkoutTab();
       },
 
-      /***********************************************************************
-       * 5. PWA (PROGRESSIVE WEB APP) SETUP & GENERATOR
-       ***********************************************************************/
       getAppSvgIcon() {
         return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-          <rect width="512" height="512" rx="110" fill="#09090b"/>
+          <rect width="512" height="512" rx="110" fill="#000000"/>
           <rect x="36" y="36" width="440" height="440" rx="85" fill="none" stroke="#10b981" stroke-width="16"/>
           <path d="M120 256h272M150 176v160M110 206v100M362 176v160M402 206v100" stroke="#10b981" stroke-width="34" stroke-linecap="round"/>
         </svg>`;
@@ -884,8 +905,8 @@
           start_url: './index.html',
           display: 'standalone',
           orientation: 'portrait',
-          background_color: '#09090b',
-          theme_color: '#09090b',
+          background_color: '#000000',
+          theme_color: '#000000',
           icons: [
             { src: svgDataUrl, sizes: '192x192 512x512', type: 'image/svg+xml', purpose: 'any maskable' }
           ]
@@ -897,15 +918,6 @@
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:')) {
           navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
             reg.update();
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener('statechange', () => {
-                if ((newWorker.state === 'installed' || newWorker.state === 'activating') && navigator.serviceWorker.controller) {
-                  App.showToast('🚀 Neues Update installiert! Starte die App neu.');
-                }
-              });
-            });
           }).catch(() => {});
         }
 
@@ -913,80 +925,17 @@
           e.preventDefault();
           this.deferredPwaPrompt = e;
           document.getElementById('pwaInstallHeaderBtn')?.classList.remove('hidden');
-          document.getElementById('pwaInstallBackupBtn')?.classList.remove('hidden');
         });
       },
 
       async triggerPwaInstall() {
-        if (!this.deferredPwaPrompt) {
-          alert('Tipp: Öffne im Browser-Menü (⋮) den Punkt „Zum Startbildschirm hinzufügen" bzw. „App installieren".');
-          return;
-        }
+        if (!this.deferredPwaPrompt) return;
         this.deferredPwaPrompt.prompt();
         const { outcome } = await this.deferredPwaPrompt.userChoice;
         if (outcome === 'accepted') {
           this.deferredPwaPrompt = null;
           document.getElementById('pwaInstallHeaderBtn')?.classList.add('hidden');
-          document.getElementById('pwaInstallBackupBtn')?.classList.add('hidden');
         }
-      },
-
-      downloadPwaFiles() {
-        const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(this.getAppSvgIcon());
-        const manifestJson = JSON.stringify({
-          name: 'IRONLOG Gym Progress Tracker',
-          short_name: 'IRONLOG',
-          start_url: './index.html',
-          display: 'standalone',
-          background_color: '#09090b',
-          theme_color: '#09090b',
-          icons: [
-            { src: svgDataUrl, sizes: '192x192 512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-          ]
-        }, null, 2);
-
-        const swJs = `const CACHE_NAME = 'ironlog-v1.3';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      });
-    })
-  );
-});`;
-
-        this.triggerDownloadFile('manifest.json', manifestJson, 'application/json');
-        setTimeout(() => {
-          this.triggerDownloadFile('sw.js', swJs, 'application/javascript');
-          this.showToast('manifest.json & sw.js heruntergeladen!');
-        }, 300);
       },
 
       triggerDownloadFile(filename, content, mimeType) {
@@ -1001,9 +950,6 @@ self.addEventListener('fetch', (event) => {
         URL.revokeObjectURL(url);
       },
 
-      /***********************************************************************
-       * 6. HELPERS & DATABASE PERSISTENCE
-       ***********************************************************************/
       detectTodaySplitId() {
         const day = new Date().getDay();
         const map = {
@@ -1046,7 +992,7 @@ self.addEventListener('fetch', (event) => {
       updateHeaderStatus() {
         const sub = document.getElementById('headerSubtitle');
         if (sub) {
-          sub.textContent = `${this.state.sessions.length} Sessions | ${this.state.machines.length} Geräte in DB`;
+          sub.textContent = `${this.state.sessions.length} Logs | ${this.state.machines.length} Geräte`;
         }
       },
 
@@ -1093,7 +1039,112 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 7. MACHINE DELETION & MANAGEMENT LOGIC
+       * 4. BEAT THE LOGBOOK ENGINE & COPY FROM LAST TIME
+       ***********************************************************************/
+      computeBeatLogbookInfo(entry, set, setIdx) {
+        if (set.type === 'warmup') {
+          return {
+            text: 'Warmup (zählt nicht ins Volumen)',
+            cls: 'text-amber-400/80 bg-amber-950/20 border-amber-900/40'
+          };
+        }
+
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        const prevSet = lastPerf && lastPerf.sets && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+
+        if (!prevSet || prevSet.type === 'warmup') {
+          return {
+            text: 'Kein Vorwert für diesen Satz-Slot',
+            cls: 'text-zinc-500 bg-black border-zinc-800/80'
+          };
+        }
+
+        const prevW = Number(prevSet.weight) || 0;
+        const prevR = Number(prevSet.reps) || 0;
+        const currW = this.parseNum(set.weight);
+        const currR = this.parseNum(set.reps);
+
+        if (currW === null || currR === null || currR <= 0) {
+          return {
+            text: `🎯 Ziel schlagen: > ${prevW} kg × ${prevR} Reps`,
+            cls: 'text-zinc-400 bg-black border-zinc-800'
+          };
+        }
+
+        const diffW = Number((currW - prevW).toFixed(2));
+        const diffR = currR - prevR;
+        const prevE1rm = prevW * (1 + prevR / 30);
+        const currE1rm = currW * (1 + currR / 30);
+        const diffE1rm = currE1rm - prevE1rm;
+
+        if (currW > prevW && currR >= prevR) {
+          const repBonus = diffR > 0 ? ` & +${diffR} Rep${diffR > 1 ? 's' : ''}` : '';
+          return {
+            text: `🔥 BEAT THE LOGBOOK: +${diffW} kg${repBonus}!`,
+            cls: 'text-emerald-300 bg-emerald-950/50 border-emerald-600/70 font-bold'
+          };
+        }
+        if (currW === prevW && currR > prevR) {
+          return {
+            text: `🔥 BEAT THE LOGBOOK: +${diffR} Rep${diffR > 1 ? 's' : ''} bei ${currW} kg!`,
+            cls: 'text-emerald-300 bg-emerald-950/50 border-emerald-600/70 font-bold'
+          };
+        }
+        if (diffE1rm > 0.15) {
+          return {
+            text: `▲ e1RM gesteigert (+${diffE1rm.toFixed(1)} kg vs. ${prevW}kg×${prevR})`,
+            cls: 'text-emerald-400 bg-emerald-950/30 border-emerald-700/50 font-bold'
+          };
+        }
+        if (currW === prevW && currR === prevR) {
+          return {
+            text: `= Leistung gehalten (${prevW} kg × ${prevR})`,
+            cls: 'text-zinc-300 bg-zinc-900 border-zinc-700'
+          };
+        }
+        return {
+          text: `▼ Unter Vorwoche (Letztes Mal: ${prevW} kg × ${prevR})`,
+          cls: 'text-red-300 bg-red-950/30 border-red-900/50'
+        };
+      },
+
+      updateBeatLogbookBadgeDOM(entryIdx, setIdx) {
+        const entry = this.state.activeDraft?.entries?.[entryIdx];
+        const set = entry?.sets?.[setIdx];
+        const el = document.getElementById(`btl-badge-${entryIdx}-${setIdx}`);
+        if (!entry || !set || !el) return;
+        const info = this.computeBeatLogbookInfo(entry, set, setIdx);
+        el.className = `text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-none ${info.cls}`;
+        el.textContent = info.text;
+      },
+
+      copyLastPerformanceToEntry(entryIdx) {
+        const entry = this.state.activeDraft?.entries?.[entryIdx];
+        if (!entry) return;
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        if (!lastPerf || !lastPerf.sets || lastPerf.sets.length === 0) {
+          this.showToast('⚠️ Noch keine Vorwerte an diesem Gerät');
+          return;
+        }
+
+        entry.sets = lastPerf.sets.map(prevSet => ({
+          weight: String(prevSet.weight ?? ''),
+          reps: String(prevSet.reps ?? ''),
+          type: prevSet.type || 'normal',
+          partials: prevSet.partials || 0,
+          drops: (prevSet.type === 'dropset' && Array.isArray(prevSet.drops))
+            ? prevSet.drops.map(d => ({ weight: String(d.weight ?? ''), reps: String(d.reps ?? '') }))
+            : [],
+          completed: false
+        }));
+
+        this.saveDraft();
+        this.renderWorkoutTab();
+        this.showToast('📋 Letzte Werte in alle Sätze kopiert!');
+      },
+
+      /***********************************************************************
+       * 5. MACHINE DELETION & MANAGEMENT LOGIC
        ***********************************************************************/
       async deleteMachine(machineId) {
         const machine = this.state.machines.find(m => m.id === machineId);
@@ -1111,10 +1162,10 @@ self.addEventListener('fetch', (event) => {
 
         let confirmMsg = `Gerät „${machine.name}" wirklich löschen?`;
         if (siblingMachines.length === 1) {
-          confirmMsg += `\n\nHinweis: Da dies das einzige Gerät für diese Übung ist, wird automatisch ein neutrales „Standard-Gerät" als Ersatz angelegt.`;
+          confirmMsg += `\n\nHinweis: Es wird automatisch ein neutrales „Standard-Gerät" als Ersatz angelegt.`;
         }
         if (usedInSessionsCount > 0) {
-          confirmMsg += `\n\nAchtung: Dieses Gerät kommt in ${usedInSessionsCount} gespeicherten Trainingseinheit(en) vor. Diese Einträge werden beim Löschen mit entfernt.`;
+          confirmMsg += `\n\nAchtung: Kommt in ${usedInSessionsCount} gespeicherten Einheit(en) vor.`;
         }
 
         if (!confirm(confirmMsg)) return;
@@ -1123,12 +1174,7 @@ self.addEventListener('fetch', (event) => {
 
         let remaining = this.state.machines.filter(m => m.exerciseId === exId);
         if (remaining.length === 0) {
-          const fallback = {
-            id: this.uid('m'),
-            exerciseId: exId,
-            name: 'Standard-Gerät',
-            setupNote: ''
-          };
+          const fallback = { id: this.uid('m'), exerciseId: exId, name: 'Standard-Gerät', setupNote: '' };
           this.state.machines.push(fallback);
           remaining = [fallback];
         }
@@ -1137,9 +1183,7 @@ self.addEventListener('fetch', (event) => {
 
         this.state.splits.forEach(sp => {
           (sp.items || []).forEach(it => {
-            if (it.defaultMachineId === machineId) {
-              it.defaultMachineId = replacementMachineId;
-            }
+            if (it.defaultMachineId === machineId) it.defaultMachineId = replacementMachineId;
           });
         });
 
@@ -1156,7 +1200,7 @@ self.addEventListener('fetch', (event) => {
           this.state.sessions.forEach(sess => {
             sess.entries = (sess.entries || []).filter(e => e.machineId !== machineId);
           });
-          this.state.sessions = this.state.sessions.filter(sess => (sess.entries || []).length > 0);
+          this.state.sessions = this.state.sessions.filter(sess => sess.isRestDay || (sess.entries || []).length > 0);
         }
 
         await this.persistAll();
@@ -1170,7 +1214,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 8. WORKOUT DRAFT & HISTORY PRE-FILL ENGINE
+       * 6. WORKOUT DRAFT & HISTORY PRE-FILL ENGINE
        ***********************************************************************/
       getLastPerformance(exerciseId, machineId) {
         for (const sess of this.state.sessions) {
@@ -1191,12 +1235,7 @@ self.addEventListener('fetch', (event) => {
       getMachinesForExercise(exerciseId) {
         let list = this.state.machines.filter(m => m.exerciseId === exerciseId);
         if (list.length === 0) {
-          const fallback = {
-            id: this.uid('m'),
-            exerciseId,
-            name: 'Standard-Gerät',
-            setupNote: ''
-          };
+          const fallback = { id: this.uid('m'), exerciseId, name: 'Standard-Gerät', setupNote: '' };
           this.state.machines.push(fallback);
           StorageEngine.putAll('machines', this.state.machines);
           list = [fallback];
@@ -1224,14 +1263,15 @@ self.addEventListener('fetch', (event) => {
         return sets;
       },
 
-      buildDraftForSplit(splitId) {
+      buildDraftForSplit(splitId, customDate = null) {
         this.sortSplits();
         const split = this.state.splits.find(s => s.id === splitId) || this.state.splits[0];
-        const date = this.todayIso();
+        const date = customDate || this.state.activeDraft?.date || this.todayIso();
         if (!split || split.isRest) {
           return {
             splitId: split ? split.id : '',
-            splitName: split ? split.name : 'Freies Training',
+            splitName: split ? split.name : 'Pausentag',
+            isRest: true,
             date,
             entries: []
           };
@@ -1246,7 +1286,7 @@ self.addEventListener('fetch', (event) => {
             entryId: this.uid('ent'),
             exerciseId: item.exerciseId,
             labelOverride: item.labelOverride || '',
-            targetRepRange: item.targetRepRange || `${item.targetSets || 2} Sätze`,
+            targetRepRange: item.targetRepRange || `${item.targetSets || 2} WS`,
             targetSets: item.targetSets || 2,
             machineId: validMachineId,
             collapsed: false,
@@ -1257,6 +1297,7 @@ self.addEventListener('fetch', (event) => {
         return {
           splitId: split.id,
           splitName: split.name,
+          isRest: false,
           date,
           entries
         };
@@ -1273,19 +1314,21 @@ self.addEventListener('fetch', (event) => {
       selectSplit(splitId) {
         const hasCompletedSets = this.state.activeDraft?.entries?.some(e => e.sets.some(s => s.completed));
         if (hasCompletedSets && splitId !== this.state.activeSplitId) {
-          if (!confirm('Du hast bereits abgehakte Sätze in der aktuellen Einheit. Tag wechseln und aktuellen Entwurf verwerfen?')) {
+          if (!confirm('Du hast bereits abgehakte Sätze. Tag wechseln und aktuellen Entwurf verwerfen?')) {
             return;
           }
         }
+        const currentDate = this.state.activeDraft?.date || this.todayIso();
         this.state.activeSplitId = splitId;
-        this.state.activeDraft = this.buildDraftForSplit(splitId);
+        this.state.activeDraft = this.buildDraftForSplit(splitId, currentDate);
         this.saveDraft();
         this.renderWorkoutTab();
       },
 
       resetActiveDraft() {
         if (!confirm('Aktuelle Eingaben für diesen Tag zurücksetzen?')) return;
-        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        const currentDate = this.state.activeDraft?.date || this.todayIso();
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, currentDate);
         this.saveDraft();
         this.renderWorkoutTab();
         this.showToast('Entwurf zurückgesetzt');
@@ -1295,10 +1338,11 @@ self.addEventListener('fetch', (event) => {
         if (!this.state.activeDraft || !val) return;
         this.state.activeDraft.date = val;
         this.saveDraft();
+        this.renderWorkoutTab();
       },
 
       /***********************************************************************
-       * 9. WORKOUT UI RENDERING & INTERACTION (ACCORDION, REORDER, STEPPERS)
+       * 7. WORKOUT UI RENDERING (MOBILE FIRST, NO +-2.5, WS LABEL, BTL)
        ***********************************************************************/
       toggleExerciseCollapse(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
@@ -1320,40 +1364,22 @@ self.addEventListener('fetch', (event) => {
         this.renderWorkoutTab();
       },
 
-      stepSetWeight(entryIdx, setIdx, delta) {
-        const entry = this.state.activeDraft?.entries?.[entryIdx];
-        if (!entry) return;
-        const set = entry.sets[setIdx];
-        if (!set) return;
-
-        let currentVal = this.parseNum(set.weight);
-        if (currentVal === null) {
-          const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
-          const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
-          currentVal = prevSet && this.parseNum(prevSet.weight) !== null ? this.parseNum(prevSet.weight) : 0;
-        }
-
-        const nextVal = Math.max(0, Math.round((currentVal + delta) * 100) / 100);
-        set.weight = String(nextVal);
-        this.saveDraft();
-        this.renderWorkoutTab();
-      },
-
       renderWorkoutTab() {
         this.sortSplits();
         const draft = this.state.activeDraft;
+        const activeDate = draft?.date || this.todayIso();
         const dateInput = document.getElementById('workoutDateInput');
-        if (dateInput && draft) dateInput.value = draft.date || this.todayIso();
+        if (dateInput) dateInput.value = activeDate;
 
         const btnBar = document.getElementById('splitSelectorButtons');
         btnBar.innerHTML = this.state.splits.map(s => {
           const active = s.id === this.state.activeSplitId;
           return `
             <button onclick="App.selectSplit('${s.id}')"
-              class="shrink-0 px-3 py-2 rounded-lg text-xs font-bold border transition-none ${
+              class="touch-target shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-extrabold border transition-none ${
                 active
-                  ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
-                  : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                  : 'bg-black text-zinc-300 border-zinc-800 active:bg-zinc-900'
               }">
               ${this.escapeHtml(s.name)}
             </button>
@@ -1362,22 +1388,37 @@ self.addEventListener('fetch', (event) => {
 
         const container = document.getElementById('workoutExercisesContainer');
         const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
+        const finishBtn = document.getElementById('finishWorkoutMainBtn');
+        const alreadyLoggedToday = this.state.sessions.some(s => s.date === activeDate);
 
         if (currentSplit && currentSplit.isRest && (!draft.entries || draft.entries.length === 0)) {
+          if (finishBtn) {
+            finishBtn.textContent = alreadyLoggedToday
+              ? `✓ Pausentag am ${activeDate} bereits abgehakt (nochmal speichern)`
+              : `🛋️ Pausentag (${activeDate}) im Kalender abhaken`;
+          }
           container.innerHTML = `
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center space-y-2">
-              <div class="text-2xl">🛋️</div>
-              <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(currentSplit.name)}</h3>
-              <p class="text-xs text-zinc-400">Planmäßiger Pausentag. Füge unten bei Bedarf trotzdem eine Übung hinzu.</p>
+            <div class="bg-oled-card border ${alreadyLoggedToday ? 'border-emerald-600/80' : 'border-zinc-800'} rounded-2xl p-6 text-center space-y-2.5">
+              <div class="text-3xl">${alreadyLoggedToday ? '✅' : '🛋️'}</div>
+              <h3 class="text-base font-extrabold text-zinc-100">${this.escapeHtml(currentSplit.name)}</h3>
+              <p class="text-xs text-zinc-400 leading-relaxed">
+                ${alreadyLoggedToday
+                  ? `Dieser Tag (${activeDate}) ist im Kalender bereits grün abgehakt!`
+                  : 'Planmäßiger Regenerations-/Pausentag. Tippe unten auf den grünen Button, um den Tag im Kalender grün abzuhaken.'}
+              </p>
             </div>
           `;
           return;
         }
 
+        if (finishBtn) {
+          finishBtn.textContent = `✓ Training abschließen & im Kalender abhaken`;
+        }
+
         if (!draft.entries || draft.entries.length === 0) {
           container.innerHTML = `
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center text-xs text-zinc-400">
-              Keine Übungen in dieser Einheit. Klicke unten auf "+ Übung zur Einheit hinzufügen".
+            <div class="bg-oled-card border border-zinc-800 rounded-2xl p-6 text-center text-xs text-zinc-400">
+              Keine Übungen in dieser Einheit. Tippe unten auf "+ Übung zur Einheit hinzufügen" oder hake den Tag direkt als erledigt ab.
             </div>
           `;
           return;
@@ -1392,76 +1433,79 @@ self.addEventListener('fetch', (event) => {
 
           const totalSetsCount = entry.sets.length;
           const completedSetsCount = entry.sets.filter(s => s.completed).length;
-          const targetCount = entry.targetSets || totalSetsCount || 1;
-          const isAllCompleted = totalSetsCount > 0 && completedSetsCount >= Math.min(totalSetsCount, targetCount) && entry.sets.every(s => s.completed);
+          const isAllCompleted = totalSetsCount > 0 && entry.sets.every(s => s.completed);
           const isCollapsed = !!entry.collapsed;
 
-          let lastPerfHtml = `<span class="text-zinc-500 text-[11px]">Keine bisherigen Daten an diesem Gerät</span>`;
+          let lastPerfHtml = `<span class="text-zinc-500 text-xs">Noch keine Vorwerte an diesem Gerät</span>`;
           if (lastPerf && lastPerf.sets.length > 0) {
-            const pills = lastPerf.sets.map((s, idx) => {
-              const typeTag = s.type === 'warmup' ? 'W' : (s.type === 'dropset' ? 'D' : `${idx + 1}`);
+            const pills = lastPerf.sets.map((s) => {
+              const typeTag = s.type === 'warmup' ? 'Warm' : (s.type === 'dropset' ? 'Drop' : 'WS');
               const partStr = s.partials > 0 ? `+${s.partials}P` : '';
               const dropStr = (s.type === 'dropset' && s.drops && s.drops.length > 0)
-                ? ' ↳ ' + s.drops.map(d => `${d.weight}×${d.reps}`).join(' / ')
+                ? ' ↳ ' + s.drops.map(d => `${d.weight}×${d.reps}`).join('/')
                 : '';
-              return `<span class="inline-block bg-zinc-900 border border-zinc-700/80 rounded px-1.5 py-0.5 text-[11px] font-mono text-zinc-200">
-                <strong class="text-emerald-400">${typeTag}:</strong> ${s.weight}kg × ${s.reps}${partStr}${dropStr}
+              return `<span class="inline-block bg-black border border-zinc-800 rounded-lg px-2 py-1 text-[11px] font-mono text-zinc-200">
+                <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeTag}:</strong> ${s.weight}kg × ${s.reps}${partStr}${dropStr}
               </span>`;
             }).join(' ');
             lastPerfHtml = `
-              <div class="flex flex-wrap items-center gap-1">
-                <span class="text-[10px] font-mono uppercase text-zinc-400 mr-1">Letztes Mal (${lastPerf.date}):</span>
-                ${pills}
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-mono uppercase text-zinc-400">Letztes Mal (${lastPerf.date}):</span>
+                  <button type="button" onclick="App.copyLastPerformanceToEntry(${entryIdx})"
+                    class="bg-emerald-500/15 active:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1">
+                    <span>📋</span>
+                    <span>Letztes Mal kopieren</span>
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">${pills}</div>
               </div>
             `;
           }
 
           return `
-            <div class="bg-zinc-900 border ${isAllCompleted ? 'border-emerald-600/70' : 'border-zinc-800'} rounded-xl overflow-hidden">
-              <!-- Exercise Header (Clickable for Accordion) -->
-              <div class="p-3 bg-zinc-925 ${isCollapsed ? '' : 'border-b border-zinc-800'} space-y-2">
+            <div class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/80' : 'border-zinc-800/90'} rounded-2xl overflow-hidden">
+              <!-- Exercise Header -->
+              <div class="p-3.5 bg-zinc-950/60 ${isCollapsed ? '' : 'border-b border-zinc-800/80'} space-y-2.5">
                 <div class="flex items-center justify-between gap-2">
                   <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
-                    class="flex-1 flex items-center gap-2 text-left min-w-0">
+                    class="flex-1 flex items-center gap-2 text-left min-w-0 py-1">
                     <span class="text-xs font-mono text-zinc-400 shrink-0">${isCollapsed ? '▸' : '▾'}</span>
-                    <h3 class="text-sm font-bold truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
+                    <h3 class="text-sm font-extrabold truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
                       ${isAllCompleted ? '✓ ' : ''}${this.escapeHtml(displayTitle)}
                     </h3>
-                    <span class="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                    <span class="shrink-0 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
                       isAllCompleted
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-600/50'
-                        : 'bg-zinc-800 text-zinc-300'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                        : 'bg-zinc-900 text-zinc-300 border border-zinc-800'
                     }">
-                      ${completedSetsCount}/${totalSetsCount} (${this.escapeHtml(entry.targetRepRange || '2 Sätze')})
+                      ${completedSetsCount}/${totalSetsCount}
                     </span>
                   </button>
 
                   <div class="flex items-center gap-1 shrink-0">
                     <button type="button" onclick="App.moveDraftExercise(${entryIdx}, -1)"
-                      title="Übung nach oben verschieben"
                       ${entryIdx === 0 ? 'disabled' : ''}
-                      class="bg-zinc-950 hover:bg-zinc-800 disabled:opacity-30 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[10px] font-mono">
+                      class="w-8 h-8 bg-black active:bg-zinc-800 disabled:opacity-25 border border-zinc-800 text-zinc-300 rounded-lg text-xs font-mono">
                       ▲
                     </button>
                     <button type="button" onclick="App.moveDraftExercise(${entryIdx}, 1)"
-                      title="Übung nach unten verschieben"
                       ${entryIdx === draft.entries.length - 1 ? 'disabled' : ''}
-                      class="bg-zinc-950 hover:bg-zinc-800 disabled:opacity-30 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[10px] font-mono">
+                      class="w-8 h-8 bg-black active:bg-zinc-800 disabled:opacity-25 border border-zinc-800 text-zinc-300 rounded-lg text-xs font-mono">
                       ▼
                     </button>
                     <button type="button" onclick="App.removeExerciseFromDraft(${entryIdx})"
-                      title="Übung aus heutiger Einheit entfernen"
-                      class="bg-zinc-950 hover:bg-red-950/60 border border-zinc-800 text-zinc-500 hover:text-red-400 text-xs px-2 py-1 rounded">
+                      class="w-8 h-8 bg-black active:bg-red-950 border border-zinc-800 text-zinc-400 rounded-lg text-xs">
                       ✕
                     </button>
                   </div>
                 </div>
 
                 ${!isCollapsed ? `
-                  <!-- Compact Machine Dropdown + Setup Note on 1 Row -->
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+                  <!-- Machine Dropdown + Setup Note -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
-                      class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                      class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                       ${machines.map(m => `
                         <option value="${m.id}" ${m.id === selectedMachine.id ? 'selected' : ''}>
                           ⚙ ${this.escapeHtml(m.name)}
@@ -1469,146 +1513,144 @@ self.addEventListener('fetch', (event) => {
                       `).join('')}
                     </select>
 
-                    <div class="flex items-center gap-1.5 bg-zinc-950/80 border border-zinc-800/90 rounded-lg px-2.5 py-1.5">
-                      <span class="text-[11px] text-zinc-400 shrink-0">📌</span>
+                    <div class="touch-target flex items-center gap-2 bg-black border border-zinc-800 rounded-xl px-3 py-2">
+                      <span class="text-xs text-zinc-400 shrink-0">📌</span>
                       <input type="text"
                         value="${this.escapeAttr(selectedMachine.setupNote || '')}"
-                        placeholder="Sitz/Setup-Notiz..."
+                        placeholder="Sitz / Polster Notiz..."
                         onchange="App.updateMachineSetupNote('${selectedMachine.id}', this.value)"
                         class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
                     </div>
                   </div>
 
-                  <!-- Last Session Reference Box -->
-                  <div class="bg-zinc-950 border border-zinc-800/80 rounded-lg px-2.5 py-1.5">
+                  <!-- Last Session Reference + Copy Button -->
+                  <div class="bg-black/80 border border-zinc-800/90 rounded-xl p-2.5">
                     ${lastPerfHtml}
                   </div>
                 ` : `
-                  <div onclick="App.toggleExerciseCollapse(${entryIdx})" class="flex items-center justify-between text-[11px] text-zinc-400 font-mono px-1 cursor-pointer">
+                  <div onclick="App.toggleExerciseCollapse(${entryIdx})" class="flex items-center justify-between text-xs text-zinc-400 font-mono px-1 cursor-pointer">
                     <span class="truncate">⚙ ${this.escapeHtml(selectedMachine.name)}${selectedMachine.setupNote ? ` • 📌 ${this.escapeHtml(selectedMachine.setupNote)}` : ''}</span>
-                    <span class="text-zinc-500 shrink-0 ml-2">Aufklappen</span>
+                    <span class="text-emerald-400 shrink-0 ml-2">Öffnen</span>
                   </div>
                 `}
               </div>
 
-              <!-- Collapsible Sets Area -->
+              <!-- Collapsible Sets Area (Large Mobile Touch Targets, No +-2.5, WS instead of #1) -->
               ${!isCollapsed ? `
-                <div class="p-3 space-y-2">
-                  <div class="grid grid-cols-12 gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">
-                    <div class="col-span-2">Typ</div>
-                    <div class="col-span-4 text-center">kg (-/+ 2.5)</div>
-                    <div class="col-span-2 text-center">Reps</div>
-                    <div class="col-span-2 text-center" title="Forced Reps / Teilwiederholungen">+Part.</div>
+                <div class="p-3.5 space-y-2.5">
+                  <div class="grid grid-cols-12 gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-1">
+                    <div class="col-span-2">Satz</div>
+                    <div class="col-span-3 text-center">Gewicht (kg)</div>
+                    <div class="col-span-3 text-center">Reps</div>
+                    <div class="col-span-2 text-center">+Part.</div>
                     <div class="col-span-2 text-right">Log</div>
                   </div>
 
                   ${entry.sets.map((s, setIdx) => {
                     const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
-                    const weightPlaceholder = prevSet ? prevSet.weight : 'kg';
-                    const repsPlaceholder = prevSet ? prevSet.reps : 'Reps';
+                    const weightPlaceholder = prevSet ? `${prevSet.weight}` : 'kg';
+                    const repsPlaceholder = prevSet ? `${prevSet.reps}` : 'Reps';
                     const rowBg = s.completed
-                      ? 'bg-emerald-950/30 border-emerald-700/60'
-                      : 'bg-zinc-950 border-zinc-800';
+                      ? 'bg-emerald-950/25 border-emerald-500/70'
+                      : 'bg-black border-zinc-800';
+                    const btlInfo = this.computeBeatLogbookInfo(entry, s, setIdx);
 
                     return `
-                      <div class="border rounded-lg p-2 space-y-2 ${rowBg}">
-                        <div class="grid grid-cols-12 gap-1 items-center">
+                      <div class="border rounded-xl p-2.5 space-y-2 ${rowBg}">
+                        <div class="grid grid-cols-12 gap-1.5 items-center">
+                          <!-- Set Type: WS, Warm, Drop -->
                           <div class="col-span-2">
                             <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
-                              class="w-full bg-zinc-900 border border-zinc-700 rounded px-1 py-2 text-[11px] font-bold ${
-                                s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-zinc-200')
+                              class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-1.5 text-xs font-extrabold text-center ${
+                                s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')
                               } focus:outline-none">
-                              <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>#${setIdx + 1}</option>
+                              <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>WS</option>
                               <option value="warmup" ${s.type === 'warmup' ? 'selected' : ''}>Warm</option>
                               <option value="dropset" ${s.type === 'dropset' ? 'selected' : ''}>Drop</option>
                             </select>
                           </div>
 
-                          <!-- Weight Input with -2.5 / +2.5 Quick Steppers -->
-                          <div class="col-span-4 flex items-center gap-0.5">
-                            <button type="button" onclick="App.stepSetWeight(${entryIdx}, ${setIdx}, -2.5)"
-                              title="-2,5 kg"
-                              class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded px-1.5 py-2 text-[10px] font-mono font-bold text-zinc-300 shrink-0">
-                              -2.5
-                            </button>
-                            <input type="text" inputmode="decimal"
+                          <!-- Roomy Weight Input -->
+                          <div class="col-span-3">
+                            <input type="text" inputmode="decimal" onfocus="this.select()"
                               value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
                               placeholder="${weightPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
-                              class="w-full min-w-0 bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-1 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
-                            <button type="button" onclick="App.stepSetWeight(${entryIdx}, ${setIdx}, 2.5)"
-                              title="+2,5 kg"
-                              class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded px-1.5 py-2 text-[10px] font-mono font-bold text-emerald-400 shrink-0">
-                              +2.5
-                            </button>
+                              class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
-                          <div class="col-span-2">
-                            <input type="number" inputmode="numeric"
+                          <!-- Roomy Reps Input -->
+                          <div class="col-span-3">
+                            <input type="number" inputmode="numeric" onfocus="this.select()"
                               value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
                               placeholder="${repsPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
-                              class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-1 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                              class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
-                          <div class="col-span-2 flex items-center justify-center">
+                          <!-- Partials Touch Button -->
+                          <div class="col-span-2">
                             <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
-                              title="Forced Reps / Teilwiederholungen antippen zum Erhöhen"
-                              class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded py-2 text-xs font-mono font-bold ${
-                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-600/60' : 'text-zinc-500'
+                              class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-extrabold ${
+                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-500/70' : 'text-zinc-500 border-zinc-700'
                               }">
                               +${s.partials || 0}P
                             </button>
                           </div>
 
-                          <div class="col-span-2 flex items-center justify-end gap-1">
+                          <!-- Checkmark & Delete -->
+                          <div class="col-span-2 flex items-center gap-1">
                             <button type="button" onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
-                              class="flex-1 py-2 rounded font-bold text-xs ${
+                              class="flex-1 touch-target rounded-xl font-extrabold text-sm ${
                                 s.completed
-                                  ? 'bg-emerald-500 text-zinc-950'
-                                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                                  ? 'bg-emerald-500 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)]'
+                                  : 'bg-zinc-800 active:bg-zinc-700 text-zinc-200'
                               }">
                               ✓
                             </button>
                             <button type="button" onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
-                              title="Satz löschen"
-                              class="text-zinc-500 hover:text-red-400 px-1 py-1 text-xs font-bold">
+                              class="touch-target text-zinc-500 active:text-red-400 px-1.5 text-sm font-bold">
                               ×
                             </button>
                           </div>
                         </div>
 
+                        <!-- Live Beat The Logbook Status Row -->
+                        <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border ${btlInfo.cls}">
+                          ${this.escapeHtml(btlInfo.text)}
+                        </div>
+
                         ${s.type === 'dropset' ? `
-                          <div class="pl-3 border-l-2 border-purple-500/60 space-y-1.5 pt-1">
+                          <div class="pl-3 border-l-2 border-purple-500/70 space-y-2 pt-1">
                             <div class="flex items-center justify-between">
-                              <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
+                              <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
                               <button type="button" onclick="App.addDropStage(${entryIdx}, ${setIdx})"
-                                class="text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-300 px-2 py-0.5 rounded font-semibold">
-                                + Drop anhängen
+                                class="text-xs bg-purple-950/80 active:bg-purple-900 border border-purple-700/70 text-purple-200 px-2.5 py-1 rounded-lg font-bold">
+                                + Drop
                               </button>
                             </div>
                             ${(s.drops || []).map((drop, dropIdx) => {
                               const prevDrop = prevSet && prevSet.drops && prevSet.drops[dropIdx] ? prevSet.drops[dropIdx] : null;
                               return `
                                 <div class="grid grid-cols-12 gap-1.5 items-center">
-                                  <div class="col-span-2 text-[11px] font-mono text-purple-300">Drop ${dropIdx + 1}</div>
+                                  <div class="col-span-2 text-xs font-mono font-bold text-purple-300">Drop ${dropIdx + 1}</div>
                                   <div class="col-span-4">
-                                    <input type="text" inputmode="decimal"
+                                    <input type="text" inputmode="decimal" onfocus="this.select()"
                                       value="${drop.weight !== '' ? drop.weight : ''}"
                                       placeholder="${prevDrop ? prevDrop.weight + ' kg' : 'kg'}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
-                                      class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
                                   </div>
                                   <div class="col-span-4">
-                                    <input type="number" inputmode="numeric"
+                                    <input type="number" inputmode="numeric" onfocus="this.select()"
                                       value="${drop.reps !== '' ? drop.reps : ''}"
                                       placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
-                                      class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
                                   </div>
                                   <div class="col-span-2 text-right">
                                     <button type="button" onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
-                                      class="text-zinc-500 hover:text-red-400 text-xs px-2 py-1">✕</button>
+                                      class="touch-target text-zinc-400 active:text-red-400 text-sm px-2.5">✕</button>
                                   </div>
                                 </div>
                               `;
@@ -1620,8 +1662,8 @@ self.addEventListener('fetch', (event) => {
                   }).join('')}
 
                   <button type="button" onclick="App.addSetRow(${entryIdx})"
-                    class="w-full bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-2 rounded-lg text-xs font-semibold">
-                    + Satz hinzufügen
+                    class="w-full touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-300 py-2.5 rounded-xl text-xs font-extrabold">
+                    + Satz (WS) hinzufügen
                   </button>
                 </div>
               ` : ''}
@@ -1634,7 +1676,6 @@ self.addEventListener('fetch', (event) => {
         const entry = this.state.activeDraft.entries[entryIdx];
         if (!entry) return;
         entry.machineId = newMachineId;
-
         const anyCompleted = entry.sets.some(s => s.completed);
         if (!anyCompleted) {
           entry.sets = this.buildSetRowsForExercise(entry.exerciseId, newMachineId, entry.targetSets || 2);
@@ -1648,7 +1689,7 @@ self.addEventListener('fetch', (event) => {
         if (!machine) return;
         machine.setupNote = noteText.trim();
         StorageEngine.putAll('machines', this.state.machines);
-        this.showToast('Sitzeinstellung gespeichert');
+        this.showToast('📌 Sitzeinstellung gespeichert');
       },
 
       onSetTypeChange(entryIdx, setIdx, newType) {
@@ -1665,6 +1706,7 @@ self.addEventListener('fetch', (event) => {
         const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
         set[field] = value;
         this.saveDraft();
+        this.updateBeatLogbookBadgeDOM(entryIdx, setIdx);
       },
 
       cyclePartials(entryIdx, setIdx) {
@@ -1753,7 +1795,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       removeSetRow(entryIdx, setIdx) {
-        if (!confirm('Sicher, dass du diesen Satz entfernen möchtest?')) return;
+        if (!confirm('Diesen Satz wirklich entfernen?')) return;
         const entry = this.state.activeDraft.entries[entryIdx];
         entry.sets.splice(setIdx, 1);
         this.saveDraft();
@@ -1761,7 +1803,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       removeExerciseFromDraft(entryIdx) {
-        if (!confirm('Sicher, dass du diese Übung aus der Einheit entfernen möchtest?')) return;
+        if (!confirm('Übung aus der aktuellen Einheit entfernen?')) return;
         this.state.activeDraft.entries.splice(entryIdx, 1);
         this.saveDraft();
         this.renderWorkoutTab();
@@ -1771,21 +1813,21 @@ self.addEventListener('fetch', (event) => {
         const modal = document.getElementById('modalOverlay');
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
-        title.textContent = 'Übung zur aktuellen Einheit hinzufügen';
+        title.textContent = 'Übung zur Einheit hinzufügen';
 
         body.innerHTML = `
           <div class="space-y-1.5">
             ${this.state.exercises.map(ex => `
               <button onclick="App.addExerciseToActiveDraft('${ex.id}')"
-                class="w-full text-left bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs font-semibold text-zinc-100 flex items-center justify-between">
+                class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-3 text-xs font-bold text-zinc-100 flex items-center justify-between">
                 <span>${this.escapeHtml(ex.name)}</span>
-                <span class="text-emerald-400 font-mono">+</span>
+                <span class="text-emerald-400 font-mono text-base">+</span>
               </button>
             `).join('')}
           </div>
           <div class="pt-3 border-t border-zinc-800 mt-2">
             <button onclick="App.promptCreateExercise(true)"
-              class="w-full bg-emerald-500 text-zinc-950 font-bold py-2.5 rounded-lg text-xs">
+              class="w-full touch-target bg-emerald-500 text-black font-extrabold py-3 rounded-xl text-xs">
               + Komplett neue Übung anlegen
             </button>
           </div>
@@ -1802,7 +1844,7 @@ self.addEventListener('fetch', (event) => {
           entryId: this.uid('ent'),
           exerciseId,
           labelOverride: ex.name,
-          targetRepRange: '2 Sätze',
+          targetRepRange: '2 WS',
           targetSets: 2,
           machineId,
           collapsed: false,
@@ -1813,12 +1855,17 @@ self.addEventListener('fetch', (event) => {
         this.renderWorkoutTab();
       },
 
+      /***********************************************************************
+       * 8. FINISH WORKOUT (SUPPORTS REST DAYS & CALENDAR CHECK-OFF)
+       ***********************************************************************/
       async finishWorkout() {
         const draft = this.state.activeDraft;
-        if (!draft || !draft.entries) return;
+        if (!draft) return;
 
+        const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
         const cleanedEntries = [];
-        for (const entry of draft.entries) {
+
+        for (const entry of (draft.entries || [])) {
           const validSets = [];
           for (const s of entry.sets) {
             const w = this.parseNum(s.weight);
@@ -1847,32 +1894,260 @@ self.addEventListener('fetch', (event) => {
           }
         }
 
+        const isRestSplit = Boolean(currentSplit?.isRest || draft.isRest);
+        const targetDate = draft.date || this.todayIso();
+
+        // Wenn Rest-Day (oder keine Sätze eingetragen, aber Nutzer will den Tag im Kalender abhaken)
         if (cleanedEntries.length === 0) {
-          alert('Keine gültigen Sätze eingetragen oder abgehakt. Trage mindestens in einem Satz Gewicht & Reps ein.');
+          if (!isRestSplit) {
+            const checkAnyway = confirm(
+              `Du hast noch keine Sätze mit Gewicht & Reps eingetragen.\n\nMöchtest du den Tag (${targetDate} – ${draft.splitName}) trotzdem als erledigten Tag / Pausentag im Kalender grün abhaken?`
+            );
+            if (!checkAnyway) return;
+          }
+
+          const restSessionRecord = {
+            id: this.uid('sess'),
+            date: targetDate,
+            timestamp: Date.now(),
+            splitId: draft.splitId || 'rest_day',
+            splitName: isRestSplit ? (draft.splitName || 'Pausentag') : `${draft.splitName} (Abgehakt)`,
+            isRestDay: true,
+            entries: []
+          };
+
+          this.state.sessions.push(restSessionRecord);
+          this.sortSessions();
+          this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
+          await this.persistAll();
+          this.renderWorkoutTab();
+          this.showToast(`✅ ${targetDate} im Kalender grün abgehakt!`);
           return;
         }
 
         const sessionRecord = {
           id: this.uid('sess'),
-          date: draft.date || this.todayIso(),
+          date: targetDate,
           timestamp: Date.now(),
           splitId: draft.splitId,
           splitName: draft.splitName,
+          isRestDay: false,
           entries: cleanedEntries
         };
 
         this.state.sessions.push(sessionRecord);
         this.sortSessions();
 
-        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
         await this.persistAll();
 
         this.renderWorkoutTab();
-        this.showToast('Trainingseinheit erfolgreich gespeichert!');
+        this.showToast(`✅ Training gespeichert & im Kalender abgehakt!`);
       },
 
       /***********************************************************************
-       * 10. STATS TAB: WEEKLY VOLUME + SEGMENT SWITCHER + PROGRESSION
+       * 9. CALENDAR TRACKER & RETROACTIVE DAY LOGGING
+       ***********************************************************************/
+      changeCalendarMonth(delta) {
+        let m = this.state.calendarMonth + delta;
+        let y = this.state.calendarYear;
+        if (m < 0) { m = 11; y--; }
+        if (m > 11) { m = 0; y++; }
+        this.state.calendarMonth = m;
+        this.state.calendarYear = y;
+        this.renderCalendarSubTab();
+      },
+
+      renderCalendarSubTab() {
+        const year = this.state.calendarYear;
+        const month = this.state.calendarMonth;
+        const monthNames = [
+          'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+          'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+        ];
+        document.getElementById('calendarMonthLabel').textContent = `${monthNames[month]} ${year}`;
+
+        const firstDayOfMonth = new Date(year, month, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        // Montag = 0 ... Sonntag = 6
+        const startOffset = (firstDayOfMonth.getDay() + 6) % 7;
+
+        const todayStr = this.todayIso();
+        const sessionsByDate = new Map();
+        this.state.sessions.forEach(sess => {
+          if (!sessionsByDate.has(sess.date)) sessionsByDate.set(sess.date, []);
+          sessionsByDate.get(sess.date).push(sess);
+        });
+
+        let completedDaysCount = 0;
+        let missedDaysCount = 0;
+        const cellsHtml = [];
+
+        for (let i = 0; i < startOffset; i++) {
+          cellsHtml.push(`<div class="h-14 rounded-xl bg-transparent"></div>`);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateIso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const logs = sessionsByDate.get(dateIso) || [];
+          const isCompleted = logs.length > 0;
+          const isPast = dateIso < todayStr;
+          const isToday = dateIso === todayStr;
+
+          let cellCls = 'bg-black border-zinc-800/80 text-zinc-500';
+          let statusIcon = '';
+          let subText = '';
+
+          if (isCompleted) {
+            completedDaysCount++;
+            const hasWorkout = logs.some(l => !l.isRestDay && (l.entries || []).length > 0);
+            cellCls = 'bg-emerald-950/60 border-emerald-500/80 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.15)]';
+            statusIcon = hasWorkout ? '💪' : '🛋️';
+            const shortSplit = (logs[0].splitName || 'Done')
+              .replace(/Montag\s*–\s*/i, '')
+              .replace(/Dienstag\s*–\s*/i, '')
+              .replace(/Mittwoch\s*–\s*/i, '')
+              .replace(/Donnerstag\s*–\s*/i, '')
+              .replace(/Freitag\s*–\s*/i, '')
+              .replace(/Samstag & Sonntag\s*–\s*/i, '');
+            subText = shortSplit.slice(0, 6);
+          } else if (isPast) {
+            missedDaysCount++;
+            cellCls = 'bg-red-950/45 border-red-800/80 text-red-300';
+            statusIcon = '✕';
+            subText = 'Offen';
+          } else if (isToday) {
+            cellCls = 'bg-zinc-900 border-emerald-400 text-zinc-100 ring-1 ring-emerald-400';
+            statusIcon = '•';
+            subText = 'Heute';
+          }
+
+          cellsHtml.push(`
+            <button type="button" onclick="App.openCalendarDayModal('${dateIso}')"
+              class="h-14 border rounded-xl p-1 flex flex-col items-center justify-between active:scale-95 transition-transform ${cellCls}">
+              <div class="w-full flex items-center justify-between px-1">
+                <span class="text-xs font-mono font-extrabold">${day}</span>
+                <span class="text-[10px] leading-none">${statusIcon}</span>
+              </div>
+              <div class="text-[9px] font-bold truncate w-full text-center opacity-90">${this.escapeHtml(subText)}</div>
+            </button>
+          `);
+        }
+
+        document.getElementById('calendarGrid').innerHTML = cellsHtml.join('');
+        document.getElementById('calCompletedCount').textContent = String(completedDaysCount);
+        document.getElementById('calMissedCount').textContent = String(missedDaysCount);
+        const totalRelevant = completedDaysCount + missedDaysCount;
+        const rate = totalRelevant > 0 ? Math.round((completedDaysCount / totalRelevant) * 100) : 100;
+        document.getElementById('calRateBadge').textContent = `${rate}%`;
+      },
+
+      openCalendarDayModal(dateIso) {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        const logs = this.state.sessions.filter(s => s.date === dateIso);
+        title.textContent = `📅 Tag verwalten: ${dateIso}`;
+
+        const existingLogsHtml = logs.length > 0 ? `
+          <div class="space-y-2 mb-3">
+            <div class="text-xs font-bold uppercase text-emerald-400">An diesem Tag eingetragen:</div>
+            ${logs.map(l => `
+              <div class="bg-black border border-emerald-800/60 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-extrabold text-zinc-100">${l.isRestDay ? '🛋️ ' : '🏋️ '}${this.escapeHtml(l.splitName || 'Eintrag')}</div>
+                  <div class="text-[11px] text-zinc-400">${l.isRestDay ? 'Pausentag / Abgehakt' : `${(l.entries || []).length} Übungen geloggt`}</div>
+                </div>
+                <button onclick="App.deleteSessionFromCalendar('${l.id}', '${dateIso}')"
+                  class="touch-target bg-red-950/60 border border-red-800 text-red-300 px-3 py-1.5 rounded-lg text-xs font-bold">
+                  Löschen
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <div class="bg-red-950/25 border border-red-900/50 rounded-xl p-3 text-xs text-red-300 mb-3">
+            Für den <strong>${dateIso}</strong> ist noch kein Eintrag vorhanden. Du kannst ihn jetzt sofort nachtragen:
+          </div>
+        `;
+
+        body.innerHTML = `
+          ${existingLogsHtml}
+
+          <div class="space-y-2">
+            <div class="text-xs font-bold uppercase text-zinc-400">Schnell abhaken (ohne Gewichte):</div>
+            <button onclick="App.quickLogCalendarDay('${dateIso}', 'rest_day', 'Pausentag / Regeneration', true)"
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-between">
+              <span>🛋️ Als Pausentag / Erledigt abhaken</span>
+              <span>✓</span>
+            </button>
+
+            <div class="grid grid-cols-1 gap-1.5 pt-1">
+              ${this.state.splits.map(sp => `
+                <button onclick="App.quickLogCalendarDay('${dateIso}', '${sp.id}', '${this.escapeAttr(sp.name)}', ${Boolean(sp.isRest)})"
+                  class="w-full touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-200 font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-between">
+                  <span>⚡ „${this.escapeHtml(sp.name)}" schnell abhaken</span>
+                  <span class="text-emerald-400 font-mono">+ Grün</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="pt-3 border-t border-zinc-800 mt-3">
+              <div class="text-xs font-bold uppercase text-zinc-400 mb-2">Oder mit kompletten Gewichten nachtragen:</div>
+              <button onclick="App.jumpToWorkoutForDate('${dateIso}')"
+                class="w-full touch-target bg-zinc-900 active:bg-zinc-800 border border-emerald-500/60 text-emerald-300 font-extrabold py-3 px-4 rounded-xl text-xs">
+                🏋️ Im Trainings-Tab mit Gewichten für ${dateIso} loggen
+              </button>
+            </div>
+          </div>
+        `;
+
+        modal.classList.remove('hidden');
+      },
+
+      async quickLogCalendarDay(dateIso, splitId, splitName, isRest) {
+        const record = {
+          id: this.uid('sess'),
+          date: dateIso,
+          timestamp: Date.now(),
+          splitId,
+          splitName,
+          isRestDay: isRest,
+          entries: []
+        };
+        this.state.sessions.push(record);
+        this.sortSessions();
+        await this.persistAll();
+        this.closeModal();
+        this.renderStatsTab();
+        this.renderWorkoutTab();
+        this.showToast(`✅ ${dateIso} im Kalender grün markiert!`);
+      },
+
+      async deleteSessionFromCalendar(sessionId, dateIso) {
+        this.state.sessions = this.state.sessions.filter(s => s.id !== sessionId);
+        await this.persistAll();
+        this.renderStatsTab();
+        this.renderWorkoutTab();
+        this.openCalendarDayModal(dateIso);
+        this.showToast('Eintrag entfernt');
+      },
+
+      jumpToWorkoutForDate(dateIso) {
+        if (!this.state.activeDraft) {
+          this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, dateIso);
+        } else {
+          this.state.activeDraft.date = dateIso;
+        }
+        this.saveDraft();
+        this.closeModal();
+        this.switchTab('workout');
+        this.showToast(`📅 Datum auf ${dateIso} gesetzt`);
+      },
+
+      /***********************************************************************
+       * 10. STATS TAB: WEEKLY VOLUME + PROGRESSION (WARMUPS EXCLUDED)
        ***********************************************************************/
       getMuscleGroupForExercise(exerciseId) {
         if (EXERCISE_MUSCLE_MAP[exerciseId]) return EXERCISE_MUSCLE_MAP[exerciseId];
@@ -1918,15 +2193,16 @@ self.addEventListener('fetch', (event) => {
         const counts = {};
         MUSCLE_GROUP_ORDER.forEach(mg => { counts[mg] = 0; });
 
-        let totalSets = 0;
+        let totalWorkingSets = 0;
         for (const sess of this.state.sessions) {
           if (sess.date >= mondayIso && sess.date <= sundayIso) {
             for (const entry of (sess.entries || [])) {
+              // Strikt nur Arbeitssätze (WS & Dropsets), keine Warmups
               const workingSets = (entry.sets || []).filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
               if (workingSets.length > 0) {
                 const group = this.getMuscleGroupForExercise(entry.exerciseId);
                 counts[group] = (counts[group] || 0) + workingSets.length;
-                totalSets += workingSets.length;
+                totalWorkingSets += workingSets.length;
               }
             }
           }
@@ -1934,11 +2210,11 @@ self.addEventListener('fetch', (event) => {
 
         const dateLabel = document.getElementById('weeklyVolumeDateLabel');
         if (dateLabel) {
-          dateLabel.textContent = `Aktuelle KW (${mondayShort} – ${sundayShort}, Arbeitssätze)`;
+          dateLabel.textContent = `KW (${mondayShort} – ${sundayShort}) • Warmups ignoriert`;
         }
         const totalBadge = document.getElementById('weeklyTotalSetsBadge');
         if (totalBadge) {
-          totalBadge.textContent = `${totalSets} Sätze gesamt`;
+          totalBadge.textContent = `${totalWorkingSets} WS`;
         }
 
         const gridEl = document.getElementById('weeklyVolumeGrid');
@@ -1948,10 +2224,10 @@ self.addEventListener('fetch', (event) => {
           const count = counts[group] || 0;
           const pct = Math.min(100, Math.round((count / 12) * 100));
           return `
-            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 space-y-1.5">
+            <div class="bg-black border border-zinc-800/90 rounded-xl p-2.5 space-y-1.5">
               <div class="flex items-center justify-between text-xs">
-                <span class="font-semibold text-zinc-200 truncate pr-1">${this.escapeHtml(group)}</span>
-                <span class="font-mono font-bold ${count > 0 ? 'text-emerald-400' : 'text-zinc-500'} shrink-0">${count} Sätze</span>
+                <span class="font-bold text-zinc-200 truncate pr-1">${this.escapeHtml(group)}</span>
+                <span class="font-mono font-extrabold ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0">${count} WS</span>
               </div>
               <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
                 <div class="h-full ${count > 0 ? 'bg-emerald-500' : 'bg-zinc-800'}" style="width: ${pct}%"></div>
@@ -1963,27 +2239,32 @@ self.addEventListener('fetch', (event) => {
 
       switchStatsSubTab(subTab) {
         this.state.statsSubTab = subTab;
+        const calView = document.getElementById('stats-view-calendar');
         const progView = document.getElementById('stats-view-progression');
         const anaView = document.getElementById('stats-view-analytics');
+
+        const btnCal = document.getElementById('statsBtnCalendar');
         const btnProg = document.getElementById('statsBtnProgression');
         const btnAna = document.getElementById('statsBtnAnalytics');
 
-        const isProg = subTab === 'progression';
-        if (progView) progView.classList.toggle('hidden', !isProg);
-        if (anaView) anaView.classList.toggle('hidden', isProg);
+        if (calView) calView.classList.toggle('hidden', subTab !== 'calendar');
+        if (progView) progView.classList.toggle('hidden', subTab !== 'progression');
+        if (anaView) anaView.classList.toggle('hidden', subTab !== 'analytics');
 
-        if (btnProg) {
-          btnProg.className = `py-2 px-3 rounded-md text-xs font-bold transition-none ${
-            isProg ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
+        const setBtnStyle = (btn, active) => {
+          if (!btn) return;
+          btn.className = `touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none ${
+            active ? 'bg-emerald-500 text-black' : 'text-zinc-400'
           }`;
-        }
-        if (btnAna) {
-          btnAna.className = `py-2 px-3 rounded-md text-xs font-bold transition-none ${
-            !isProg ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
-          }`;
-        }
+        };
 
-        if (isProg) {
+        setBtnStyle(btnCal, subTab === 'calendar');
+        setBtnStyle(btnProg, subTab === 'progression');
+        setBtnStyle(btnAna, subTab === 'analytics');
+
+        if (subTab === 'calendar') {
+          this.renderCalendarSubTab();
+        } else if (subTab === 'progression') {
           this.renderProgressionTab();
         } else {
           this.populateAnalyticsFilters();
@@ -1993,7 +2274,7 @@ self.addEventListener('fetch', (event) => {
 
       renderStatsTab() {
         this.renderWeeklyVolume();
-        this.switchStatsSubTab(this.state.statsSubTab || 'progression');
+        this.switchStatsSubTab(this.state.statsSubTab || 'calendar');
       },
 
       getEverTrackedExercises() {
@@ -2039,22 +2320,18 @@ self.addEventListener('fetch', (event) => {
       renderProgressionTab() {
         document.querySelectorAll('.prog-range-btn').forEach(btn => {
           const active = btn.getAttribute('data-range') === this.state.progressionRange;
-          btn.className = `prog-range-btn px-3 py-1.5 rounded text-xs font-bold transition-none ${
-            active ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
+          btn.className = `prog-range-btn px-3 py-2 rounded-lg text-xs font-extrabold transition-none ${
+            active ? 'bg-emerald-500 text-black' : 'text-zinc-400'
           }`;
         });
 
         const trackedExercises = this.getEverTrackedExercises();
         const selectEl = document.getElementById('progressionExerciseSelect');
         const emptyOverlay = document.getElementById('progressionEmptyState');
-        const emptyTitle = document.getElementById('progressionEmptyTitle');
-        const emptySub = document.getElementById('progressionEmptySub');
 
         if (trackedExercises.length === 0) {
           selectEl.innerHTML = `<option value="">— Noch keine Übung getrackt —</option>`;
           document.getElementById('progressionMachineFilterBar').innerHTML = '';
-          emptyTitle.textContent = 'Noch keine Übung getrackt.';
-          emptySub.textContent = 'Sobald du deine erste Einheit speicherst (oder über „⚙️ Backup" die Demo-Daten lädst), erscheinen hier alle jemals getrackten Übungen.';
           emptyOverlay.classList.remove('hidden');
           document.getElementById('progStartVal').textContent = '—';
           document.getElementById('progEndVal').textContent = '—';
@@ -2072,7 +2349,7 @@ self.addEventListener('fetch', (event) => {
 
         selectEl.innerHTML = trackedExercises.map(ex => `
           <option value="${ex.id}" ${ex.id === currentSelectedEx ? 'selected' : ''}>
-            ${this.escapeHtml(ex.name)} (${ex.sessionCount}× getrackt)
+            ${this.escapeHtml(ex.name)} (${ex.sessionCount}×)
           </option>
         `).join('');
 
@@ -2088,6 +2365,7 @@ self.addEventListener('fetch', (event) => {
           const sessTs = this.isoToLocalTimestamp(sess.date);
           for (const entry of (sess.entries || [])) {
             if (entry.exerciseId !== currentSelectedEx) continue;
+            // Warmup-Sätze strikt aus allen Grafik-Berechnungen ausschließen
             const workingSets = (entry.sets || []).filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
             if (workingSets.length === 0) continue;
 
@@ -2141,30 +2419,30 @@ self.addEventListener('fetch', (event) => {
 
         const includeYearInTicks = (maxTs - minTs) > 90 * DAY_MS;
         document.getElementById('progressionDateSpanLabel').textContent =
-          `${this.formatShortDateFromTs(minTs, true)} bis Heute (${this.formatShortDateFromTs(maxTs, true)})`;
+          `${this.formatShortDateFromTs(minTs, true)} – Heute`;
 
         const machineGroups = Array.from(usedMachinesMap.values());
         const filterBar = document.getElementById('progressionMachineFilterBar');
         if (machineGroups.length > 1) {
           filterBar.innerHTML = [
             `<button onclick="App.setProgressionMachineFilter('ALL')"
-              class="px-2.5 py-1 rounded text-[11px] font-semibold border ${
+              class="px-3 py-1.5 rounded-lg text-xs font-bold border ${
                 this.state.progressionMachineFilter === 'ALL'
                   ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                  : 'bg-zinc-950 border-zinc-800 text-zinc-400'
-              }">Alle Geräte (${machineGroups.length})</button>`,
+                  : 'bg-black border-zinc-800 text-zinc-400'
+              }">Alle (${machineGroups.length})</button>`,
             ...machineGroups.map(mg => `
               <button onclick="App.setProgressionMachineFilter('${mg.machineId}')"
-                class="px-2.5 py-1 rounded text-[11px] font-semibold border ${
+                class="px-3 py-1.5 rounded-lg text-xs font-bold border ${
                   this.state.progressionMachineFilter === mg.machineId
                     ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                    : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                    : 'bg-black border-zinc-800 text-zinc-400'
                 }">⚙ ${this.escapeHtml(mg.machineName)}</button>
             `)
           ].join('');
         } else {
           filterBar.innerHTML = machineGroups.length === 1
-            ? `<span class="text-[11px] font-mono text-zinc-400">⚙ Gerät: ${this.escapeHtml(machineGroups[0].machineName)}</span>`
+            ? `<span class="text-xs font-mono text-zinc-400">⚙ ${this.escapeHtml(machineGroups[0].machineName)}</span>`
             : '';
         }
 
@@ -2216,8 +2494,6 @@ self.addEventListener('fetch', (event) => {
         }
 
         if (datasets.length === 0) {
-          emptyTitle.textContent = 'Keine Einheiten in diesem Zeitraum.';
-          emptySub.textContent = 'Wechsle oben rechts auf „1 Jahr" oder „Gesamt", um ältere Einheiten dieser Übung zu sehen.';
           emptyOverlay.classList.remove('hidden');
           document.getElementById('progStartVal').textContent = '—';
           document.getElementById('progEndVal').textContent = '—';
@@ -2238,7 +2514,7 @@ self.addEventListener('fetch', (event) => {
         document.getElementById('progEndVal').textContent = `${lastVal} kg`;
         const deltaEl = document.getElementById('progDeltaVal');
         deltaEl.textContent = `${sign}${diff.toFixed(1)} kg (${sign}${pct}%)`;
-        deltaEl.className = `text-base font-bold font-mono mt-0.5 ${
+        deltaEl.className = `text-sm font-extrabold font-mono mt-0.5 ${
           diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-red-400' : 'text-zinc-300')
         }`;
 
@@ -2257,7 +2533,7 @@ self.addEventListener('fetch', (event) => {
                 labels: { color: '#e4e4e7', font: { size: 11 } }
               },
               tooltip: {
-                backgroundColor: '#09090b',
+                backgroundColor: '#000000',
                 borderColor: '#3f3f46',
                 borderWidth: 1,
                 titleColor: '#f4f4f5',
@@ -2273,7 +2549,7 @@ self.addEventListener('fetch', (event) => {
                     return [
                       `e1RM: ${raw.e1rm} kg`,
                       `Max Weight: ${raw.maxWeight} kg`,
-                      `Volumen: ${raw.volume} kg`
+                      `Arbeitsvolumen: ${raw.volume} kg`
                     ];
                   }
                 }
@@ -2285,7 +2561,7 @@ self.addEventListener('fetch', (event) => {
                 min: minTs,
                 max: maxTs,
                 afterBuildTicks: (axis) => {
-                  const tickCount = 6;
+                  const tickCount = 5;
                   const step = (maxTs - minTs) / (tickCount - 1);
                   const customTicks = [];
                   for (let i = 0; i < tickCount - 1; i++) {
@@ -2300,13 +2576,11 @@ self.addEventListener('fetch', (event) => {
                   maxRotation: 0,
                   autoSkip: false,
                   callback: (val) => {
-                    if (Math.abs(val - maxTs) < 10000) {
-                      return `Heute (${this.formatShortDateFromTs(maxTs, false)})`;
-                    }
+                    if (Math.abs(val - maxTs) < 10000) return 'Heute';
                     return this.formatShortDateFromTs(val, includeYearInTicks);
                   }
                 },
-                grid: { color: '#27272a' }
+                grid: { color: '#18181b' }
               },
               y: {
                 ticks: {
@@ -2314,7 +2588,7 @@ self.addEventListener('fetch', (event) => {
                   font: { size: 11 },
                   callback: (v) => `${v} kg`
                 },
-                grid: { color: '#27272a' }
+                grid: { color: '#18181b' }
               }
             }
           }
@@ -2322,7 +2596,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 11. ANALYTICS SUB-VIEW (MACHINE-ISOLATED DETAILS)
+       * 11. ANALYTICS SUB-VIEW (MACHINE-ISOLATED DETAILS, NO WARMUPS IN VOL)
        ***********************************************************************/
       populateAnalyticsFilters() {
         const exSelect = document.getElementById('analyticsExerciseSelect');
@@ -2376,7 +2650,8 @@ self.addEventListener('fetch', (event) => {
           if (matchingEntries.length === 0) continue;
 
           const allSets = matchingEntries.flatMap(e => e.sets || []);
-          const workingSets = allSets.filter(s => s.type !== 'warmup');
+          // Strikt alle Warmup-Sätze aus Volumen & e1RM herausfiltern
+          const workingSets = allSets.filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
           if (workingSets.length === 0) continue;
 
           let bestE1rm = 0;
@@ -2429,10 +2704,10 @@ self.addEventListener('fetch', (event) => {
 
         document.querySelectorAll('.metric-btn').forEach(btn => {
           const active = btn.getAttribute('data-metric') === this.state.analyticsMetric;
-          btn.className = `metric-btn py-2 px-2.5 rounded text-xs font-semibold border ${
+          btn.className = `metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-extrabold border ${
             active
-              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold'
-              : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+              ? 'bg-emerald-500 text-black border-emerald-400'
+              : 'bg-black text-zinc-300 border-zinc-800'
           }`;
         });
 
@@ -2487,10 +2762,10 @@ self.addEventListener('fetch', (event) => {
             labelText = 'Max Arbeitsgewicht';
           } else if (metric === 'topSet') {
             values = dataPoints.map(p => p.topSet.weight);
-            labelText = 'Top-Set Gewicht (Details im Tooltip)';
+            labelText = 'Top-Set Gewicht';
           } else if (metric === 'volume') {
             values = dataPoints.map(p => p.volume);
-            labelText = 'Total Volume (inkl. Dropsets)';
+            labelText = 'Arbeitsvolumen (ohne Warmup)';
           }
 
           document.getElementById('chartTitleLabel').textContent = labelText;
@@ -2503,7 +2778,7 @@ self.addEventListener('fetch', (event) => {
                 label: labelText,
                 data: values,
                 borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                backgroundColor: 'rgba(16, 185, 129, 0.14)',
                 borderWidth: 2.5,
                 pointBackgroundColor: '#10b981',
                 pointRadius: 4,
@@ -2519,43 +2794,18 @@ self.addEventListener('fetch', (event) => {
               plugins: {
                 legend: { display: false },
                 tooltip: {
-                  backgroundColor: '#09090b',
+                  backgroundColor: '#000000',
                   borderColor: '#3f3f46',
                   borderWidth: 1,
                   titleColor: '#f4f4f5',
                   bodyColor: '#10b981',
-                  padding: 10,
-                  callbacks: {
-                    label: (ctx) => {
-                      const pt = dataPoints[ctx.dataIndex];
-                      if (metric === 'topSet') {
-                        const ts = pt.topSet;
-                        const part = ts.partials > 0 ? ` (+${ts.partials} Partials)` : '';
-                        return [
-                          `Top-Set: ${ts.weight} kg × ${ts.reps} Reps${part}`,
-                          `e1RM dieses Satzes: ${(ts.weight * (1 + ts.reps / 30)).toFixed(1)} kg`,
-                          `Satz-Typ: ${ts.type.toUpperCase()}`
-                        ];
-                      }
-                      if (metric === 'e1rm') {
-                        const bs = pt.bestE1rmSet;
-                        return [
-                          `e1RM: ${pt.e1rm} kg`,
-                          `Basis-Satz: ${bs.weight} kg × ${bs.reps} Reps`
-                        ];
-                      }
-                      if (metric === 'volume') {
-                        return `Gesamtvolumen: ${pt.volume} kg`;
-                      }
-                      return `Max Weight: ${pt.maxWeight} kg`;
-                    }
-                  }
+                  padding: 10
                 }
               },
               scales: {
                 x: {
-                  ticks: { color: '#a1a1aa', font: { size: 11 } },
-                  grid: { color: '#27272a' }
+                  ticks: { color: '#a1a1aa', font: { size: 10 } },
+                  grid: { color: '#18181b' }
                 },
                 y: {
                   ticks: {
@@ -2563,7 +2813,7 @@ self.addEventListener('fetch', (event) => {
                     font: { size: 11 },
                     callback: (v) => `${v} kg`
                   },
-                  grid: { color: '#27272a' }
+                  grid: { color: '#18181b' }
                 }
               }
             }
@@ -2575,7 +2825,8 @@ self.addEventListener('fetch', (event) => {
           listEl.innerHTML = `<p class="text-xs text-zinc-500">Keine Einträge vorhanden.</p>`;
         } else {
           listEl.innerHTML = [...dataPoints].reverse().map(pt => {
-            const setsHtml = pt.allSets.map((s, idx) => {
+            const setsHtml = pt.allSets.map((s) => {
+              const typeLabel = s.type === 'warmup' ? 'Warm' : (s.type === 'dropset' ? 'Drop' : 'WS');
               const badgeColor = s.type === 'warmup'
                 ? 'text-amber-400 border-amber-800/60'
                 : (s.type === 'dropset' ? 'text-purple-300 border-purple-800/60' : 'text-zinc-200 border-zinc-700');
@@ -2583,16 +2834,16 @@ self.addEventListener('fetch', (event) => {
               const drops = (s.type === 'dropset' && s.drops && s.drops.length > 0)
                 ? ` ↳ [${s.drops.map(d => `${d.weight}kg×${d.reps}`).join(', ')}]`
                 : '';
-              return `<span class="inline-block bg-zinc-950 border ${badgeColor} rounded px-2 py-0.5 text-xs font-mono">
-                S${idx + 1} (${s.type}): <strong>${s.weight}kg × ${s.reps}</strong>${part}${drops}
+              return `<span class="inline-block bg-black border ${badgeColor} rounded-lg px-2 py-0.5 text-xs font-mono">
+                ${typeLabel}: <strong>${s.weight}kg × ${s.reps}</strong>${part}${drops}
               </span>`;
             }).join(' ');
 
             return `
-              <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 space-y-1.5">
+              <div class="bg-black border border-zinc-800 rounded-xl p-3 space-y-1.5">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="font-bold font-mono text-zinc-200">${pt.date} <span class="text-zinc-500 font-normal">(${this.escapeHtml(pt.splitName || '')})</span></span>
-                  <span class="font-mono text-[11px] text-emerald-400">e1RM: ${pt.e1rm} kg | Vol: ${pt.volume} kg</span>
+                  <span class="font-bold font-mono text-zinc-200">${pt.date}</span>
+                  <span class="font-mono text-[11px] text-emerald-400">e1RM: ${pt.e1rm} kg | WS-Vol: ${pt.volume} kg</span>
                 </div>
                 <div class="flex flex-wrap gap-1.5">${setsHtml}</div>
               </div>
@@ -2602,33 +2853,53 @@ self.addEventListener('fetch', (event) => {
       },
 
       /***********************************************************************
-       * 12. HISTORY TAB (ALL SAVED WORKOUT SESSIONS)
+       * 12. HISTORY TAB (ALL SAVED WORKOUT SESSIONS & REST DAYS)
        ***********************************************************************/
       renderHistoryTab() {
         const badge = document.getElementById('historyCountBadge');
         const container = document.getElementById('historySessionsContainer');
-        badge.textContent = `${this.state.sessions.length} Sessions`;
+        badge.textContent = `${this.state.sessions.length} Logs`;
 
         if (this.state.sessions.length === 0) {
           container.innerHTML = `
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center text-xs text-zinc-400">
-              Noch keine abgeschlossenen Trainingseinheiten gespeichert.
+            <div class="bg-oled-card border border-zinc-800 rounded-2xl p-6 text-center text-xs text-zinc-400">
+              Noch keine abgeschlossenen Einheiten oder Pausentage gespeichert.
             </div>
           `;
           return;
         }
 
         container.innerHTML = this.state.sessions.map(sess => {
+          if (sess.isRestDay || !sess.entries || sess.entries.length === 0) {
+            return `
+              <div class="bg-oled-card border border-emerald-900/60 rounded-2xl p-3.5 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-xl">🛋️</span>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
+                    <h3 class="text-sm font-extrabold text-zinc-100">${this.escapeHtml(sess.splitName || 'Pausentag')}</h3>
+                    <p class="text-[11px] text-zinc-400">Im Kalender grün abgehakt</p>
+                  </div>
+                </div>
+                <button onclick="App.deleteSession('${sess.id}')"
+                  class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
+                  Löschen
+                </button>
+              </div>
+            `;
+          }
+
           const entriesHtml = (sess.entries || []).map(entry => {
             const ex = this.state.exercises.find(e => e.id === entry.exerciseId);
             const mach = this.state.machines.find(m => m.id === entry.machineId);
-            const setsPills = (entry.sets || []).map((s, i) => {
+            const setsPills = (entry.sets || []).map((s) => {
+              const typeLabel = s.type === 'warmup' ? 'Warm' : (s.type === 'dropset' ? 'Drop' : 'WS');
               const part = s.partials > 0 ? `+${s.partials}P` : '';
               const drops = (s.type === 'dropset' && s.drops?.length)
                 ? ` ↳ ${s.drops.map(d => `${d.weight}×${d.reps}`).join('/')}`
                 : '';
-              return `<span class="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded font-mono text-[11px] text-zinc-200">
-                ${s.type === 'warmup' ? 'W' : i + 1}: ${s.weight}kg × ${s.reps}${part}${drops}
+              return `<span class="bg-black border border-zinc-800 px-2 py-0.5 rounded-lg font-mono text-[11px] text-zinc-200">
+                <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeLabel}:</strong> ${s.weight}kg × ${s.reps}${part}${drops}
               </span>`;
             }).join(' ');
 
@@ -2644,14 +2915,14 @@ self.addEventListener('fetch', (event) => {
           }).join('');
 
           return `
-            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2.5">
+            <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2.5">
               <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
                 <div>
                   <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
-                  <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
+                  <h3 class="text-sm font-extrabold text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
                 </div>
                 <button onclick="App.deleteSession('${sess.id}')"
-                  class="text-xs text-zinc-500 hover:text-red-400 px-2 py-1 border border-zinc-800 rounded">
+                  class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
                   Löschen
                 </button>
               </div>
@@ -2662,12 +2933,12 @@ self.addEventListener('fetch', (event) => {
       },
 
       async deleteSession(sessionId) {
-        if (!confirm('Diese gespeicherte Trainingseinheit wirklich löschen?')) return;
+        if (!confirm('Diesen Eintrag wirklich löschen?')) return;
         this.state.sessions = this.state.sessions.filter(s => s.id !== sessionId);
         await StorageEngine.putAll('sessions', this.state.sessions);
         this.updateHeaderStatus();
         this.renderHistoryTab();
-        this.showToast('Session gelöscht');
+        this.showToast('Eintrag gelöscht');
       },
 
       /***********************************************************************
@@ -2679,39 +2950,37 @@ self.addEventListener('fetch', (event) => {
         exList.innerHTML = this.state.exercises.map(ex => {
           const machines = this.getMachinesForExercise(ex.id);
           return `
-            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 space-y-2">
-              <div class="flex items-center justify-between">
-                <div>
-                  <span class="text-xs font-bold text-zinc-100">${this.escapeHtml(ex.name)}</span>
-                  <span class="ml-1.5 text-[10px] font-mono bg-zinc-900 border border-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">${this.escapeHtml(this.getMuscleGroupForExercise(ex.id))}</span>
+            <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <span class="text-xs font-extrabold text-zinc-100">${this.escapeHtml(ex.name)}</span>
+                  <span class="ml-1.5 text-[10px] font-mono bg-oled-card border border-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">${this.escapeHtml(this.getMuscleGroupForExercise(ex.id))}</span>
                 </div>
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <button onclick="App.promptAddMachine('${ex.id}')"
-                    class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2 py-0.5 rounded font-semibold">
-                    + Maschine
+                    class="text-xs bg-oled-card active:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
+                    + Gerät
                   </button>
                   <button onclick="App.promptRenameExercise('${ex.id}')"
-                    class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
-                    Umbenennen
+                    class="text-xs bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2.5 py-1.5 rounded-lg">
+                    ✎
                   </button>
                 </div>
               </div>
               <div class="space-y-1.5 pt-1">
                 ${machines.map(m => `
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-zinc-900 border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs">
-                    <div class="font-medium text-zinc-200">⚙ ${this.escapeHtml(m.name)}</div>
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-oled-card border border-zinc-800/80 rounded-xl px-2.5 py-2 text-xs">
+                    <div class="font-bold text-zinc-200">⚙ ${this.escapeHtml(m.name)}</div>
                     <div class="flex items-center gap-1.5">
                       <input type="text"
                         value="${this.escapeAttr(m.setupNote || '')}"
                         placeholder="Sitz-/Polsternotiz..."
                         onchange="App.updateMachineSetupNote('${m.id}', this.value)"
-                        class="flex-1 sm:w-48 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono text-amber-300 placeholder-zinc-600">
+                        class="flex-1 sm:w-48 bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 placeholder-zinc-600">
                       <button onclick="App.promptRenameMachine('${m.id}')"
-                        title="Gerät umbenennen"
-                        class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[11px]">✎</button>
+                        class="bg-black border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs">✎</button>
                       <button onclick="App.deleteMachine('${m.id}')"
-                        title="Gerät löschen"
-                        class="bg-zinc-950 hover:bg-red-950/70 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-400 px-2 py-1 rounded text-[11px]">🗑</button>
+                        class="bg-black border border-zinc-800 text-zinc-400 active:text-red-400 px-2.5 py-1.5 rounded-lg text-xs">🗑</button>
                     </div>
                   </div>
                 `).join('')}
@@ -2722,23 +2991,23 @@ self.addEventListener('fetch', (event) => {
 
         const splitList = document.getElementById('manageSplitsList');
         splitList.innerHTML = this.state.splits.map((sp, spIdx) => `
-          <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 space-y-2">
+          <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-xs font-bold text-zinc-100">${this.escapeHtml(sp.name)}</h4>
+                <h4 class="text-xs font-extrabold text-zinc-100">${this.escapeHtml(sp.name)}</h4>
                 <span class="text-[11px] text-zinc-500">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
               </div>
               <div class="flex items-center gap-1">
-                <button onclick="App.moveSplitDay(${spIdx}, -1)" title="Nach oben"
-                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-1 rounded">↑</button>
-                <button onclick="App.moveSplitDay(${spIdx}, 1)" title="Nach unten"
-                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-1 rounded">↓</button>
+                <button onclick="App.moveSplitDay(${spIdx}, -1)"
+                  class="text-xs bg-oled-card border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg">↑</button>
+                <button onclick="App.moveSplitDay(${spIdx}, 1)"
+                  class="text-xs bg-oled-card border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg">↓</button>
                 <button onclick="App.openAddExerciseToSplitModal('${sp.id}')"
-                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2 py-1 rounded font-semibold">
+                  class="text-xs bg-oled-card border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
                   + Übung
                 </button>
                 <button onclick="App.deleteSplitDay('${sp.id}')"
-                  class="text-[11px] text-zinc-500 hover:text-red-400 px-1.5 py-1">✕</button>
+                  class="text-xs text-zinc-500 active:text-red-400 px-2 py-1.5">✕</button>
               </div>
             </div>
             ${sp.items.length > 0 ? `
@@ -2746,12 +3015,12 @@ self.addEventListener('fetch', (event) => {
                 ${sp.items.map((it, itIdx) => {
                   const ex = this.state.exercises.find(e => e.id === it.exerciseId);
                   return `
-                    <div class="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs">
-                      <span class="text-zinc-200">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
+                    <div class="flex items-center justify-between bg-oled-card border border-zinc-800 rounded-lg px-2.5 py-2 text-xs">
+                      <span class="text-zinc-200 font-semibold">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
                       <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-mono text-zinc-400">${this.escapeHtml(it.targetRepRange || `${it.targetSets} Sätze`)}</span>
+                        <span class="text-[11px] font-mono text-zinc-400">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
                         <button onclick="App.removeSplitItem(${spIdx}, ${itIdx})"
-                          class="text-zinc-500 hover:text-red-400 text-xs">✕</button>
+                          class="text-zinc-500 active:text-red-400 text-xs px-1.5">✕</button>
                       </div>
                     </div>
                   `;
@@ -2765,7 +3034,7 @@ self.addEventListener('fetch', (event) => {
       promptCreateExercise(addToWorkoutAfter = false) {
         const name = prompt('Name der neuen Übung:');
         if (!name || !name.trim()) return;
-        const machineName = prompt('Erstes Standard-Gerät für diese Übung (z.B. "Gym80 Maschine" oder "Kabelturm A"):', 'Standard-Gerät') || 'Standard-Gerät';
+        const machineName = prompt('Erstes Gerät für diese Übung:', 'Standard-Gerät') || 'Standard-Gerät';
         const exId = this.uid('ex');
         const machId = this.uid('m');
 
@@ -2795,7 +3064,7 @@ self.addEventListener('fetch', (event) => {
       },
 
       promptAddMachine(exerciseId) {
-        const name = prompt('Name des spezifischen Geräts (z.B. "Latzug - Turm A (schwer)"):');
+        const name = prompt('Name des spezifischen Geräts:');
         if (!name || !name.trim()) return;
         const note = prompt('Sitz-/Polstereinstellung (optional):', '') || '';
         this.state.machines.push({
@@ -2823,13 +3092,14 @@ self.addEventListener('fetch', (event) => {
       },
 
       promptCreateSplitDay() {
-        const name = prompt('Name des neuen Trainingstags (z.B. "Samstag – Weakpoints"):');
+        const name = prompt('Name des neuen Tags:');
         if (!name || !name.trim()) return;
+        const isRest = confirm('Ist dieser Tag ein regulärer Pausentag (Rest Day)?');
         this.state.splits.push({
           id: this.uid('day'),
           order: this.state.splits.length + 1,
           name: name.trim(),
-          isRest: false,
+          isRest,
           items: []
         });
         this.persistAll();
@@ -2838,11 +3108,8 @@ self.addEventListener('fetch', (event) => {
       },
 
       deleteSplitDay(splitId) {
-        if (this.state.splits.length <= 1) {
-          alert('Mindestens ein Tag muss im Plan verbleiben.');
-          return;
-        }
-        if (!confirm('Diesen Trainingstag aus dem Plan entfernen?')) return;
+        if (this.state.splits.length <= 1) return;
+        if (!confirm('Diesen Tag aus dem Plan entfernen?')) return;
         this.state.splits = this.state.splits.filter(s => s.id !== splitId);
         if (this.state.activeSplitId === splitId) {
           this.state.activeSplitId = this.state.splits[0].id;
@@ -2861,9 +3128,9 @@ self.addEventListener('fetch', (event) => {
 
         body.innerHTML = this.state.exercises.map(ex => `
           <button onclick="App.addExerciseToSplitDay('${splitId}', '${ex.id}')"
-            class="w-full text-left bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs font-semibold text-zinc-100 flex items-center justify-between">
+            class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-3 text-xs font-bold text-zinc-100 flex items-center justify-between">
             <span>${this.escapeHtml(ex.name)}</span>
-            <span class="text-emerald-400 font-mono">+</span>
+            <span class="text-emerald-400 font-mono text-base">+</span>
           </button>
         `).join('');
         modal.classList.remove('hidden');
@@ -2873,7 +3140,7 @@ self.addEventListener('fetch', (event) => {
         const split = this.state.splits.find(s => s.id === splitId);
         const ex = this.state.exercises.find(e => e.id === exerciseId);
         if (!split || !ex) return;
-        const setsStr = prompt('Ziel-Satzanzahl (z.B. 2 oder 3):', '2') || '2';
+        const setsStr = prompt('Ziel-Arbeitssätze (WS):', '2') || '2';
         const targetSets = Math.max(1, parseInt(setsStr, 10) || 2);
         const machines = this.getMachinesForExercise(exerciseId);
 
@@ -2882,7 +3149,7 @@ self.addEventListener('fetch', (event) => {
           exerciseId,
           labelOverride: ex.name,
           targetSets,
-          targetRepRange: `${targetSets} Sätze`,
+          targetRepRange: `${targetSets} WS`,
           defaultMachineId: machines[0].id
         });
 
@@ -2917,7 +3184,7 @@ self.addEventListener('fetch', (event) => {
       exportDatabaseJson() {
         const payload = {
           app: 'IRONLOG_GYM_TRACKER',
-          version: 2,
+          version: 3,
           exportedAt: new Date().toISOString(),
           data: {
             exercises: this.state.exercises,
@@ -2927,7 +3194,7 @@ self.addEventListener('fetch', (event) => {
           }
         };
         this.triggerDownloadFile(`ironlog_backup_${this.todayIso()}.json`, JSON.stringify(payload, null, 2), 'application/json');
-        this.showToast('JSON-Backup heruntergeladen');
+        this.showToast('⬇ JSON-Backup heruntergeladen');
       },
 
       importDatabaseJson(event) {
@@ -2939,7 +3206,7 @@ self.addEventListener('fetch', (event) => {
             const parsed = JSON.parse(e.target.result);
             const data = parsed.data || parsed;
             if (!Array.isArray(data.exercises) || !Array.isArray(data.machines) || !Array.isArray(data.splits) || !Array.isArray(data.sessions)) {
-              alert('Ungültiges Backup-Format: Pflichtfelder fehlen.');
+              alert('Ungültiges Backup-Format.');
               return;
             }
             this.state.exercises = data.exercises;
@@ -2953,9 +3220,9 @@ self.addEventListener('fetch', (event) => {
             await this.persistAll();
             this.populateAnalyticsFilters();
             this.renderWorkoutTab();
-            this.showToast(`Backup importiert (${this.state.sessions.length} Sessions)`);
+            this.showToast(`✅ Backup importiert (${this.state.sessions.length} Logs)`);
           } catch (err) {
-            alert('Fehler beim Lesen der JSON-Datei: ' + err.message);
+            alert('Fehler beim Lesen der Datei: ' + err.message);
           } finally {
             event.target.value = '';
           }
@@ -2968,10 +3235,11 @@ self.addEventListener('fetch', (event) => {
         const tzOffset = today.getTimezoneOffset() * 60000;
         const demoSessions = [];
 
-        const weeksToSeed = [16, 12, 8, 5, 4, 3, 2, 1, 0];
+        const weeksToSeed = [12, 8, 5, 4, 3, 2, 1, 0];
         weeksToSeed.forEach((week, idx) => {
           const pushDate = new Date(today.getTime() - tzOffset - (week * 7 + 3) * 86400000).toISOString().slice(0, 10);
           const pullDate = new Date(today.getTime() - tzOffset - (week * 7 + 2) * 86400000).toISOString().slice(0, 10);
+          const restDate = new Date(today.getTime() - tzOffset - (week * 7 + 1) * 86400000).toISOString().slice(0, 10);
           const legsDate = new Date(today.getTime() - tzOffset - (week * 7 + 0) * 86400000).toISOString().slice(0, 10);
 
           const prog = idx;
@@ -2982,6 +3250,7 @@ self.addEventListener('fetch', (event) => {
             timestamp: Date.now() - week * 100000,
             splitId: 'day_mon_push',
             splitName: 'Montag – Push',
+            isRestDay: false,
             entries: [
               {
                 exerciseId: 'ex_shoulder_press',
@@ -2990,20 +3259,6 @@ self.addEventListener('fetch', (event) => {
                   { weight: 40, reps: 10, type: 'warmup', partials: 0, drops: [] },
                   { weight: 65 + prog * 2.5, reps: 8 + (prog % 2), type: 'normal', partials: 1, drops: [] },
                   { weight: 65 + prog * 2.5, reps: 7, type: 'normal', partials: 2, drops: [] }
-                ]
-              },
-              {
-                exerciseId: 'ex_lat_raise',
-                machineId: 'm_lr_1',
-                sets: [
-                  { weight: 10 + prog * 1.25, reps: 12, type: 'normal', partials: 2, drops: [] },
-                  {
-                    weight: 10 + prog * 1.25,
-                    reps: 10,
-                    type: 'dropset',
-                    partials: 0,
-                    drops: [{ weight: 7.5, reps: 8 }, { weight: 5, reps: 10 }]
-                  }
                 ]
               },
               {
@@ -3023,30 +3278,27 @@ self.addEventListener('fetch', (event) => {
             timestamp: Date.now() - week * 90000,
             splitId: 'day_tue_pull',
             splitName: 'Dienstag – Pull',
+            isRestDay: false,
             entries: [
               {
                 exerciseId: 'ex_lat_pulldown',
                 machineId: 'm_lp_1',
                 sets: [
                   { weight: 70 + prog * 2.5, reps: 9, type: 'normal', partials: 1, drops: [] },
-                  {
-                    weight: 70 + prog * 2.5,
-                    reps: 8,
-                    type: 'dropset',
-                    partials: 1,
-                    drops: [{ weight: 52.5, reps: 7 }]
-                  }
-                ]
-              },
-              {
-                exerciseId: 'ex_chest_row',
-                machineId: 'm_cr_1',
-                sets: [
-                  { weight: 55 + prog * 2.5, reps: 8, type: 'normal', partials: 0, drops: [] },
-                  { weight: 55 + prog * 2.5, reps: 8, type: 'normal', partials: 1, drops: [] }
+                  { weight: 70 + prog * 2.5, reps: 8, type: 'dropset', partials: 1, drops: [{ weight: 52.5, reps: 7 }] }
                 ]
               }
             ]
+          });
+
+          demoSessions.push({
+            id: this.uid('sess'),
+            date: restDate,
+            timestamp: Date.now() - week * 85000,
+            splitId: 'day_wed_rest',
+            splitName: 'Mittwoch – Pause',
+            isRestDay: true,
+            entries: []
           });
 
           demoSessions.push({
@@ -3055,6 +3307,7 @@ self.addEventListener('fetch', (event) => {
             timestamp: Date.now() - week * 80000,
             splitId: 'day_thu_legs',
             splitName: 'Donnerstag – Beine',
+            isRestDay: false,
             entries: [
               {
                 exerciseId: 'ex_squat_legpress',
@@ -3063,14 +3316,6 @@ self.addEventListener('fetch', (event) => {
                   { weight: 120, reps: 10, type: 'warmup', partials: 0, drops: [] },
                   { weight: 190 + prog * 10, reps: 9, type: 'normal', partials: 0, drops: [] },
                   { weight: 190 + prog * 10, reps: 8, type: 'normal', partials: 0, drops: [] }
-                ]
-              },
-              {
-                exerciseId: 'ex_seated_leg_curl',
-                machineId: 'm_slc_1',
-                sets: [
-                  { weight: 60 + prog * 2.5, reps: 10, type: 'normal', partials: 2, drops: [] },
-                  { weight: 60 + prog * 2.5, reps: 9, type: 'normal', partials: 2, drops: [] }
                 ]
               }
             ]
@@ -3083,20 +3328,20 @@ self.addEventListener('fetch', (event) => {
         await this.persistAll();
         this.populateAnalyticsFilters();
         this.renderWorkoutTab();
-        this.showToast('27 Demo-Sessions (über 4 Monate) geladen!');
+        this.showToast('Demo-Sessions (inkl. Kalender-Einträgen) geladen!');
       },
 
       async clearAllSessionsOnly() {
-        if (!confirm('Alle gespeicherten Trainingseinheiten löschen? Dein Plan, deine Übungen und Maschinen bleiben erhalten.')) return;
+        if (!confirm('Alle gespeicherten Einheiten & Kalender-Haken löschen?')) return;
         this.state.sessions = [];
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
         await this.persistAll();
         this.renderWorkoutTab();
-        this.showToast('Alle Sessions gelöscht');
+        this.showToast('Alle Logs gelöscht');
       },
 
       async factoryResetDatabase() {
-        if (!confirm('KOMPLETTER WERKSRESET: Alle Sessions, eigene Maschinen und Plan-Änderungen unwiderruflich auf das Initial-Setup zurücksetzen?')) return;
+        if (!confirm('KOMPLETTER WERKSRESET: Alles unwiderruflich auf Anfang zurücksetzen?')) return;
         this.state.exercises = JSON.parse(JSON.stringify(INITIAL_EXERCISES));
         this.state.machines = JSON.parse(JSON.stringify(INITIAL_MACHINES));
         this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
@@ -3107,21 +3352,13 @@ self.addEventListener('fetch', (event) => {
         await this.persistAll();
         this.populateAnalyticsFilters();
         this.switchTab('workout');
-        this.showToast('Datenbank auf Initial-Setup zurückgesetzt');
+        this.showToast('Datenbank zurückgesetzt');
       },
 
       /***********************************************************************
        * 15. NAVIGATION
        ***********************************************************************/
       switchTab(tabName) {
-        if (tabName === 'progression') {
-          this.state.statsSubTab = 'progression';
-          tabName = 'stats';
-        } else if (tabName === 'analytics') {
-          this.state.statsSubTab = 'analytics';
-          tabName = 'stats';
-        }
-
         this.state.currentTab = tabName;
         ['workout', 'stats', 'history', 'manage', 'backup'].forEach(t => {
           const el = document.getElementById(`tab-${t}`);
@@ -3130,17 +3367,17 @@ self.addEventListener('fetch', (event) => {
 
         document.querySelectorAll('.nav-btn').forEach(btn => {
           const isCurrent = btn.getAttribute('data-tab') === tabName;
-          btn.className = `nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 ${
+          btn.className = `nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-extrabold border-t-2 ${
             isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400'
           }`;
         });
 
         const headerBackupBtn = document.getElementById('headerBackupBtn');
         if (headerBackupBtn) {
-          headerBackupBtn.className = `px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border ${
+          headerBackupBtn.className = `px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border min-h-[40px] ${
             tabName === 'backup'
               ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-              : 'bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border-zinc-800 text-zinc-300'
+              : 'bg-oled-card border-zinc-800 text-zinc-200'
           }`;
         }
 
