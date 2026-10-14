@@ -345,6 +345,21 @@
 
     <!-- HEADER VIEW: BACKUP & PWA APP SETUP -->
     <section id="tab-backup" class="hidden space-y-4">
+      <!-- App Version & Update Checker Card -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-zinc-100">App-Version & Updates</h2>
+            <p class="text-xs text-zinc-400">Aktuell installiert: <span id="currentVersionLabel" class="text-emerald-400 font-mono font-bold">Lade...</span></p>
+          </div>
+          <button onclick="App.checkForUpdates()"
+            class="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-bold px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
+            <span>🔄</span>
+            <span>Auf Update prüfen</span>
+          </button>
+        </div>
+      </div>
+
       <!-- PWA App Setup Card -->
       <div class="bg-zinc-900 border border-emerald-800/60 rounded-lg p-4 space-y-3">
         <div class="flex items-center justify-between">
@@ -715,6 +730,18 @@
       deferredPwaPrompt: null,
 
       async init() {
+        // Prüfen, ob gerade ein Update durchgeführt wurde
+        const updateMsg = sessionStorage.getItem('ironlog_update_msg');
+        if (updateMsg) {
+          this.showToast(updateMsg);
+          sessionStorage.removeItem('ironlog_update_msg');
+        }
+
+        // Aktuelle Version im Backup-Tab setzen
+        const currentVer = localStorage.getItem('ironlog_version') || 'v1.3';
+        const verLabel = document.getElementById('currentVersionLabel');
+        if (verLabel) verLabel.textContent = currentVer;
+
         this.setupPwaEnvironment();
         await StorageEngine.init();
         const initialized = await StorageEngine.getMeta('initialized');
@@ -751,6 +778,42 @@
         this.updateHeaderStatus();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
+      },
+
+      async checkForUpdates() {
+        this.showToast('🔍 Prüfe auf Updates...');
+        try {
+          // Bypass für den WebView-Cache mit dynamischem Zeitstempel
+          const res = await fetch('./sw.js?t=' + Date.now(), { cache: 'no-store' });
+          if (!res.ok) throw new Error('Server nicht erreichbar');
+
+          const text = await res.text();
+          const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+          const remoteVersion = match ? match[1].replace('ironlog-', '').replace('offline-', '') : 'Unbekannt';
+          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.3';
+
+          if (remoteVersion !== currentVersion) {
+            if (confirm(`Neues Update gefunden!\n\nAktuell: ${currentVersion}\nNeu: ${remoteVersion}\n\nJetzt installieren und neu laden?`)) {
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+              }
+              localStorage.setItem('ironlog_version', remoteVersion);
+              sessionStorage.setItem('ironlog_update_msg', `🚀 Erfolgreich auf ${remoteVersion} aktualisiert!`);
+              window.location.reload();
+            }
+          } else {
+            if (confirm(`Du bist bereits auf dem neuesten Stand (${currentVersion}).\n\nMöchtest du den Cache trotzdem erzwingen und neu laden?`)) {
+              if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+              }
+              window.location.reload();
+            }
+          }
+        } catch (err) {
+          this.showToast('⚠️ Offline oder GitHub nicht erreichbar');
+        }
       },
 
       /***********************************************************************
@@ -834,11 +897,9 @@
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:')) {
           navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
             reg.update();
-
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (!newWorker) return;
-
               newWorker.addEventListener('statechange', () => {
                 if ((newWorker.state === 'installed' || newWorker.state === 'activating') && navigator.serviceWorker.controller) {
                   App.showToast('🚀 Neues Update installiert! Starte die App neu.');
@@ -884,7 +945,7 @@
           ]
         }, null, 2);
 
-        const swJs = `const CACHE_NAME = 'ironlog-offline-v2';
+        const swJs = `const CACHE_NAME = 'ironlog-v1.3';
 const ASSETS = [
   './',
   './index.html',
@@ -1833,7 +1894,7 @@ self.addEventListener('fetch', (event) => {
 
       getCurrentWeekDateBounds() {
         const now = new Date();
-        const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+        const dayOfWeek = now.getDay();
         const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
         const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday);
