@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ironlog-offline-v2';
-const ASSETS = [
+const CACHE_NAME = 'ironlog-dynamic-v1';
+const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
@@ -9,7 +9,7 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
   );
   self.skipWaiting();
 });
@@ -25,12 +25,12 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        const clone = response.clone();
+    fetch(event.request)
+      .then((networkResponse) => {
+        const clone = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      });
-    })
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
