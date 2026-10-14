@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#09090b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IRONLOG">
+  <title>IRONLOG // Offline Gym Tracker</title>
+  <link id="pwaManifestLink" rel="manifest" href="">
+  <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="">
+  <link id="pwaAppleIcon" rel="apple-touch-icon" href="">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            zinc: {
+              925: '#121215',
+              950: '#09090b'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overscroll-behavior-y: none;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen selection:bg-emerald-500 selection:text-zinc-950">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-2.5 h-6 bg-emerald-500 rounded-sm"></div>
+        <div>
+          <h1 class="text-base font-bold tracking-wider uppercase text-zinc-100 leading-none">IRONLOG</h1>
+          <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Ready</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-2.5 py-1.5 rounded text-xs">
+          📲 App installieren
+        </button>
+        <div id="restTimerBadge" class="hidden items-center gap-1.5 bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded text-xs font-mono text-emerald-400">
+          <span>⏱</span>
+          <span id="restTimerDisplay">00:00</span>
+          <button onclick="App.stopRestTimer()" class="ml-1 text-zinc-400 hover:text-zinc-100 font-bold">×</button>
+        </div>
+        <button onclick="App.startRestTimer(90)" title="90s Satzpause starten" class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded text-xs font-mono">
+          90s ⏱
+        </button>
+        <button onclick="App.startRestTimer(180)" title="180s Satzpause starten" class="bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded text-xs font-mono">
+          3m ⏱
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-3xl mx-auto px-3 pt-4">
+
+    <!-- TAB 1: WORKOUT -->
+    <section id="tab-workout" class="space-y-4">
+      <!-- Split Selector Bar -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Trainingstag / Split</label>
+          <input type="date" id="workoutDateInput" onchange="App.updateActiveWorkoutDate(this.value)"
+            class="bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs font-mono text-zinc-200 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div id="splitSelectorButtons" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+      </div>
+
+      <!-- Active Exercises Container -->
+      <div id="workoutExercisesContainer" class="space-y-4"></div>
+
+      <!-- Quick Add Exercise to current session & Finish Buttons -->
+      <div id="workoutFooterActions" class="space-y-3 pt-2">
+        <div class="flex gap-2">
+          <button onclick="App.openAddExerciseToWorkoutModal()"
+            class="flex-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-3 rounded-lg text-sm font-semibold">
+            + Übung zur Einheit hinzufügen
+          </button>
+          <button onclick="App.resetActiveDraft()"
+            class="bg-zinc-900 hover:bg-red-950/60 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-300 px-4 py-3 rounded-lg text-xs font-semibold">
+            Reset
+          </button>
+        </div>
+        <button onclick="App.finishWorkout()"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-bold py-3.5 rounded-lg text-sm uppercase tracking-wider shadow-lg">
+          Training abschließen & speichern
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 2: PROGRESSION (TIMELINE VIEW) -->
+    <section id="tab-progression" class="hidden space-y-4">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Progression & Zeitachsen-Analyse</h2>
+            <p class="text-[11px] text-zinc-400">Zeigt alle jemals getrackten Übungen mit „Heute" am rechten Rand</p>
+          </div>
+          <!-- Timeframe Buttons (1M, 1Y, ALL) -->
+          <div class="inline-flex bg-zinc-950 border border-zinc-800 rounded-lg p-1 self-start sm:self-auto">
+            <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+              1 Monat
+            </button>
+            <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+              1 Jahr
+            </button>
+            <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-1.5 rounded text-xs font-bold">
+              Gesamt
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <!-- Dropdown: Every ever tracked exercise -->
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung auswählen</label>
+            <select id="progressionExerciseSelect" onchange="App.onProgressionExerciseChange()"
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+          </div>
+          <!-- Metric Selector -->
+          <div>
+            <label class="block text-[11px] text-zinc-400 mb-1">Metrik</label>
+            <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
+              <option value="e1rm">Estimated 1RM (Epley)</option>
+              <option value="maxWeight">Max Weight (kg)</option>
+              <option value="volume">Total Volume (kg)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Machine Filter Pills inside Progression -->
+        <div id="progressionMachineFilterBar" class="flex flex-wrap gap-1.5 pt-1"></div>
+      </div>
+
+      <!-- Progression Chart Box -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span id="progressionChartTitle" class="text-xs font-semibold text-zinc-200">Entwicklungsdiagramm</span>
+          <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+        </div>
+        <div class="relative h-72 w-full">
+          <canvas id="progressionChartCanvas"></canvas>
+          <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-zinc-900/95">
+            <p id="progressionEmptyTitle" class="text-sm text-zinc-300 font-semibold">Noch keine getrackten Übungen vorhanden.</p>
+            <p id="progressionEmptySub" class="text-xs text-zinc-500 mt-1">Schließe dein erstes Training ab oder lade im Tab „Backup" die Demo-Daten.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progression Summary Stats -->
+      <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2.5">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Startwert (Zeitraum)</div>
+          <div id="progStartVal" class="text-base font-bold font-mono text-zinc-200 mt-0.5">—</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Aktuell / Letzter Wert</div>
+          <div id="progEndVal" class="text-base font-bold font-mono text-emerald-400 mt-0.5">—</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Steigerung (Delta)</div>
+          <div id="progDeltaVal" class="text-base font-bold font-mono text-zinc-100 mt-0.5">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ANALYTICS / CHARTS (MACHINE-ISOLATED DETAILS) -->
+    <section id="tab-analytics" class="hidden space-y-4">
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] text-zinc-400 mb-1">1. Übung auswählen</label>
+            <select id="analyticsExerciseSelect" onchange="App.onAnalyticsExerciseChange()"
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-zinc-400 mb-1">2. Spezifische Maschine / Gerät</label>
+            <select id="analyticsMachineSelect" onchange="App.renderAnalytics()"
+              class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+          </div>
+        </div>
+
+        <!-- Metric Switcher -->
+        <div class="pt-1">
+          <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="metricButtonsContainer">
+            <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm"
+              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+              Est. 1RM (Epley)
+            </button>
+            <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight"
+              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+              Max Weight
+            </button>
+            <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet"
+              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+              Top-Set Perf.
+            </button>
+            <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume"
+              class="metric-btn py-2 px-2.5 rounded text-xs font-semibold border transition-none">
+              Total Volume
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="analyticsKpiGrid">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Bestes e1RM</div>
+          <div id="kpiE1rm" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">—</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Max Gewicht</div>
+          <div id="kpiMaxWeight" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Max Volumen</div>
+          <div id="kpiMaxVolume" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">—</div>
+        </div>
+        <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+          <div class="text-[11px] text-zinc-400">Sessions (Gerät)</div>
+          <div id="kpiSessions" class="text-lg font-bold font-mono text-zinc-100 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <!-- Chart Container -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <span id="chartTitleLabel" class="text-xs font-semibold text-zinc-300">Progress-Verlauf</span>
+          <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800"></span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="progressChart"></canvas>
+          <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+            <p class="text-sm text-zinc-400 font-medium">Noch keine Arbeitssätze für diese Übung + Maschine gespeichert.</p>
+            <p class="text-xs text-zinc-500 mt-1">Logge eine Einheit oder lade im Tab "Backup" Testdaten zum Ausprobieren.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Machine Session Log Table -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
+        <div id="analyticsHistoryList" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: HISTORY (VERLAUF) -->
+    <section id="tab-history" class="hidden space-y-3">
+      <div class="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-lg p-3">
+        <div>
+          <h2 class="text-sm font-bold text-zinc-100">Gespeicherte Einheiten</h2>
+          <p class="text-xs text-zinc-400">Kompletter Trainingsverlauf aus der IndexedDB</p>
+        </div>
+        <span id="historyCountBadge" class="text-xs font-mono bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded text-zinc-300">0</span>
+      </div>
+      <div id="historySessionsContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- TAB 5: PLAN & GERÄTE VERWALTUNG -->
+    <section id="tab-manage" class="hidden space-y-6">
+      <!-- Exercises & Machines Manager -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-zinc-100">Übungen & Spezifische Geräte</h2>
+            <p class="text-xs text-zinc-400">Maschinen anlegen, umbenennen, löschen oder Sitzeinstellungen ändern</p>
+          </div>
+          <button onclick="App.promptCreateExercise()"
+            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs">
+            + Neue Übung
+          </button>
+        </div>
+        <div id="manageExercisesList" class="space-y-2.5"></div>
+      </div>
+
+      <!-- Split & Days Manager -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-zinc-100">Trainingsplan / Split-Struktur (Mo – So)</h2>
+            <p class="text-xs text-zinc-400">Tage bearbeiten, Reihenfolge anpassen oder Übungen zuordnen</p>
+          </div>
+          <button onclick="App.promptCreateSplitDay()"
+            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-semibold px-3 py-1.5 rounded text-xs border border-zinc-700">
+            + Neuer Tag
+          </button>
+        </div>
+        <div id="manageSplitsList" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- TAB 6: BACKUP & PWA APP SETUP -->
+    <section id="tab-backup" class="hidden space-y-4">
+      <!-- PWA App Setup Card -->
+      <div class="bg-zinc-900 border border-emerald-800/60 rounded-lg p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-emerald-400">📱 Als echte Offline-App installieren (Handy & PC)</h2>
+          <span class="text-[10px] font-mono uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded">PWA Ready</span>
+        </div>
+        <p class="text-xs text-zinc-300 leading-relaxed">
+          Damit dein Smartphone (Android / iOS) oder PC diese Datei wie eine native App im Vollbild und <strong>100% offline im Flugmodus</strong> (inkl. gecachtem Tailwind & Chart.js) ausführt, kannst du hier die zwei winzigen PWA-Begleitdateien (<code class="text-emerald-400">manifest.json</code> und <code class="text-emerald-400">sw.js</code>) herunterladen und in denselben Ordner wie deine <code class="text-emerald-400">index.html</code> legen.
+        </p>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button id="pwaInstallBackupBtn" onclick="App.triggerPwaInstall()"
+            class="hidden bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-2.5 px-4 rounded-lg text-xs uppercase tracking-wider">
+            📲 Direkt als App installieren
+          </button>
+          <button onclick="App.downloadPwaFiles()"
+            class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 font-semibold py-2.5 px-3.5 rounded-lg text-xs">
+            ⚙ PWA-Dateien (sw.js & manifest.json) herunterladen
+          </button>
+        </div>
+      </div>
+
+      <!-- JSON Backup Card -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+        <h2 class="text-sm font-bold text-zinc-100">JSON-Backup (Export & Import)</h2>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          Alle Daten (Splits, Übungen, Maschinen, Sitzeinstellungen und sämtliche Sessions) liegen lokal in deiner Browser-<code class="text-emerald-400">IndexedDB</code>. Exportiere regelmäßig ein JSON-Backup, um deinen Progress zu sichern oder zwischen PC und Handy zu übertragen.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+          <button onclick="App.exportDatabaseJson()"
+            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-3 px-4 rounded-lg text-xs uppercase tracking-wider">
+            ⬇ Backup als JSON exportieren
+          </button>
+          <label class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold py-3 px-4 rounded-lg text-xs uppercase tracking-wider text-center cursor-pointer">
+            ⬆ JSON-Backup importieren
+            <input type="file" accept=".json,application/json" onchange="App.importDatabaseJson(event)" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <!-- Demo Data & Factory Reset -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-3">
+        <h2 class="text-sm font-bold text-zinc-100">Diagnose & Datenbank-Tools</h2>
+        <p class="text-xs text-zinc-400">
+          Teste das Zeitachsen-Diagramm unter „Progression" mit realistischen Demo-Daten (über mehrere Monate) oder setze die Datenbank zurück.
+        </p>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button onclick="App.seedDemoSessions()"
+            class="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
+            Demo-Verlauf generieren (inkl. Jahresverlauf)
+          </button>
+          <button onclick="App.clearAllSessionsOnly()"
+            class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
+            Nur Sessions löschen (Plan & Geräte behalten)
+          </button>
+          <button onclick="App.factoryResetDatabase()"
+            class="bg-zinc-950 hover:bg-red-950 border border-red-900/60 text-red-400 px-3.5 py-2.5 rounded-lg text-xs font-semibold">
+            Kompletter Werksreset
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD EXERCISE TO ACTIVE WORKOUT OR SPLIT -->
+  <div id="modalOverlay" class="hidden fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-xl sm:rounded-xl w-full max-w-md p-4 space-y-3 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+        <h3 id="modalTitle" class="text-sm font-bold text-zinc-100">Auswahl</h3>
+        <button onclick="App.closeModal()" class="text-zinc-400 hover:text-zinc-100 text-lg font-bold px-2">×</button>
+      </div>
+      <div id="modalBody" class="overflow-y-auto space-y-2 py-1 flex-1"></div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastBanner" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-zinc-950 font-bold text-xs px-4 py-2 rounded shadow-lg"></div>
+
+  <!-- BOTTOM NAVIGATION (6 TABS) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 pb-[env(safe-area-inset-bottom)]">
+    <div class="max-w-3xl mx-auto grid grid-cols-6">
+      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-emerald-500 text-emerald-400">
+        <span class="text-base leading-none mb-1">🏋️</span>
+        <span>Training</span>
+      </button>
+      <button onclick="App.switchTab('progression')" data-tab="progression" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">🚀</span>
+        <span>Progression</span>
+      </button>
+      <button onclick="App.switchTab('analytics')" data-tab="analytics" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">📈</span>
+        <span>Details</span>
+      </button>
+      <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">🗂</span>
+        <span>Verlauf</span>
+      </button>
+      <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">⚙️</span>
+        <span>Geräte</span>
+      </button>
+      <button onclick="App.switchTab('backup')" data-tab="backup" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">💾</span>
+        <span>Backup</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    /*************************************************************************
+     * 1. INITIAL TRAINING PLAN & BASE CATALOG
+     *************************************************************************/
+    const INITIAL_EXERCISES = [
+      { id: 'ex_shoulder_press', name: 'Schulterdrücken Maschine' },
+      { id: 'ex_lat_raise', name: 'Seitheben Kabel (oder Maschine)' },
+      { id: 'ex_oh_triceps', name: 'Overhead Trizeps Extensions' },
+      { id: 'ex_triceps_pushdown', name: 'Trizeps Pushdowns' },
+      { id: 'ex_chest_press', name: 'Brustpresse' },
+      { id: 'ex_lat_pulldown', name: 'Latzug' },
+      { id: 'ex_chest_row', name: 'Brustgestütztes Rudern' },
+      { id: 'ex_rev_pec_deck', name: 'Reverse Pec Deck' },
+      { id: 'ex_preacher_curls', name: 'Preacher Curls' },
+      { id: 'ex_hammer_curls', name: 'Hammer Curls' },
+      { id: 'ex_seated_leg_curl', name: 'Beinbeuger sitzend' },
+      { id: 'ex_squat_legpress', name: 'Squats (oder Beinpresse)' },
+      { id: 'ex_rdl', name: 'Romanian Deadlift' },
+      { id: 'ex_leg_extension', name: 'Beinstrecker' },
+      { id: 'ex_adductor', name: 'Adduktoren-Maschine' },
+      { id: 'ex_abductor', name: 'Abduktoren-Maschine' },
+      { id: 'ex_calf_raise', name: 'Wadenheben' },
+      { id: 'ex_facepulls', name: 'Facepulls (oder hintere Schulter am Kabel)' },
+      { id: 'ex_single_triceps_pushdown', name: 'Single-Arm Trizeps Pushdowns' },
+      { id: 'ex_incline_hammer_curls', name: 'Incline Hammer Curls' }
+    ];
+
+    const INITIAL_MACHINES = [
+      { id: 'm_sp_1', exerciseId: 'ex_shoulder_press', name: 'Gym80 Schulterpresse (Pin)', setupNote: 'Sitz auf 4, Griff eng' },
+      { id: 'm_sp_2', exerciseId: 'ex_shoulder_press', name: 'Hammer Strength Plate-Loaded', setupNote: 'Sitz auf 3' },
+      { id: 'm_lr_1', exerciseId: 'ex_lat_raise', name: 'Kabelturm A (1:2 Übersetzung)', setupNote: 'Rolle auf Hüfthöhe' },
+      { id: 'm_lr_2', exerciseId: 'ex_lat_raise', name: 'Seitheben Maschine', setupNote: 'Sitz 5' },
+      { id: 'm_oht_1', exerciseId: 'ex_oh_triceps', name: 'Kabelturm A (Seil über Kopf)', setupNote: 'Rolle unten' },
+      { id: 'm_tp_1', exerciseId: 'ex_triceps_pushdown', name: 'Kabelturm A (V-Griff / Stange)', setupNote: 'Rolle ganz oben' },
+      { id: 'm_cp_1', exerciseId: 'ex_chest_press', name: 'Brustpresse Sitzend (Pin)', setupNote: 'Sitz 4, Rückenpolster 2' },
+      { id: 'm_cp_2', exerciseId: 'ex_chest_press', name: 'Plate-Loaded Brustpresse', setupNote: 'Sitz 3' },
+      { id: 'm_lp_1', exerciseId: 'ex_lat_pulldown', name: 'Latzug - Turm A (schwer)', setupNote: 'Beinpolster 3, weiter Mag-Grip' },
+      { id: 'm_lp_2', exerciseId: 'ex_lat_pulldown', name: 'Latzug - Gym80', setupNote: 'Sitz 4' },
+      { id: 'm_cr_1', exerciseId: 'ex_chest_row', name: 'T-Bar / Chest Supported Row (Plate)', setupNote: 'Brustpolster 3, Fußraste hoch' },
+      { id: 'm_cr_2', exerciseId: 'ex_chest_row', name: 'Rudermaschine (Pin)', setupNote: 'Sitz 4, Brustpolster 2' },
+      { id: 'm_rpd_1', exerciseId: 'ex_rev_pec_deck', name: 'Pec Deck Maschine (Reverse)', setupNote: 'Sitz 5, Arme auf Raste 1' },
+      { id: 'm_pc_1', exerciseId: 'ex_preacher_curls', name: 'Preacher Curl Maschine', setupNote: 'Sitz 3' },
+      { id: 'm_pc_2', exerciseId: 'ex_preacher_curls', name: 'Scott-Bank + SZ-Stange', setupNote: 'Polster auf 4' },
+      { id: 'm_hc_1', exerciseId: 'ex_hammer_curls', name: 'Kurzhanteln (Stehend/Sitzend)', setupNote: 'Bank 80°' },
+      { id: 'm_slc_1', exerciseId: 'ex_seated_leg_curl', name: 'Beinbeuger Sitzend (Gym80)', setupNote: 'Rücken 4, Rolle 3, Oberschenkelpolster fest' },
+      { id: 'm_sq_1', exerciseId: 'ex_squat_legpress', name: '45° Beinpresse (Plate-Loaded)', setupNote: 'Rückenlehne Stufe 2' },
+      { id: 'm_sq_2', exerciseId: 'ex_squat_legpress', name: 'Hackenschmidt / Pendulum Squat', setupNote: 'Schulterpolster Standard' },
+      { id: 'm_sq_3', exerciseId: 'ex_squat_legpress', name: 'Langhantel Rack (Frei)', setupNote: 'Safety Pins auf 8' },
+      { id: 'm_rdl_1', exerciseId: 'ex_rdl', name: 'Langhantel (Olympia 20kg)', setupNote: 'Zughilfen ab Arbeitssatz 1' },
+      { id: 'm_le_1', exerciseId: 'ex_leg_extension', name: 'Beinstrecker Maschine', setupNote: 'Rücken 3, Schienbeinrolle 4' },
+      { id: 'm_add_1', exerciseId: 'ex_adductor', name: 'Adduktoren Maschine', setupNote: 'Startweite maximal, Rücken 2' },
+      { id: 'm_abd_1', exerciseId: 'ex_abductor', name: 'Abduktoren Maschine', setupNote: 'Startweite 1' },
+      { id: 'm_cr_calf_1', exerciseId: 'ex_calf_raise', name: 'Wadenheben Stehend / Beinpresse', setupNote: 'Schulterpolster 5' },
+      { id: 'm_fp_1', exerciseId: 'ex_facepulls', name: 'Kabelturm A (langes Seil)', setupNote: 'Rolle auf Brusthöhe' },
+      { id: 'm_satp_1', exerciseId: 'ex_single_triceps_pushdown', name: 'Kabelturm A (Einhand-Schlaufe)', setupNote: 'Rolle ganz oben' },
+      { id: 'm_ihc_1', exerciseId: 'ex_incline_hammer_curls', name: 'Schrägbank + Kurzhanteln', setupNote: 'Schrägbank Raste 4 (ca. 60°)' }
+    ];
+
+    const INITIAL_SPLITS = [
+      {
+        id: 'day_mon_push',
+        order: 1,
+        name: 'Montag – Push',
+        isRest: false,
+        items: [
+          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sp_1' },
+          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel', targetSets: 3, targetRepRange: '2–3 Sätze', defaultMachineId: 'm_lr_1' },
+          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_oht_1' },
+          { exerciseId: 'ex_triceps_pushdown', labelOverride: 'Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_tp_1' },
+          { exerciseId: 'ex_chest_press', labelOverride: 'Brustpresse', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cp_1' }
+        ]
+      },
+      {
+        id: 'day_tue_pull',
+        order: 2,
+        name: 'Dienstag – Pull',
+        isRest: false,
+        items: [
+          { exerciseId: 'ex_lat_pulldown', labelOverride: 'Latzug', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_lp_1' },
+          { exerciseId: 'ex_chest_row', labelOverride: 'Brustgestütztes Rudern', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cr_1' },
+          { exerciseId: 'ex_rev_pec_deck', labelOverride: 'Reverse Pec Deck', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_rpd_1' },
+          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_pc_1' },
+          { exerciseId: 'ex_hammer_curls', labelOverride: 'Hammer Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_hc_1' }
+        ]
+      },
+      {
+        id: 'day_wed_rest',
+        order: 3,
+        name: 'Mittwoch – Pause',
+        isRest: true,
+        items: []
+      },
+      {
+        id: 'day_thu_legs',
+        order: 4,
+        name: 'Donnerstag – Beine',
+        isRest: false,
+        items: [
+          { exerciseId: 'ex_seated_leg_curl', labelOverride: 'Beinbeuger sitzend', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_slc_1' },
+          { exerciseId: 'ex_squat_legpress', labelOverride: 'Squats (oder Beinpresse)', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sq_1' },
+          { exerciseId: 'ex_rdl', labelOverride: 'Romanian Deadlift', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_rdl_1' },
+          { exerciseId: 'ex_leg_extension', labelOverride: 'Beinstrecker', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_le_1' },
+          { exerciseId: 'ex_adductor', labelOverride: 'Adduktoren-Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_add_1' },
+          { exerciseId: 'ex_abductor', labelOverride: 'Abduktoren-Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_abd_1' },
+          { exerciseId: 'ex_calf_raise', labelOverride: 'Wadenheben', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_cr_calf_1' }
+        ]
+      },
+      {
+        id: 'day_fri_shoulders_arms',
+        order: 5,
+        name: 'Freitag – Schultern & Arme',
+        isRest: false,
+        items: [
+          { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_sp_1' },
+          { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel (oder Maschine)', targetSets: 3, targetRepRange: '2–3 Sätze', defaultMachineId: 'm_lr_1' },
+          { exerciseId: 'ex_facepulls', labelOverride: 'Facepulls (oder hintere Schulter am Kabel)', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_fp_1' },
+          { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_oht_1' },
+          { exerciseId: 'ex_single_triceps_pushdown', labelOverride: 'Single-Arm Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_satp_1' },
+          { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_pc_1' },
+          { exerciseId: 'ex_incline_hammer_curls', labelOverride: 'Incline Hammer Curls', targetSets: 2, targetRepRange: '2 Sätze', defaultMachineId: 'm_ihc_1' }
+        ]
+      },
+      {
+        id: 'day_weekend_rest',
+        order: 6,
+        name: 'Samstag & Sonntag – Pause',
+        isRest: true,
+        items: []
+      }
+    ];
+
+    /*************************************************************************
+     * 2. INDEXEDDB STORAGE ENGINE (WITH LOCALSTORAGE MIRROR FALLBACK)
+     *************************************************************************/
+    const StorageEngine = {
+      dbName: 'GymProgressDB',
+      dbVersion: 1,
+      db: null,
+
+      async init() {
+        return new Promise((resolve) => {
+          if (!window.indexedDB) {
+            resolve(false);
+            return;
+          }
+          const req = indexedDB.open(this.dbName, this.dbVersion);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('exercises')) db.createObjectStore('exercises', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('machines')) db.createObjectStore('machines', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('splits')) db.createObjectStore('splits', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions', { keyPath: 'id' });
+            if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
+          };
+          req.onsuccess = (e) => {
+            this.db = e.target.result;
+            resolve(true);
+          };
+          req.onerror = () => resolve(false);
+        });
+      },
+
+      async getAll(storeName) {
+        if (!this.db) {
+          const raw = localStorage.getItem(`ironlog_${storeName}`);
+          return raw ? JSON.parse(raw) : [];
+        }
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readonly');
+          const store = tx.objectStore(storeName);
+          const req = store.getAll();
+          req.onsuccess = () => resolve(req.result || []);
+          req.onerror = () => reject(req.error);
+        });
+      },
+
+      async putAll(storeName, items) {
+        localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(items));
+        if (!this.db) return;
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          const store = tx.objectStore(storeName);
+          store.clear();
+          items.forEach(item => store.put(item));
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      },
+
+      async getMeta(key) {
+        if (!this.db) {
+          const raw = localStorage.getItem(`ironlog_meta_${key}`);
+          return raw ? JSON.parse(raw) : null;
+        }
+        return new Promise((resolve) => {
+          const tx = this.db.transaction('meta', 'readonly');
+          const req = tx.objectStore('meta').get(key);
+          req.onsuccess = () => resolve(req.result ? req.result.value : null);
+          req.onerror = () => resolve(null);
+        });
+      },
+
+      async setMeta(key, value) {
+        localStorage.setItem(`ironlog_meta_${key}`, JSON.stringify(value));
+        if (!this.db) return;
+        return new Promise((resolve) => {
+          const tx = this.db.transaction('meta', 'readwrite');
+          tx.objectStore('meta').put({ key, value });
+          tx.oncomplete = () => resolve();
+        });
+      }
+    };
+
+    /*************************************************************************
+     * 3. CORE APPLICATION STATE & LOGIC
+     *************************************************************************/
+    const App = {
+      state: {
+        exercises: [],
+        machines: [],
+        splits: [],
+        sessions: [],
+        activeSplitId: 'day_mon_push',
+        activeDraft: null,
+        analyticsMetric: 'e1rm',
+        progressionRange: '1M', // '1M' | '1Y' | 'ALL'
+        progressionMachineFilter: 'ALL',
+        currentTab: 'workout'
+      },
+      chartInstance: null,
+      progressionChartInstance: null,
+      restTimerInterval: null,
+      restTimerRemaining: 0,
+      deferredPwaPrompt: null,
+
+      async init() {
+        this.setupPwaEnvironment();
+        await StorageEngine.init();
+        const initialized = await StorageEngine.getMeta('initialized');
+
+        if (!initialized) {
+          this.state.exercises = JSON.parse(JSON.stringify(INITIAL_EXERCISES));
+          this.state.machines = JSON.parse(JSON.stringify(INITIAL_MACHINES));
+          this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
+          this.state.sessions = [];
+          this.sortSplits();
+          await this.persistAll();
+          await StorageEngine.setMeta('initialized', true);
+        } else {
+          this.state.exercises = await StorageEngine.getAll('exercises');
+          this.state.machines = await StorageEngine.getAll('machines');
+          this.state.splits = await StorageEngine.getAll('splits');
+          this.state.sessions = await StorageEngine.getAll('sessions');
+          // Ensure splits are strictly sorted Monday -> Sunday even on older IndexedDBs
+          this.sortSplits();
+          await StorageEngine.putAll('splits', this.state.splits);
+        }
+
+        this.sortSessions();
+
+        const savedDraft = await StorageEngine.getMeta('activeDraft');
+        if (savedDraft && savedDraft.splitId && this.state.splits.some(s => s.id === savedDraft.splitId)) {
+          this.state.activeSplitId = savedDraft.splitId;
+          this.state.activeDraft = savedDraft;
+        } else {
+          const defaultSplitId = this.detectTodaySplitId();
+          this.state.activeSplitId = defaultSplitId;
+          this.state.activeDraft = this.buildDraftForSplit(defaultSplitId);
+        }
+
+        this.updateHeaderStatus();
+        this.renderWorkoutTab();
+        this.populateAnalyticsFilters();
+      },
+
+      /***********************************************************************
+       * 4. STRICT MONDAY -> SUNDAY SPLIT ORDERING
+       ***********************************************************************/
+      getWeekdayRank(split) {
+        const id = String(split.id || '').toLowerCase();
+        const name = String(split.name || '').toLowerCase();
+
+        if (id === 'day_mon_push' || name.startsWith('montag')) return 1;
+        if (id === 'day_tue_pull' || name.startsWith('dienstag')) return 2;
+        if (id === 'day_wed_rest' || name.startsWith('mittwoch')) return 3;
+        if (id === 'day_thu_legs' || name.startsWith('donnerstag')) return 4;
+        if (id === 'day_fri_shoulders_arms' || name.startsWith('freitag')) return 5;
+        if (id === 'day_weekend_rest' || name.startsWith('samstag')) return 6;
+        if (name.startsWith('sonntag')) return 7;
+
+        return typeof split.order === 'number' ? split.order : 50;
+      },
+
+      sortSplits() {
+        this.state.splits.sort((a, b) => {
+          const rankA = this.getWeekdayRank(a);
+          const rankB = this.getWeekdayRank(b);
+          if (rankA !== rankB) return rankA - rankB;
+          const orderA = typeof a.order === 'number' ? a.order : 99;
+          const orderB = typeof b.order === 'number' ? b.order : 99;
+          return orderA - orderB;
+        });
+        this.state.splits.forEach((s, idx) => {
+          s.order = idx + 1;
+        });
+      },
+
+      async moveSplitDay(index, direction) {
+        const targetIdx = index + direction;
+        if (targetIdx < 0 || targetIdx >= this.state.splits.length) return;
+        const temp = this.state.splits[index];
+        this.state.splits[index] = this.state.splits[targetIdx];
+        this.state.splits[targetIdx] = temp;
+        this.state.splits.forEach((s, idx) => { s.order = idx + 1; });
+        await StorageEngine.putAll('splits', this.state.splits);
+        this.renderManageTab();
+        this.renderWorkoutTab();
+      },
+
+      /***********************************************************************
+       * 5. PWA (PROGRESSIVE WEB APP) SETUP & GENERATOR
+       ***********************************************************************/
+      getAppSvgIcon() {
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+          <rect width="512" height="512" rx="110" fill="#09090b"/>
+          <rect x="36" y="36" width="440" height="440" rx="85" fill="none" stroke="#10b981" stroke-width="16"/>
+          <path d="M120 256h272M150 176v160M110 206v100M362 176v160M402 206v100" stroke="#10b981" stroke-width="34" stroke-linecap="round"/>
+        </svg>`;
+      },
+
+      setupPwaEnvironment() {
+        const svg = this.getAppSvgIcon();
+        const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        document.getElementById('pwaFavicon').href = svgDataUrl;
+        document.getElementById('pwaAppleIcon').href = svgDataUrl;
+
+        const manifestObj = {
+          name: 'IRONLOG Gym Progress Tracker',
+          short_name: 'IRONLOG',
+          description: 'Offline Gym Progress & Machine Tracker',
+          start_url: './index.html',
+          display: 'standalone',
+          orientation: 'portrait',
+          background_color: '#09090b',
+          theme_color: '#09090b',
+          icons: [
+            { src: svgDataUrl, sizes: '192x192 512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+        document.getElementById('pwaManifestLink').href = URL.createObjectURL(manifestBlob);
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:')) {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          this.deferredPwaPrompt = e;
+          document.getElementById('pwaInstallHeaderBtn')?.classList.remove('hidden');
+          document.getElementById('pwaInstallBackupBtn')?.classList.remove('hidden');
+        });
+      },
+
+      async triggerPwaInstall() {
+        if (!this.deferredPwaPrompt) {
+          alert('Tipp: Öffne im Browser-Menü (⋮) den Punkt „Zum Startbildschirm hinzufügen" bzw. „App installieren".');
+          return;
+        }
+        this.deferredPwaPrompt.prompt();
+        const { outcome } = await this.deferredPwaPrompt.userChoice;
+        if (outcome === 'accepted') {
+          this.deferredPwaPrompt = null;
+          document.getElementById('pwaInstallHeaderBtn')?.classList.add('hidden');
+          document.getElementById('pwaInstallBackupBtn')?.classList.add('hidden');
+        }
+      },
+
+      downloadPwaFiles() {
+        const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(this.getAppSvgIcon());
+        const manifestJson = JSON.stringify({
+          name: 'IRONLOG Gym Progress Tracker',
+          short_name: 'IRONLOG',
+          start_url: './index.html',
+          display: 'standalone',
+          background_color: '#09090b',
+          theme_color: '#09090b',
+          icons: [
+            { src: svgDataUrl, sizes: '192x192 512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+          ]
+        }, null, 2);
+
+        const swJs = `const CACHE_NAME = 'ironlog-offline-v2';
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js'
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      return cached || fetch(event.request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      });
+    })
+  );
+});`;
+
+        this.triggerDownloadFile('manifest.json', manifestJson, 'application/json');
+        setTimeout(() => {
+          this.triggerDownloadFile('sw.js', swJs, 'application/javascript');
+          this.showToast('manifest.json & sw.js heruntergeladen!');
+        }, 300);
+      },
+
+      triggerDownloadFile(filename, content, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      },
+
+      /***********************************************************************
+       * 6. HELPERS & DATABASE PERSISTENCE
+       ***********************************************************************/
+      detectTodaySplitId() {
+        const day = new Date().getDay();
+        const map = {
+          1: 'day_mon_push',
+          2: 'day_tue_pull',
+          3: 'day_wed_rest',
+          4: 'day_thu_legs',
+          5: 'day_fri_shoulders_arms',
+          6: 'day_weekend_rest',
+          0: 'day_weekend_rest'
+        };
+        const candidate = map[day];
+        if (this.state.splits.some(s => s.id === candidate)) return candidate;
+        return this.state.splits[0]?.id || '';
+      },
+
+      async persistAll() {
+        this.sortSplits();
+        await Promise.all([
+          StorageEngine.putAll('exercises', this.state.exercises),
+          StorageEngine.putAll('machines', this.state.machines),
+          StorageEngine.putAll('splits', this.state.splits),
+          StorageEngine.putAll('sessions', this.state.sessions),
+          StorageEngine.setMeta('activeDraft', this.state.activeDraft)
+        ]);
+        this.updateHeaderStatus();
+      },
+
+      async saveDraft() {
+        await StorageEngine.setMeta('activeDraft', this.state.activeDraft);
+      },
+
+      sortSessions() {
+        this.state.sessions.sort((a, b) => {
+          if (a.date !== b.date) return b.date.localeCompare(a.date);
+          return (b.timestamp || 0) - (a.timestamp || 0);
+        });
+      },
+
+      updateHeaderStatus() {
+        const sub = document.getElementById('headerSubtitle');
+        if (sub) {
+          sub.textContent = `${this.state.sessions.length} Sessions | ${this.state.machines.length} Geräte in DB`;
+        }
+      },
+
+      showToast(msg) {
+        const el = document.getElementById('toastBanner');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      },
+
+      todayIso() {
+        const d = new Date();
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+      },
+
+      isoToLocalTimestamp(isoDateStr) {
+        const parts = String(isoDateStr).split('-').map(Number);
+        if (parts.length !== 3) return Date.now();
+        return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0, 0).getTime();
+      },
+
+      formatShortDateFromTs(ts, includeYear = false) {
+        const d = new Date(ts);
+        const day = String(d.getDate()).padStart(2, '0');
+        const mon = String(d.getMonth() + 1).padStart(2, '0');
+        if (includeYear) {
+          const yr = String(d.getFullYear()).slice(-2);
+          return `${day}.${mon}.${yr}`;
+        }
+        return `${day}.${mon}.`;
+      },
+
+      uid(prefix = 'id') {
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+      },
+
+      parseNum(val) {
+        if (val === '' || val === null || val === undefined) return null;
+        const normalized = String(val).replace(',', '.');
+        const num = parseFloat(normalized);
+        return isNaN(num) ? null : num;
+      },
+
+      /***********************************************************************
+       * 7. MACHINE DELETION & MANAGEMENT LOGIC
+       ***********************************************************************/
+      async deleteMachine(machineId) {
+        const machine = this.state.machines.find(m => m.id === machineId);
+        if (!machine) return;
+
+        const exId = machine.exerciseId;
+        const siblingMachines = this.state.machines.filter(m => m.exerciseId === exId);
+
+        let usedInSessionsCount = 0;
+        this.state.sessions.forEach(sess => {
+          if ((sess.entries || []).some(e => e.machineId === machineId)) {
+            usedInSessionsCount++;
+          }
+        });
+
+        let confirmMsg = `Gerät „${machine.name}" wirklich löschen?`;
+        if (siblingMachines.length === 1) {
+          confirmMsg += `\n\nHinweis: Da dies das einzige Gerät für diese Übung ist, wird automatisch ein neutrales „Standard-Gerät" als Ersatz angelegt.`;
+        }
+        if (usedInSessionsCount > 0) {
+          confirmMsg += `\n\nAchtung: Dieses Gerät kommt in ${usedInSessionsCount} gespeicherten Trainingseinheit(en) vor. Diese Einträge werden beim Löschen mit entfernt.`;
+        }
+
+        if (!confirm(confirmMsg)) return;
+
+        this.state.machines = this.state.machines.filter(m => m.id !== machineId);
+
+        let remaining = this.state.machines.filter(m => m.exerciseId === exId);
+        if (remaining.length === 0) {
+          const fallback = {
+            id: this.uid('m'),
+            exerciseId: exId,
+            name: 'Standard-Gerät',
+            setupNote: ''
+          };
+          this.state.machines.push(fallback);
+          remaining = [fallback];
+        }
+
+        const replacementMachineId = remaining[0].id;
+
+        this.state.splits.forEach(sp => {
+          (sp.items || []).forEach(it => {
+            if (it.defaultMachineId === machineId) {
+              it.defaultMachineId = replacementMachineId;
+            }
+          });
+        });
+
+        if (this.state.activeDraft && Array.isArray(this.state.activeDraft.entries)) {
+          this.state.activeDraft.entries.forEach(entry => {
+            if (entry.machineId === machineId) {
+              entry.machineId = replacementMachineId;
+              entry.sets = this.buildSetRowsForExercise(entry.exerciseId, replacementMachineId, entry.targetSets || 2);
+            }
+          });
+        }
+
+        if (usedInSessionsCount > 0) {
+          this.state.sessions.forEach(sess => {
+            sess.entries = (sess.entries || []).filter(e => e.machineId !== machineId);
+          });
+          this.state.sessions = this.state.sessions.filter(sess => (sess.entries || []).length > 0);
+        }
+
+        await this.persistAll();
+        this.populateAnalyticsFilters();
+        if (this.state.currentTab === 'workout') this.renderWorkoutTab();
+        if (this.state.currentTab === 'manage') this.renderManageTab();
+        if (this.state.currentTab === 'progression') this.renderProgressionTab();
+        if (this.state.currentTab === 'analytics') this.renderAnalytics();
+        if (this.state.currentTab === 'history') this.renderHistoryTab();
+
+        this.showToast(`Gerät „${machine.name}" gelöscht`);
+      },
+
+      /***********************************************************************
+       * 8. WORKOUT DRAFT & HISTORY PRE-FILL ENGINE
+       ***********************************************************************/
+      getLastPerformance(exerciseId, machineId) {
+        for (const sess of this.state.sessions) {
+          const entry = (sess.entries || []).find(
+            e => e.exerciseId === exerciseId && e.machineId === machineId && (e.sets || []).length > 0
+          );
+          if (entry) {
+            return {
+              date: sess.date,
+              splitName: sess.splitName,
+              sets: entry.sets
+            };
+          }
+        }
+        return null;
+      },
+
+      getMachinesForExercise(exerciseId) {
+        let list = this.state.machines.filter(m => m.exerciseId === exerciseId);
+        if (list.length === 0) {
+          const fallback = {
+            id: this.uid('m'),
+            exerciseId,
+            name: 'Standard-Gerät',
+            setupNote: ''
+          };
+          this.state.machines.push(fallback);
+          StorageEngine.putAll('machines', this.state.machines);
+          list = [fallback];
+        }
+        return list;
+      },
+
+      buildSetRowsForExercise(exerciseId, machineId, targetSets = 2) {
+        const lastPerf = this.getLastPerformance(exerciseId, machineId);
+        const count = Math.max(targetSets || 2, lastPerf ? lastPerf.sets.length : 0);
+        const sets = [];
+        for (let i = 0; i < count; i++) {
+          const prevSet = lastPerf && lastPerf.sets[i] ? lastPerf.sets[i] : null;
+          sets.push({
+            weight: '',
+            reps: '',
+            type: prevSet ? prevSet.type : 'normal',
+            partials: 0,
+            drops: prevSet && prevSet.type === 'dropset' && Array.isArray(prevSet.drops)
+              ? prevSet.drops.map(() => ({ weight: '', reps: '' }))
+              : [],
+            completed: false
+          });
+        }
+        return sets;
+      },
+
+      buildDraftForSplit(splitId) {
+        this.sortSplits();
+        const split = this.state.splits.find(s => s.id === splitId) || this.state.splits[0];
+        const date = this.todayIso();
+        if (!split || split.isRest) {
+          return {
+            splitId: split ? split.id : '',
+            splitName: split ? split.name : 'Freies Training',
+            date,
+            entries: []
+          };
+        }
+
+        const entries = split.items.map(item => {
+          const machines = this.getMachinesForExercise(item.exerciseId);
+          const lastUsedMachineId = this.findLastUsedMachineId(item.exerciseId) || item.defaultMachineId || machines[0].id;
+          const validMachineId = machines.some(m => m.id === lastUsedMachineId) ? lastUsedMachineId : machines[0].id;
+
+          return {
+            entryId: this.uid('ent'),
+            exerciseId: item.exerciseId,
+            labelOverride: item.labelOverride || '',
+            targetRepRange: item.targetRepRange || `${item.targetSets || 2} Sätze`,
+            targetSets: item.targetSets || 2,
+            machineId: validMachineId,
+            sets: this.buildSetRowsForExercise(item.exerciseId, validMachineId, item.targetSets || 2)
+          };
+        });
+
+        return {
+          splitId: split.id,
+          splitName: split.name,
+          date,
+          entries
+        };
+      },
+
+      findLastUsedMachineId(exerciseId) {
+        for (const sess of this.state.sessions) {
+          const found = (sess.entries || []).find(e => e.exerciseId === exerciseId);
+          if (found && found.machineId) return found.machineId;
+        }
+        return null;
+      },
+
+      selectSplit(splitId) {
+        const hasCompletedSets = this.state.activeDraft?.entries?.some(e => e.sets.some(s => s.completed));
+        if (hasCompletedSets && splitId !== this.state.activeSplitId) {
+          if (!confirm('Du hast bereits abgehakte Sätze in der aktuellen Einheit. Tag wechseln und aktuellen Entwurf verwerfen?')) {
+            return;
+          }
+        }
+        this.state.activeSplitId = splitId;
+        this.state.activeDraft = this.buildDraftForSplit(splitId);
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      resetActiveDraft() {
+        if (!confirm('Aktuelle Eingaben für diesen Tag zurücksetzen?')) return;
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        this.saveDraft();
+        this.renderWorkoutTab();
+        this.showToast('Entwurf zurückgesetzt');
+      },
+
+      updateActiveWorkoutDate(val) {
+        if (!this.state.activeDraft || !val) return;
+        this.state.activeDraft.date = val;
+        this.saveDraft();
+      },
+
+      /***********************************************************************
+       * 9. WORKOUT UI RENDERING & INTERACTION
+       ***********************************************************************/
+      renderWorkoutTab() {
+        this.sortSplits();
+        const draft = this.state.activeDraft;
+        const dateInput = document.getElementById('workoutDateInput');
+        if (dateInput && draft) dateInput.value = draft.date || this.todayIso();
+
+        const btnBar = document.getElementById('splitSelectorButtons');
+        btnBar.innerHTML = this.state.splits.map(s => {
+          const active = s.id === this.state.activeSplitId;
+          return `
+            <button onclick="App.selectSplit('${s.id}')"
+              class="shrink-0 px-3 py-2 rounded-lg text-xs font-bold border transition-none ${
+                active
+                  ? 'bg-emerald-500 text-zinc-950 border-emerald-400'
+                  : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+              }">
+              ${this.escapeHtml(s.name)}
+            </button>
+          `;
+        }).join('');
+
+        const container = document.getElementById('workoutExercisesContainer');
+        const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
+
+        if (currentSplit && currentSplit.isRest && (!draft.entries || draft.entries.length === 0)) {
+          container.innerHTML = `
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center space-y-2">
+              <div class="text-2xl">🛋️</div>
+              <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(currentSplit.name)}</h3>
+              <p class="text-xs text-zinc-400">Planmäßiger Pausentag. Füge unten bei Bedarf trotzdem eine Übung hinzu.</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (!draft.entries || draft.entries.length === 0) {
+          container.innerHTML = `
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center text-xs text-zinc-400">
+              Keine Übungen in dieser Einheit. Klicke unten auf "+ Übung zur Einheit hinzufügen".
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = draft.entries.map((entry, entryIdx) => {
+          const exercise = this.state.exercises.find(ex => ex.id === entry.exerciseId) || { name: 'Unbekannte Übung' };
+          const displayTitle = entry.labelOverride || exercise.name;
+          const machines = this.getMachinesForExercise(entry.exerciseId);
+          const selectedMachine = machines.find(m => m.id === entry.machineId) || machines[0];
+          const lastPerf = this.getLastPerformance(entry.exerciseId, selectedMachine.id);
+
+          let lastPerfHtml = `<span class="text-zinc-500">Keine bisherigen Daten an genau diesem Gerät</span>`;
+          if (lastPerf && lastPerf.sets.length > 0) {
+            const pills = lastPerf.sets.map((s, idx) => {
+              const typeTag = s.type === 'warmup' ? 'W' : (s.type === 'dropset' ? 'D' : `${idx + 1}`);
+              const partStr = s.partials > 0 ? `+${s.partials}P` : '';
+              const dropStr = (s.type === 'dropset' && s.drops && s.drops.length > 0)
+                ? ' ↳ ' + s.drops.map(d => `${d.weight}×${d.reps}`).join(' / ')
+                : '';
+              return `<span class="inline-block bg-zinc-900 border border-zinc-700/80 rounded px-1.5 py-0.5 text-[11px] font-mono text-zinc-200">
+                <strong class="text-emerald-400">${typeTag}:</strong> ${s.weight}kg × ${s.reps}${partStr}${dropStr}
+              </span>`;
+            }).join(' ');
+            lastPerfHtml = `
+              <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[10px] font-mono uppercase text-zinc-400 mr-1">Letztes Mal (${lastPerf.date}):</span>
+                ${pills}
+              </div>
+            `;
+          }
+
+          return `
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+              <!-- Exercise Header -->
+              <div class="p-3.5 bg-zinc-925 border-b border-zinc-800 space-y-2.5">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(displayTitle)}</h3>
+                      <span class="text-[11px] font-mono bg-zinc-800 text-emerald-400 px-2 py-0.5 rounded">${this.escapeHtml(entry.targetRepRange || '2 Sätze')}</span>
+                    </div>
+                  </div>
+                  <button onclick="App.removeExerciseFromDraft(${entryIdx})" title="Übung aus heutiger Einheit entfernen"
+                    class="text-zinc-500 hover:text-red-400 text-xs px-1.5 py-0.5">✕</button>
+                </div>
+
+                <!-- Machine Selection, Quick Add & Delete Machine -->
+                <div class="flex items-center gap-1.5">
+                  <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
+                    class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                    ${machines.map(m => `
+                      <option value="${m.id}" ${m.id === selectedMachine.id ? 'selected' : ''}>
+                        ⚙ ${this.escapeHtml(m.name)}
+                      </option>
+                    `).join('')}
+                  </select>
+                  <button onclick="App.promptAddMachineFromWorkout(${entryIdx}, '${entry.exerciseId}')"
+                    title="Neues Gerät für diese Übung anlegen"
+                    class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 font-bold px-2.5 py-2 rounded-lg text-xs shrink-0">
+                    + Gerät
+                  </button>
+                  <button onclick="App.deleteMachine('${selectedMachine.id}')"
+                    title="Aktuell ausgewähltes Gerät löschen"
+                    class="bg-zinc-950 hover:bg-red-950/60 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-400 px-2.5 py-2 rounded-lg text-xs shrink-0">
+                    🗑
+                  </button>
+                </div>
+
+                <!-- Machine Setup Note -->
+                <div class="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800/90 rounded-lg px-2.5 py-1.5">
+                  <span class="text-[11px] text-zinc-400 shrink-0">📌 Sitz/Setup:</span>
+                  <input type="text"
+                    value="${this.escapeAttr(selectedMachine.setupNote || '')}"
+                    placeholder="z.B. Sitz auf 4, Brustpolster 2..."
+                    onchange="App.updateMachineSetupNote('${selectedMachine.id}', this.value)"
+                    class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
+                </div>
+
+                <!-- Last Session Reference Box -->
+                <div class="bg-zinc-950 border border-zinc-800/80 rounded-lg p-2">
+                  ${lastPerfHtml}
+                </div>
+              </div>
+
+              <!-- Sets Table -->
+              <div class="p-3 space-y-2">
+                <div class="grid grid-cols-12 gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 px-1">
+                  <div class="col-span-2">Typ</div>
+                  <div class="col-span-3 text-center">kg</div>
+                  <div class="col-span-3 text-center">Reps</div>
+                  <div class="col-span-2 text-center" title="Forced Reps / Teilwiederholungen">+Part.</div>
+                  <div class="col-span-2 text-right">Log</div>
+                </div>
+
+                ${entry.sets.map((s, setIdx) => {
+                  const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+                  const weightPlaceholder = prevSet ? prevSet.weight : 'kg';
+                  const repsPlaceholder = prevSet ? prevSet.reps : 'Reps';
+                  const rowBg = s.completed
+                    ? 'bg-emerald-950/30 border-emerald-700/60'
+                    : 'bg-zinc-950 border-zinc-800';
+
+                  return `
+                    <div class="border rounded-lg p-2 space-y-2 ${rowBg}">
+                      <div class="grid grid-cols-12 gap-1.5 items-center">
+                        <div class="col-span-2">
+                          <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
+                            class="w-full bg-zinc-900 border border-zinc-700 rounded px-1 py-2 text-[11px] font-bold ${
+                              s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-zinc-200')
+                            } focus:outline-none">
+                            <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>#${setIdx + 1} Norm</option>
+                            <option value="warmup" ${s.type === 'warmup' ? 'selected' : ''}>Warm</option>
+                            <option value="dropset" ${s.type === 'dropset' ? 'selected' : ''}>Drop</option>
+                          </select>
+                        </div>
+
+                        <div class="col-span-3">
+                          <input type="text" inputmode="decimal"
+                            value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
+                            placeholder="${weightPlaceholder}"
+                            oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
+                            class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-2 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                        </div>
+
+                        <div class="col-span-3">
+                          <input type="number" inputmode="numeric"
+                            value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
+                            placeholder="${repsPlaceholder}"
+                            oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
+                            class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 rounded px-2 py-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                        </div>
+
+                        <div class="col-span-2 flex items-center justify-center">
+                          <button onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
+                            title="Forced Reps / Teilwiederholungen antippen zum Erhöhen"
+                            class="w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded py-2 text-xs font-mono font-bold ${
+                              (s.partials || 0) > 0 ? 'text-amber-400 border-amber-600/60' : 'text-zinc-500'
+                            }">
+                            +${s.partials || 0}P
+                          </button>
+                        </div>
+
+                        <div class="col-span-2 flex items-center justify-end gap-1">
+                          <button onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
+                            class="flex-1 py-2 rounded font-bold text-xs ${
+                              s.completed
+                                ? 'bg-emerald-500 text-zinc-950'
+                                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                            }">
+                            ✓
+                          </button>
+                          <button onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
+                            title="Satz löschen"
+                            class="text-zinc-600 hover:text-red-400 px-1 py-1 text-xs">
+                            ×
+                          </button>
+                        </div>
+                      </div>
+
+                      ${s.type === 'dropset' ? `
+                        <div class="pl-3 border-l-2 border-purple-500/60 space-y-1.5 pt-1">
+                          <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
+                            <button onclick="App.addDropStage(${entryIdx}, ${setIdx})"
+                              class="text-[11px] bg-purple-950/70 hover:bg-purple-900 border border-purple-700/60 text-purple-300 px-2 py-0.5 rounded font-semibold">
+                              + Drop anhängen
+                            </button>
+                          </div>
+                          ${(s.drops || []).map((drop, dropIdx) => {
+                            const prevDrop = prevSet && prevSet.drops && prevSet.drops[dropIdx] ? prevSet.drops[dropIdx] : null;
+                            return `
+                              <div class="grid grid-cols-12 gap-1.5 items-center">
+                                <div class="col-span-2 text-[11px] font-mono text-purple-300">Drop ${dropIdx + 1}</div>
+                                <div class="col-span-4">
+                                  <input type="text" inputmode="decimal"
+                                    value="${drop.weight !== '' ? drop.weight : ''}"
+                                    placeholder="${prevDrop ? prevDrop.weight + ' kg' : 'kg'}"
+                                    oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
+                                    class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                </div>
+                                <div class="col-span-4">
+                                  <input type="number" inputmode="numeric"
+                                    value="${drop.reps !== '' ? drop.reps : ''}"
+                                    placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
+                                    oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
+                                    class="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-center text-xs font-mono text-zinc-100 placeholder-zinc-600">
+                                </div>
+                                <div class="col-span-2 text-right">
+                                  <button onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
+                                    class="text-zinc-500 hover:text-red-400 text-xs px-2 py-1">✕</button>
+                                </div>
+                              </div>
+                            `;
+                          }).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+
+                <button onclick="App.addSetRow(${entryIdx})"
+                  class="w-full bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 py-2 rounded-lg text-xs font-semibold">
+                  + Satz hinzufügen
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      onWorkoutMachineChange(entryIdx, newMachineId) {
+        const entry = this.state.activeDraft.entries[entryIdx];
+        if (!entry) return;
+        entry.machineId = newMachineId;
+
+        const anyCompleted = entry.sets.some(s => s.completed);
+        if (!anyCompleted) {
+          entry.sets = this.buildSetRowsForExercise(entry.exerciseId, newMachineId, entry.targetSets || 2);
+        }
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      updateMachineSetupNote(machineId, noteText) {
+        const machine = this.state.machines.find(m => m.id === machineId);
+        if (!machine) return;
+        machine.setupNote = noteText.trim();
+        StorageEngine.putAll('machines', this.state.machines);
+        this.showToast('Sitzeinstellung gespeichert');
+      },
+
+      promptAddMachineFromWorkout(entryIdx, exerciseId) {
+        const name = prompt('Name der neuen Maschine / Ausführung (z.B. "Turm B - eng" oder "Hammer Strength"):');
+        if (!name || !name.trim()) return;
+        const setupNote = prompt('Optionale Sitz-/Polsternotiz (z.B. "Sitz auf 4, Polster 2"):', '') || '';
+        const newMachine = {
+          id: this.uid('m'),
+          exerciseId,
+          name: name.trim(),
+          setupNote: setupNote.trim()
+        };
+        this.state.machines.push(newMachine);
+        StorageEngine.putAll('machines', this.state.machines);
+        this.onWorkoutMachineChange(entryIdx, newMachine.id);
+        this.showToast(`Gerät "${newMachine.name}" angelegt`);
+      },
+
+      onSetTypeChange(entryIdx, setIdx, newType) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        set.type = newType;
+        if (newType === 'dropset' && (!set.drops || set.drops.length === 0)) {
+          set.drops = [{ weight: '', reps: '' }];
+        }
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      onSetFieldInput(entryIdx, setIdx, field, value) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        set[field] = value;
+        this.saveDraft();
+      },
+
+      cyclePartials(entryIdx, setIdx) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        set.partials = ((set.partials || 0) + 1) % 6;
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      addDropStage(entryIdx, setIdx) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        if (!Array.isArray(set.drops)) set.drops = [];
+        set.drops.push({ weight: '', reps: '' });
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      removeDropStage(entryIdx, setIdx, dropIdx) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        if (!Array.isArray(set.drops)) return;
+        set.drops.splice(dropIdx, 1);
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      onDropFieldInput(entryIdx, setIdx, dropIdx, field, value) {
+        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
+        if (!set.drops || !set.drops[dropIdx]) return;
+        set.drops[dropIdx][field] = value;
+        this.saveDraft();
+      },
+
+      toggleSetComplete(entryIdx, setIdx) {
+        const entry = this.state.activeDraft.entries[entryIdx];
+        const set = entry.sets[setIdx];
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+
+        if (!set.completed) {
+          if ((set.weight === '' || set.weight === null) && prevSet) {
+            set.weight = String(prevSet.weight);
+          }
+          if ((set.reps === '' || set.reps === null) && prevSet) {
+            set.reps = String(prevSet.reps);
+          }
+          const w = this.parseNum(set.weight);
+          const r = this.parseNum(set.reps);
+          if (w === null || r === null || r <= 0) {
+            alert('Bitte Gewicht (kg) und Wiederholungen (Reps) eingeben.');
+            return;
+          }
+          set.weight = w;
+          set.reps = r;
+
+          if (set.type === 'dropset' && Array.isArray(set.drops)) {
+            set.drops.forEach((d, dIdx) => {
+              const prevDrop = prevSet && prevSet.drops && prevSet.drops[dIdx] ? prevSet.drops[dIdx] : null;
+              if (d.weight === '' && prevDrop) d.weight = prevDrop.weight;
+              if (d.reps === '' && prevDrop) d.reps = prevDrop.reps;
+            });
+          }
+          set.completed = true;
+        } else {
+          set.completed = false;
+        }
+
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      addSetRow(entryIdx) {
+        const entry = this.state.activeDraft.entries[entryIdx];
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        const nextIdx = entry.sets.length;
+        const prevSet = lastPerf && lastPerf.sets[nextIdx] ? lastPerf.sets[nextIdx] : null;
+        entry.sets.push({
+          weight: '',
+          reps: '',
+          type: prevSet ? prevSet.type : 'normal',
+          partials: 0,
+          drops: [],
+          completed: false
+        });
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      removeSetRow(entryIdx, setIdx) {
+        const entry = this.state.activeDraft.entries[entryIdx];
+        entry.sets.splice(setIdx, 1);
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      removeExerciseFromDraft(entryIdx) {
+        this.state.activeDraft.entries.splice(entryIdx, 1);
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      openAddExerciseToWorkoutModal() {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        title.textContent = 'Übung zur aktuellen Einheit hinzufügen';
+
+        body.innerHTML = `
+          <div class="space-y-1.5">
+            ${this.state.exercises.map(ex => `
+              <button onclick="App.addExerciseToActiveDraft('${ex.id}')"
+                class="w-full text-left bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs font-semibold text-zinc-100 flex items-center justify-between">
+                <span>${this.escapeHtml(ex.name)}</span>
+                <span class="text-emerald-400 font-mono">+</span>
+              </button>
+            `).join('')}
+          </div>
+          <div class="pt-3 border-t border-zinc-800 mt-2">
+            <button onclick="App.promptCreateExercise(true)"
+              class="w-full bg-emerald-500 text-zinc-950 font-bold py-2.5 rounded-lg text-xs">
+              + Komplett neue Übung anlegen
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+      },
+
+      addExerciseToActiveDraft(exerciseId) {
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        if (!ex) return;
+        const machines = this.getMachinesForExercise(exerciseId);
+        const machineId = this.findLastUsedMachineId(exerciseId) || machines[0].id;
+        this.state.activeDraft.entries.push({
+          entryId: this.uid('ent'),
+          exerciseId,
+          labelOverride: ex.name,
+          targetRepRange: '2 Sätze',
+          targetSets: 2,
+          machineId,
+          sets: this.buildSetRowsForExercise(exerciseId, machineId, 2)
+        });
+        this.saveDraft();
+        this.closeModal();
+        this.renderWorkoutTab();
+      },
+
+      async finishWorkout() {
+        const draft = this.state.activeDraft;
+        if (!draft || !draft.entries) return;
+
+        const cleanedEntries = [];
+        for (const entry of draft.entries) {
+          const validSets = [];
+          for (const s of entry.sets) {
+            const w = this.parseNum(s.weight);
+            const r = this.parseNum(s.reps);
+            if (w !== null && r !== null && r > 0) {
+              const cleanDrops = (s.type === 'dropset' && Array.isArray(s.drops))
+                ? s.drops
+                    .map(d => ({ weight: this.parseNum(d.weight), reps: this.parseNum(d.reps) }))
+                    .filter(d => d.weight !== null && d.reps !== null && d.reps > 0)
+                : [];
+              validSets.push({
+                weight: w,
+                reps: r,
+                type: s.type || 'normal',
+                partials: parseInt(s.partials || 0, 10) || 0,
+                drops: cleanDrops
+              });
+            }
+          }
+          if (validSets.length > 0) {
+            cleanedEntries.push({
+              exerciseId: entry.exerciseId,
+              machineId: entry.machineId,
+              sets: validSets
+            });
+          }
+        }
+
+        if (cleanedEntries.length === 0) {
+          alert('Keine gültigen Sätze eingetragen oder abgehakt. Trage mindestens in einem Satz Gewicht & Reps ein.');
+          return;
+        }
+
+        const sessionRecord = {
+          id: this.uid('sess'),
+          date: draft.date || this.todayIso(),
+          timestamp: Date.now(),
+          splitId: draft.splitId,
+          splitName: draft.splitName,
+          entries: cleanedEntries
+        };
+
+        this.state.sessions.push(sessionRecord);
+        this.sortSessions();
+
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        await this.persistAll();
+
+        this.renderWorkoutTab();
+        this.showToast('Trainingseinheit erfolgreich gespeichert!');
+      },
+
+      /***********************************************************************
+       * 10. PROGRESSION TAB (EVER-TRACKED DROPDOWN + TIMELINE X-AXIS)
+       ***********************************************************************/
+      getEverTrackedExercises() {
+        const counts = new Map();
+        for (const sess of this.state.sessions) {
+          for (const entry of (sess.entries || [])) {
+            const hasWorkingSet = (entry.sets || []).some(s => s.type !== 'warmup' && Number(s.reps) > 0);
+            if (hasWorkingSet) {
+              counts.set(entry.exerciseId, (counts.get(entry.exerciseId) || 0) + 1);
+            }
+          }
+        }
+
+        const trackedList = [];
+        counts.forEach((count, exId) => {
+          const exObj = this.state.exercises.find(e => e.id === exId);
+          trackedList.push({
+            id: exId,
+            name: exObj ? exObj.name : exId,
+            sessionCount: count
+          });
+        });
+
+        trackedList.sort((a, b) => a.name.localeCompare(b.name));
+        return trackedList;
+      },
+
+      setProgressionRange(rangeKey) {
+        this.state.progressionRange = rangeKey;
+        this.renderProgressionTab();
+      },
+
+      setProgressionMachineFilter(machineFilter) {
+        this.state.progressionMachineFilter = machineFilter;
+        this.renderProgressionTab();
+      },
+
+      onProgressionExerciseChange() {
+        this.state.progressionMachineFilter = 'ALL';
+        this.renderProgressionTab();
+      },
+
+      renderProgressionTab() {
+        document.querySelectorAll('.prog-range-btn').forEach(btn => {
+          const active = btn.getAttribute('data-range') === this.state.progressionRange;
+          btn.className = `prog-range-btn px-3 py-1.5 rounded text-xs font-bold transition-none ${
+            active ? 'bg-emerald-500 text-zinc-950' : 'text-zinc-400 hover:text-zinc-200'
+          }`;
+        });
+
+        const trackedExercises = this.getEverTrackedExercises();
+        const selectEl = document.getElementById('progressionExerciseSelect');
+        const emptyOverlay = document.getElementById('progressionEmptyState');
+        const emptyTitle = document.getElementById('progressionEmptyTitle');
+        const emptySub = document.getElementById('progressionEmptySub');
+
+        if (trackedExercises.length === 0) {
+          selectEl.innerHTML = `<option value="">— Noch keine Übung getrackt —</option>`;
+          document.getElementById('progressionMachineFilterBar').innerHTML = '';
+          emptyTitle.textContent = 'Noch keine Übung getrackt.';
+          emptySub.textContent = 'Sobald du deine erste Einheit speicherst (oder unter Backup die Demo-Daten lädst), erscheinen hier alle jemals getrackten Übungen.';
+          emptyOverlay.classList.remove('hidden');
+          document.getElementById('progStartVal').textContent = '—';
+          document.getElementById('progEndVal').textContent = '—';
+          document.getElementById('progDeltaVal').textContent = '—';
+          if (this.progressionChartInstance) {
+            this.progressionChartInstance.destroy();
+            this.progressionChartInstance = null;
+          }
+          return;
+        }
+
+        const currentSelectedEx = trackedExercises.some(e => e.id === selectEl.value)
+          ? selectEl.value
+          : trackedExercises[0].id;
+
+        selectEl.innerHTML = trackedExercises.map(ex => `
+          <option value="${ex.id}" ${ex.id === currentSelectedEx ? 'selected' : ''}>
+            ${this.escapeHtml(ex.name)} (${ex.sessionCount}× getrackt)
+          </option>
+        `).join('');
+
+        const todayIsoStr = this.todayIso();
+        const maxTs = this.isoToLocalTimestamp(todayIsoStr);
+        const DAY_MS = 86400000;
+
+        const chronologicalSessions = [...this.state.sessions].sort((a, b) => a.date.localeCompare(b.date));
+        const usedMachinesMap = new Map();
+        let earliestExerciseTs = maxTs;
+
+        for (const sess of chronologicalSessions) {
+          const sessTs = this.isoToLocalTimestamp(sess.date);
+          for (const entry of (sess.entries || [])) {
+            if (entry.exerciseId !== currentSelectedEx) continue;
+            const workingSets = (entry.sets || []).filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
+            if (workingSets.length === 0) continue;
+
+            if (sessTs < earliestExerciseTs) earliestExerciseTs = sessTs;
+
+            let bestE1rm = 0;
+            let maxWeight = 0;
+            let totalVolume = 0;
+
+            for (const s of workingSets) {
+              const w = Number(s.weight) || 0;
+              const r = Number(s.reps) || 0;
+              const e1rm = w * (1 + r / 30);
+              if (e1rm > bestE1rm) bestE1rm = e1rm;
+              if (w > maxWeight) maxWeight = w;
+              totalVolume += w * r;
+              if (s.type === 'dropset' && Array.isArray(s.drops)) {
+                for (const d of s.drops) {
+                  totalVolume += (Number(d.weight) || 0) * (Number(d.reps) || 0);
+                }
+              }
+            }
+
+            if (!usedMachinesMap.has(entry.machineId)) {
+              const machObj = this.state.machines.find(m => m.id === entry.machineId);
+              usedMachinesMap.set(entry.machineId, {
+                machineId: entry.machineId,
+                machineName: machObj ? machObj.name : 'Standard-Gerät',
+                points: []
+              });
+            }
+
+            usedMachinesMap.get(entry.machineId).points.push({
+              x: sessTs,
+              date: sess.date,
+              e1rm: Number(bestE1rm.toFixed(1)),
+              maxWeight: Number(maxWeight.toFixed(2)),
+              volume: Math.round(totalVolume)
+            });
+          }
+        }
+
+        let minTs;
+        if (this.state.progressionRange === '1M') {
+          minTs = maxTs - 30 * DAY_MS;
+        } else if (this.state.progressionRange === '1Y') {
+          minTs = maxTs - 365 * DAY_MS;
+        } else {
+          minTs = Math.min(earliestExerciseTs, maxTs - 7 * DAY_MS);
+        }
+
+        const includeYearInTicks = (maxTs - minTs) > 90 * DAY_MS;
+        document.getElementById('progressionDateSpanLabel').textContent =
+          `${this.formatShortDateFromTs(minTs, true)} bis Heute (${this.formatShortDateFromTs(maxTs, true)})`;
+
+        const machineGroups = Array.from(usedMachinesMap.values());
+        const filterBar = document.getElementById('progressionMachineFilterBar');
+        if (machineGroups.length > 1) {
+          filterBar.innerHTML = [
+            `<button onclick="App.setProgressionMachineFilter('ALL')"
+              class="px-2.5 py-1 rounded text-[11px] font-semibold border ${
+                this.state.progressionMachineFilter === 'ALL'
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                  : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+              }">Alle Geräte (${machineGroups.length})</button>`,
+            ...machineGroups.map(mg => `
+              <button onclick="App.setProgressionMachineFilter('${mg.machineId}')"
+                class="px-2.5 py-1 rounded text-[11px] font-semibold border ${
+                  this.state.progressionMachineFilter === mg.machineId
+                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                    : 'bg-zinc-950 border-zinc-800 text-zinc-400'
+                }">⚙ ${this.escapeHtml(mg.machineName)}</button>
+            `)
+          ].join('');
+        } else {
+          filterBar.innerHTML = machineGroups.length === 1
+            ? `<span class="text-[11px] font-mono text-zinc-400">⚙ Gerät: ${this.escapeHtml(machineGroups[0].machineName)}</span>`
+            : '';
+        }
+
+        const metric = document.getElementById('progressionMetricSelect').value || 'e1rm';
+        const palette = ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#f43f5e'];
+
+        const filteredGroups = this.state.progressionMachineFilter === 'ALL'
+          ? machineGroups
+          : machineGroups.filter(g => g.machineId === this.state.progressionMachineFilter);
+
+        const datasets = [];
+        const allVisiblePoints = [];
+
+        filteredGroups.forEach((group, idx) => {
+          const color = palette[idx % palette.length];
+          const inWindow = group.points
+            .filter(pt => pt.x >= minTs && pt.x <= maxTs)
+            .map(pt => ({
+              x: pt.x,
+              y: pt[metric],
+              date: pt.date,
+              machineName: group.machineName,
+              e1rm: pt.e1rm,
+              maxWeight: pt.maxWeight,
+              volume: pt.volume
+            }));
+
+          allVisiblePoints.push(...inWindow);
+
+          if (inWindow.length > 0) {
+            datasets.push({
+              label: group.machineName,
+              data: inWindow,
+              borderColor: color,
+              backgroundColor: color + '22',
+              borderWidth: 2.5,
+              pointBackgroundColor: color,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.2,
+              fill: filteredGroups.length === 1
+            });
+          }
+        });
+
+        if (this.progressionChartInstance) {
+          this.progressionChartInstance.destroy();
+          this.progressionChartInstance = null;
+        }
+
+        if (datasets.length === 0) {
+          emptyTitle.textContent = 'Keine Einheiten in diesem Zeitraum.';
+          emptySub.textContent = 'Wechsle oben rechts auf „1 Jahr" oder „Gesamt", um ältere Einheiten dieser Übung zu sehen.';
+          emptyOverlay.classList.remove('hidden');
+          document.getElementById('progStartVal').textContent = '—';
+          document.getElementById('progEndVal').textContent = '—';
+          document.getElementById('progDeltaVal').textContent = '—';
+          return;
+        }
+
+        emptyOverlay.classList.add('hidden');
+
+        allVisiblePoints.sort((a, b) => a.x - b.x);
+        const firstVal = allVisiblePoints[0].y;
+        const lastVal = allVisiblePoints[allVisiblePoints.length - 1].y;
+        const diff = lastVal - firstVal;
+        const pct = firstVal > 0 ? ((diff / firstVal) * 100).toFixed(1) : '0.0';
+        const sign = diff > 0 ? '+' : '';
+
+        document.getElementById('progStartVal').textContent = `${firstVal} kg`;
+        document.getElementById('progEndVal').textContent = `${lastVal} kg`;
+        const deltaEl = document.getElementById('progDeltaVal');
+        deltaEl.textContent = `${sign}${diff.toFixed(1)} kg (${sign}${pct}%)`;
+        deltaEl.className = `text-base font-bold font-mono mt-0.5 ${
+          diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-red-400' : 'text-zinc-300')
+        }`;
+
+        const canvas = document.getElementById('progressionChartCanvas');
+        this.progressionChartInstance = new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: { datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            parsing: false,
+            plugins: {
+              legend: {
+                display: datasets.length > 1,
+                labels: { color: '#e4e4e7', font: { size: 11 } }
+              },
+              tooltip: {
+                backgroundColor: '#09090b',
+                borderColor: '#3f3f46',
+                borderWidth: 1,
+                titleColor: '#f4f4f5',
+                bodyColor: '#10b981',
+                padding: 10,
+                callbacks: {
+                  title: (items) => {
+                    const raw = items[0]?.raw;
+                    return raw ? `${raw.date} — ${raw.machineName}` : '';
+                  },
+                  label: (ctx) => {
+                    const raw = ctx.raw;
+                    return [
+                      `e1RM: ${raw.e1rm} kg`,
+                      `Max Weight: ${raw.maxWeight} kg`,
+                      `Volumen: ${raw.volume} kg`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'linear',
+                min: minTs,
+                max: maxTs,
+                afterBuildTicks: (axis) => {
+                  const tickCount = 6;
+                  const step = (maxTs - minTs) / (tickCount - 1);
+                  const customTicks = [];
+                  for (let i = 0; i < tickCount - 1; i++) {
+                    customTicks.push({ value: Math.round(minTs + i * step) });
+                  }
+                  customTicks.push({ value: maxTs });
+                  axis.ticks = customTicks;
+                },
+                ticks: {
+                  color: '#a1a1aa',
+                  font: { size: 10 },
+                  maxRotation: 0,
+                  autoSkip: false,
+                  callback: (val) => {
+                    if (Math.abs(val - maxTs) < 10000) {
+                      return `Heute (${this.formatShortDateFromTs(maxTs, false)})`;
+                    }
+                    return this.formatShortDateFromTs(val, includeYearInTicks);
+                  }
+                },
+                grid: { color: '#27272a' }
+              },
+              y: {
+                ticks: {
+                  color: '#a1a1aa',
+                  font: { size: 11 },
+                  callback: (v) => `${v} kg`
+                },
+                grid: { color: '#27272a' }
+              }
+            }
+          }
+        });
+      },
+
+      /***********************************************************************
+       * 11. ANALYTICS TAB (MACHINE-ISOLATED DETAILS)
+       ***********************************************************************/
+      populateAnalyticsFilters() {
+        const exSelect = document.getElementById('analyticsExerciseSelect');
+        if (!exSelect) return;
+        const currentEx = exSelect.value || (this.state.exercises[0]?.id || '');
+
+        exSelect.innerHTML = this.state.exercises.map(ex => `
+          <option value="${ex.id}" ${ex.id === currentEx ? 'selected' : ''}>
+            ${this.escapeHtml(ex.name)}
+          </option>
+        `).join('');
+
+        this.onAnalyticsExerciseChange(false);
+      },
+
+      onAnalyticsExerciseChange(shouldRender = true) {
+        const exId = document.getElementById('analyticsExerciseSelect').value;
+        const machSelect = document.getElementById('analyticsMachineSelect');
+        const machines = this.getMachinesForExercise(exId);
+
+        const machineWithData = machines.find(m =>
+          this.state.sessions.some(s => (s.entries || []).some(e => e.exerciseId === exId && e.machineId === m.id))
+        );
+        const defaultMachId = machineWithData ? machineWithData.id : machines[0]?.id;
+
+        machSelect.innerHTML = machines.map(m => `
+          <option value="${m.id}" ${m.id === defaultMachId ? 'selected' : ''}>
+            ${this.escapeHtml(m.name)}
+          </option>
+        `).join('');
+
+        if (shouldRender) this.renderAnalytics();
+      },
+
+      setAnalyticsMetric(metric) {
+        this.state.analyticsMetric = metric;
+        this.renderAnalytics();
+      },
+
+      computeSessionMetricsForMachine(exerciseId, machineId) {
+        const chronological = [...this.state.sessions].sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return (a.timestamp || 0) - (b.timestamp || 0);
+        });
+
+        const points = [];
+        for (const sess of chronological) {
+          const matchingEntries = (sess.entries || []).filter(
+            e => e.exerciseId === exerciseId && e.machineId === machineId
+          );
+          if (matchingEntries.length === 0) continue;
+
+          const allSets = matchingEntries.flatMap(e => e.sets || []);
+          const workingSets = allSets.filter(s => s.type !== 'warmup');
+          if (workingSets.length === 0) continue;
+
+          let bestE1rm = 0;
+          let bestE1rmSet = null;
+          let maxWeight = 0;
+          let topSet = workingSets[0];
+          let totalVolume = 0;
+
+          for (const s of workingSets) {
+            const w = Number(s.weight) || 0;
+            const r = Number(s.reps) || 0;
+            const e1rm = w * (1 + r / 30);
+
+            if (e1rm > bestE1rm) {
+              bestE1rm = e1rm;
+              bestE1rmSet = s;
+            }
+            if (w > maxWeight) maxWeight = w;
+            if (w > topSet.weight || (w === topSet.weight && r > topSet.reps)) {
+              topSet = s;
+            }
+
+            totalVolume += w * r;
+            if (s.type === 'dropset' && Array.isArray(s.drops)) {
+              for (const d of s.drops) {
+                totalVolume += (Number(d.weight) || 0) * (Number(d.reps) || 0);
+              }
+            }
+          }
+
+          points.push({
+            sessionId: sess.id,
+            date: sess.date,
+            splitName: sess.splitName,
+            e1rm: Number(bestE1rm.toFixed(1)),
+            bestE1rmSet,
+            maxWeight: Number(maxWeight.toFixed(2)),
+            topSet,
+            volume: Math.round(totalVolume),
+            allSets
+          });
+        }
+        return points;
+      },
+
+      renderAnalytics() {
+        const exId = document.getElementById('analyticsExerciseSelect')?.value;
+        const machId = document.getElementById('analyticsMachineSelect')?.value;
+        if (!exId || !machId) return;
+
+        document.querySelectorAll('.metric-btn').forEach(btn => {
+          const active = btn.getAttribute('data-metric') === this.state.analyticsMetric;
+          btn.className = `metric-btn py-2 px-2.5 rounded text-xs font-semibold border ${
+            active
+              ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-bold'
+              : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'
+          }`;
+        });
+
+        const machine = this.state.machines.find(m => m.id === machId);
+        const setupBadge = document.getElementById('chartSetupNoteBadge');
+        setupBadge.textContent = machine?.setupNote ? `📌 ${machine.setupNote}` : 'Keine Sitz-Notiz';
+
+        const dataPoints = this.computeSessionMetricsForMachine(exId, machId);
+
+        const kpiE1rm = document.getElementById('kpiE1rm');
+        const kpiMaxW = document.getElementById('kpiMaxWeight');
+        const kpiMaxV = document.getElementById('kpiMaxVolume');
+        const kpiSess = document.getElementById('kpiSessions');
+
+        if (dataPoints.length === 0) {
+          kpiE1rm.textContent = '—';
+          kpiMaxW.textContent = '—';
+          kpiMaxV.textContent = '—';
+          kpiSess.textContent = '0';
+        } else {
+          const maxE1 = Math.max(...dataPoints.map(p => p.e1rm));
+          const maxW = Math.max(...dataPoints.map(p => p.maxWeight));
+          const maxV = Math.max(...dataPoints.map(p => p.volume));
+          kpiE1rm.textContent = `${maxE1.toFixed(1)} kg`;
+          kpiMaxW.textContent = `${maxW} kg`;
+          kpiMaxV.textContent = `${maxV} kg`;
+          kpiSess.textContent = String(dataPoints.length);
+        }
+
+        const emptyState = document.getElementById('chartEmptyState');
+        const canvas = document.getElementById('progressChart');
+
+        if (this.chartInstance) {
+          this.chartInstance.destroy();
+          this.chartInstance = null;
+        }
+
+        if (dataPoints.length === 0) {
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          const metric = this.state.analyticsMetric;
+          const labels = dataPoints.map(p => p.date);
+          let values = [];
+          let labelText = '';
+
+          if (metric === 'e1rm') {
+            values = dataPoints.map(p => p.e1rm);
+            labelText = 'Estimated 1RM (Epley)';
+          } else if (metric === 'maxWeight') {
+            values = dataPoints.map(p => p.maxWeight);
+            labelText = 'Max Arbeitsgewicht';
+          } else if (metric === 'topSet') {
+            values = dataPoints.map(p => p.topSet.weight);
+            labelText = 'Top-Set Gewicht (Details im Tooltip)';
+          } else if (metric === 'volume') {
+            values = dataPoints.map(p => p.volume);
+            labelText = 'Total Volume (inkl. Dropsets)';
+          }
+
+          document.getElementById('chartTitleLabel').textContent = labelText;
+
+          this.chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: labelText,
+                data: values,
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#10b981',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.2,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: '#09090b',
+                  borderColor: '#3f3f46',
+                  borderWidth: 1,
+                  titleColor: '#f4f4f5',
+                  bodyColor: '#10b981',
+                  padding: 10,
+                  callbacks: {
+                    label: (ctx) => {
+                      const pt = dataPoints[ctx.dataIndex];
+                      if (metric === 'topSet') {
+                        const ts = pt.topSet;
+                        const part = ts.partials > 0 ? ` (+${ts.partials} Partials)` : '';
+                        return [
+                          `Top-Set: ${ts.weight} kg × ${ts.reps} Reps${part}`,
+                          `e1RM dieses Satzes: ${(ts.weight * (1 + ts.reps / 30)).toFixed(1)} kg`,
+                          `Satz-Typ: ${ts.type.toUpperCase()}`
+                        ];
+                      }
+                      if (metric === 'e1rm') {
+                        const bs = pt.bestE1rmSet;
+                        return [
+                          `e1RM: ${pt.e1rm} kg`,
+                          `Basis-Satz: ${bs.weight} kg × ${bs.reps} Reps`
+                        ];
+                      }
+                      if (metric === 'volume') {
+                        return `Gesamtvolumen: ${pt.volume} kg`;
+                      }
+                      return `Max Weight: ${pt.maxWeight} kg`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  ticks: { color: '#a1a1aa', font: { size: 11 } },
+                  grid: { color: '#27272a' }
+                },
+                y: {
+                  ticks: {
+                    color: '#a1a1aa',
+                    font: { size: 11 },
+                    callback: (v) => `${v} kg`
+                  },
+                  grid: { color: '#27272a' }
+                }
+              }
+            }
+          });
+        }
+
+        const listEl = document.getElementById('analyticsHistoryList');
+        if (dataPoints.length === 0) {
+          listEl.innerHTML = `<p class="text-xs text-zinc-500">Keine Einträge vorhanden.</p>`;
+        } else {
+          listEl.innerHTML = [...dataPoints].reverse().map(pt => {
+            const setsHtml = pt.allSets.map((s, idx) => {
+              const badgeColor = s.type === 'warmup'
+                ? 'text-amber-400 border-amber-800/60'
+                : (s.type === 'dropset' ? 'text-purple-300 border-purple-800/60' : 'text-zinc-200 border-zinc-700');
+              const part = s.partials > 0 ? ` +${s.partials}P` : '';
+              const drops = (s.type === 'dropset' && s.drops && s.drops.length > 0)
+                ? ` ↳ [${s.drops.map(d => `${d.weight}kg×${d.reps}`).join(', ')}]`
+                : '';
+              return `<span class="inline-block bg-zinc-950 border ${badgeColor} rounded px-2 py-0.5 text-xs font-mono">
+                S${idx + 1} (${s.type}): <strong>${s.weight}kg × ${s.reps}</strong>${part}${drops}
+              </span>`;
+            }).join(' ');
+
+            return `
+              <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="font-bold font-mono text-zinc-200">${pt.date} <span class="text-zinc-500 font-normal">(${this.escapeHtml(pt.splitName || '')})</span></span>
+                  <span class="font-mono text-[11px] text-emerald-400">e1RM: ${pt.e1rm} kg | Vol: ${pt.volume} kg</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">${setsHtml}</div>
+              </div>
+            `;
+          }).join('');
+        }
+      },
+
+      /***********************************************************************
+       * 12. HISTORY TAB (ALL SAVED WORKOUT SESSIONS)
+       ***********************************************************************/
+      renderHistoryTab() {
+        const badge = document.getElementById('historyCountBadge');
+        const container = document.getElementById('historySessionsContainer');
+        badge.textContent = `${this.state.sessions.length} Sessions`;
+
+        if (this.state.sessions.length === 0) {
+          container.innerHTML = `
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-6 text-center text-xs text-zinc-400">
+              Noch keine abgeschlossenen Trainingseinheiten gespeichert.
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = this.state.sessions.map(sess => {
+          const entriesHtml = (sess.entries || []).map(entry => {
+            const ex = this.state.exercises.find(e => e.id === entry.exerciseId);
+            const mach = this.state.machines.find(m => m.id === entry.machineId);
+            const setsPills = (entry.sets || []).map((s, i) => {
+              const part = s.partials > 0 ? `+${s.partials}P` : '';
+              const drops = (s.type === 'dropset' && s.drops?.length)
+                ? ` ↳ ${s.drops.map(d => `${d.weight}×${d.reps}`).join('/')}`
+                : '';
+              return `<span class="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded font-mono text-[11px] text-zinc-200">
+                ${s.type === 'warmup' ? 'W' : i + 1}: ${s.weight}kg × ${s.reps}${part}${drops}
+              </span>`;
+            }).join(' ');
+
+            return `
+              <div class="border-l-2 border-zinc-700 pl-2.5 py-0.5 space-y-1">
+                <div class="flex flex-wrap items-center justify-between gap-1">
+                  <span class="text-xs font-bold text-zinc-200">${this.escapeHtml(ex ? ex.name : entry.exerciseId)}</span>
+                  <span class="text-[11px] font-mono text-emerald-400">⚙ ${this.escapeHtml(mach ? mach.name : 'Standard')}</span>
+                </div>
+                <div class="flex flex-wrap gap-1">${setsPills}</div>
+              </div>
+            `;
+          }).join('');
+
+          return `
+            <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3.5 space-y-2.5">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <div>
+                  <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
+                  <h3 class="text-sm font-bold text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
+                </div>
+                <button onclick="App.deleteSession('${sess.id}')"
+                  class="text-xs text-zinc-500 hover:text-red-400 px-2 py-1 border border-zinc-800 rounded">
+                  Löschen
+                </button>
+              </div>
+              <div class="space-y-2">${entriesHtml}</div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      async deleteSession(sessionId) {
+        if (!confirm('Diese gespeicherte Trainingseinheit wirklich löschen?')) return;
+        this.state.sessions = this.state.sessions.filter(s => s.id !== sessionId);
+        await StorageEngine.putAll('sessions', this.state.sessions);
+        this.updateHeaderStatus();
+        this.renderHistoryTab();
+        this.showToast('Session gelöscht');
+      },
+
+      /***********************************************************************
+       * 13. MANAGE TAB (EXERCISES, MACHINES & SPLITS)
+       ***********************************************************************/
+      renderManageTab() {
+        this.sortSplits();
+        const exList = document.getElementById('manageExercisesList');
+        exList.innerHTML = this.state.exercises.map(ex => {
+          const machines = this.getMachinesForExercise(ex.id);
+          return `
+            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-zinc-100">${this.escapeHtml(ex.name)}</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="App.promptAddMachine('${ex.id}')"
+                    class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2 py-0.5 rounded font-semibold">
+                    + Maschine
+                  </button>
+                  <button onclick="App.promptRenameExercise('${ex.id}')"
+                    class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
+                    Umbenennen
+                  </button>
+                </div>
+              </div>
+              <div class="space-y-1.5 pt-1">
+                ${machines.map(m => `
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-zinc-900 border border-zinc-800/80 rounded px-2.5 py-1.5 text-xs">
+                    <div class="font-medium text-zinc-200">⚙ ${this.escapeHtml(m.name)}</div>
+                    <div class="flex items-center gap-1.5">
+                      <input type="text"
+                        value="${this.escapeAttr(m.setupNote || '')}"
+                        placeholder="Sitz-/Polsternotiz..."
+                        onchange="App.updateMachineSetupNote('${m.id}', this.value)"
+                        class="flex-1 sm:w-48 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-[11px] font-mono text-amber-300 placeholder-zinc-600">
+                      <button onclick="App.promptRenameMachine('${m.id}')"
+                        title="Gerät umbenennen"
+                        class="bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-2 py-1 rounded text-[11px]">✎</button>
+                      <button onclick="App.deleteMachine('${m.id}')"
+                        title="Gerät löschen"
+                        class="bg-zinc-950 hover:bg-red-950/70 border border-zinc-800 hover:border-red-800 text-zinc-400 hover:text-red-400 px-2 py-1 rounded text-[11px]">🗑</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const splitList = document.getElementById('manageSplitsList');
+        splitList.innerHTML = this.state.splits.map((sp, spIdx) => `
+          <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-xs font-bold text-zinc-100">${this.escapeHtml(sp.name)}</h4>
+                <span class="text-[11px] text-zinc-500">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="App.moveSplitDay(${spIdx}, -1)" title="Nach oben"
+                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-1 rounded">↑</button>
+                <button onclick="App.moveSplitDay(${spIdx}, 1)" title="Nach unten"
+                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2 py-1 rounded">↓</button>
+                <button onclick="App.openAddExerciseToSplitModal('${sp.id}')"
+                  class="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2 py-1 rounded font-semibold">
+                  + Übung
+                </button>
+                <button onclick="App.deleteSplitDay('${sp.id}')"
+                  class="text-[11px] text-zinc-500 hover:text-red-400 px-1.5 py-1">✕</button>
+              </div>
+            </div>
+            ${sp.items.length > 0 ? `
+              <div class="space-y-1 pt-1">
+                ${sp.items.map((it, itIdx) => {
+                  const ex = this.state.exercises.find(e => e.id === it.exerciseId);
+                  return `
+                    <div class="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded px-2.5 py-1.5 text-xs">
+                      <span class="text-zinc-200">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
+                      <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-mono text-zinc-400">${this.escapeHtml(it.targetRepRange || `${it.targetSets} Sätze`)}</span>
+                        <button onclick="App.removeSplitItem(${spIdx}, ${itIdx})"
+                          class="text-zinc-500 hover:text-red-400 text-xs">✕</button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      },
+
+      promptCreateExercise(addToWorkoutAfter = false) {
+        const name = prompt('Name der neuen Übung:');
+        if (!name || !name.trim()) return;
+        const machineName = prompt('Erstes Standard-Gerät für diese Übung (z.B. "Gym80 Maschine" oder "Kabelturm A"):', 'Standard-Gerät') || 'Standard-Gerät';
+        const exId = this.uid('ex');
+        const machId = this.uid('m');
+
+        this.state.exercises.push({ id: exId, name: name.trim() });
+        this.state.machines.push({ id: machId, exerciseId: exId, name: machineName.trim(), setupNote: '' });
+        this.persistAll();
+        this.populateAnalyticsFilters();
+
+        if (addToWorkoutAfter) {
+          this.addExerciseToActiveDraft(exId);
+        } else {
+          this.renderManageTab();
+        }
+        this.showToast(`Übung "${name.trim()}" erstellt`);
+      },
+
+      promptRenameExercise(exerciseId) {
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        if (!ex) return;
+        const next = prompt('Neuer Name der Übung:', ex.name);
+        if (!next || !next.trim()) return;
+        ex.name = next.trim();
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+        this.populateAnalyticsFilters();
+      },
+
+      promptAddMachine(exerciseId) {
+        const name = prompt('Name des spezifischen Geräts (z.B. "Latzug - Turm A (schwer)"):');
+        if (!name || !name.trim()) return;
+        const note = prompt('Sitz-/Polstereinstellung (optional):', '') || '';
+        this.state.machines.push({
+          id: this.uid('m'),
+          exerciseId,
+          name: name.trim(),
+          setupNote: note.trim()
+        });
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+        this.populateAnalyticsFilters();
+      },
+
+      promptRenameMachine(machineId) {
+        const m = this.state.machines.find(x => x.id === machineId);
+        if (!m) return;
+        const next = prompt('Gerätename bearbeiten:', m.name);
+        if (!next || !next.trim()) return;
+        m.name = next.trim();
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+        this.populateAnalyticsFilters();
+      },
+
+      promptCreateSplitDay() {
+        const name = prompt('Name des neuen Trainingstags (z.B. "Samstag – Weakpoints"):');
+        if (!name || !name.trim()) return;
+        this.state.splits.push({
+          id: this.uid('day'),
+          order: this.state.splits.length + 1,
+          name: name.trim(),
+          isRest: false,
+          items: []
+        });
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+      },
+
+      deleteSplitDay(splitId) {
+        if (this.state.splits.length <= 1) {
+          alert('Mindestens ein Tag muss im Plan verbleiben.');
+          return;
+        }
+        if (!confirm('Diesen Trainingstag aus dem Plan entfernen?')) return;
+        this.state.splits = this.state.splits.filter(s => s.id !== splitId);
+        if (this.state.activeSplitId === splitId) {
+          this.state.activeSplitId = this.state.splits[0].id;
+          this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        }
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+      },
+
+      openAddExerciseToSplitModal(splitId) {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+        title.textContent = 'Übung zum Split-Tag hinzufügen';
+
+        body.innerHTML = this.state.exercises.map(ex => `
+          <button onclick="App.addExerciseToSplitDay('${splitId}', '${ex.id}')"
+            class="w-full text-left bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs font-semibold text-zinc-100 flex items-center justify-between">
+            <span>${this.escapeHtml(ex.name)}</span>
+            <span class="text-emerald-400 font-mono">+</span>
+          </button>
+        `).join('');
+        modal.classList.remove('hidden');
+      },
+
+      addExerciseToSplitDay(splitId, exerciseId) {
+        const split = this.state.splits.find(s => s.id === splitId);
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        if (!split || !ex) return;
+        const setsStr = prompt('Ziel-Satzanzahl (z.B. 2 oder 3):', '2') || '2';
+        const targetSets = Math.max(1, parseInt(setsStr, 10) || 2);
+        const machines = this.getMachinesForExercise(exerciseId);
+
+        split.isRest = false;
+        split.items.push({
+          exerciseId,
+          labelOverride: ex.name,
+          targetSets,
+          targetRepRange: `${targetSets} Sätze`,
+          defaultMachineId: machines[0].id
+        });
+
+        if (this.state.activeSplitId === splitId) {
+          this.state.activeDraft = this.buildDraftForSplit(splitId);
+        }
+        this.persistAll();
+        this.closeModal();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+      },
+
+      removeSplitItem(splitIdx, itemIdx) {
+        const sp = this.state.splits[splitIdx];
+        if (!sp) return;
+        sp.items.splice(itemIdx, 1);
+        if (this.state.activeSplitId === sp.id) {
+          this.state.activeDraft = this.buildDraftForSplit(sp.id);
+        }
+        this.persistAll();
+        this.renderManageTab();
+        this.renderWorkoutTab();
+      },
+
+      closeModal() {
+        document.getElementById('modalOverlay').classList.add('hidden');
+      },
+
+      /***********************************************************************
+       * 14. BACKUP (JSON EXPORT / IMPORT) & DEMO SEEDER
+       ***********************************************************************/
+      exportDatabaseJson() {
+        const payload = {
+          app: 'IRONLOG_GYM_TRACKER',
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          data: {
+            exercises: this.state.exercises,
+            machines: this.state.machines,
+            splits: this.state.splits,
+            sessions: this.state.sessions
+          }
+        };
+        this.triggerDownloadFile(`ironlog_backup_${this.todayIso()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+        this.showToast('JSON-Backup heruntergeladen');
+      },
+
+      importDatabaseJson(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const parsed = JSON.parse(e.target.result);
+            const data = parsed.data || parsed;
+            if (!Array.isArray(data.exercises) || !Array.isArray(data.machines) || !Array.isArray(data.splits) || !Array.isArray(data.sessions)) {
+              alert('Ungültiges Backup-Format: Pflichtfelder fehlen.');
+              return;
+            }
+            this.state.exercises = data.exercises;
+            this.state.machines = data.machines;
+            this.state.splits = data.splits;
+            this.state.sessions = data.sessions;
+            this.sortSplits();
+            this.sortSessions();
+            this.state.activeSplitId = this.state.splits[0]?.id || '';
+            this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+            await this.persistAll();
+            this.populateAnalyticsFilters();
+            this.renderWorkoutTab();
+            this.showToast(`Backup importiert (${this.state.sessions.length} Sessions)`);
+          } catch (err) {
+            alert('Fehler beim Lesen der JSON-Datei: ' + err.message);
+          } finally {
+            event.target.value = '';
+          }
+        };
+        reader.readAsText(file);
+      },
+
+      async seedDemoSessions() {
+        const today = new Date();
+        const tzOffset = today.getTimezoneOffset() * 60000;
+        const demoSessions = [];
+
+        const weeksToSeed = [16, 12, 8, 5, 4, 3, 2, 1, 0];
+        weeksToSeed.forEach((week, idx) => {
+          const pushDate = new Date(today.getTime() - tzOffset - (week * 7 + 3) * 86400000).toISOString().slice(0, 10);
+          const pullDate = new Date(today.getTime() - tzOffset - (week * 7 + 2) * 86400000).toISOString().slice(0, 10);
+          const legsDate = new Date(today.getTime() - tzOffset - (week * 7 + 0) * 86400000).toISOString().slice(0, 10);
+
+          const prog = idx;
+
+          demoSessions.push({
+            id: this.uid('sess'),
+            date: pushDate,
+            timestamp: Date.now() - week * 100000,
+            splitId: 'day_mon_push',
+            splitName: 'Montag – Push',
+            entries: [
+              {
+                exerciseId: 'ex_shoulder_press',
+                machineId: 'm_sp_1',
+                sets: [
+                  { weight: 40, reps: 10, type: 'warmup', partials: 0, drops: [] },
+                  { weight: 65 + prog * 2.5, reps: 8 + (prog % 2), type: 'normal', partials: 1, drops: [] },
+                  { weight: 65 + prog * 2.5, reps: 7, type: 'normal', partials: 2, drops: [] }
+                ]
+              },
+              {
+                exerciseId: 'ex_lat_raise',
+                machineId: 'm_lr_1',
+                sets: [
+                  { weight: 10 + prog * 1.25, reps: 12, type: 'normal', partials: 2, drops: [] },
+                  {
+                    weight: 10 + prog * 1.25,
+                    reps: 10,
+                    type: 'dropset',
+                    partials: 0,
+                    drops: [{ weight: 7.5, reps: 8 }, { weight: 5, reps: 10 }]
+                  }
+                ]
+              },
+              {
+                exerciseId: 'ex_chest_press',
+                machineId: 'm_cp_1',
+                sets: [
+                  { weight: 80 + prog * 2.5, reps: 8, type: 'normal', partials: 0, drops: [] },
+                  { weight: 80 + prog * 2.5, reps: 7, type: 'normal', partials: 1, drops: [] }
+                ]
+              }
+            ]
+          });
+
+          demoSessions.push({
+            id: this.uid('sess'),
+            date: pullDate,
+            timestamp: Date.now() - week * 90000,
+            splitId: 'day_tue_pull',
+            splitName: 'Dienstag – Pull',
+            entries: [
+              {
+                exerciseId: 'ex_lat_pulldown',
+                machineId: 'm_lp_1',
+                sets: [
+                  { weight: 70 + prog * 2.5, reps: 9, type: 'normal', partials: 1, drops: [] },
+                  {
+                    weight: 70 + prog * 2.5,
+                    reps: 8,
+                    type: 'dropset',
+                    partials: 1,
+                    drops: [{ weight: 52.5, reps: 7 }]
+                  }
+                ]
+              },
+              {
+                exerciseId: 'ex_chest_row',
+                machineId: 'm_cr_1',
+                sets: [
+                  { weight: 55 + prog * 2.5, reps: 8, type: 'normal', partials: 0, drops: [] },
+                  { weight: 55 + prog * 2.5, reps: 8, type: 'normal', partials: 1, drops: [] }
+                ]
+              }
+            ]
+          });
+
+          demoSessions.push({
+            id: this.uid('sess'),
+            date: legsDate,
+            timestamp: Date.now() - week * 80000,
+            splitId: 'day_thu_legs',
+            splitName: 'Donnerstag – Beine',
+            entries: [
+              {
+                exerciseId: 'ex_squat_legpress',
+                machineId: 'm_sq_1',
+                sets: [
+                  { weight: 120, reps: 10, type: 'warmup', partials: 0, drops: [] },
+                  { weight: 190 + prog * 10, reps: 9, type: 'normal', partials: 0, drops: [] },
+                  { weight: 190 + prog * 10, reps: 8, type: 'normal', partials: 0, drops: [] }
+                ]
+              },
+              {
+                exerciseId: 'ex_seated_leg_curl',
+                machineId: 'm_slc_1',
+                sets: [
+                  { weight: 60 + prog * 2.5, reps: 10, type: 'normal', partials: 2, drops: [] },
+                  { weight: 60 + prog * 2.5, reps: 9, type: 'normal', partials: 2, drops: [] }
+                ]
+              }
+            ]
+          });
+        });
+
+        this.state.sessions.push(...demoSessions);
+        this.sortSessions();
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        await this.persistAll();
+        this.populateAnalyticsFilters();
+        this.renderWorkoutTab();
+        this.showToast('27 Demo-Sessions (über 4 Monate) geladen!');
+      },
+
+      async clearAllSessionsOnly() {
+        if (!confirm('Alle gespeicherten Trainingseinheiten löschen? Dein Plan, deine Übungen und Maschinen bleiben erhalten.')) return;
+        this.state.sessions = [];
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        await this.persistAll();
+        this.renderWorkoutTab();
+        this.showToast('Alle Sessions gelöscht');
+      },
+
+      async factoryResetDatabase() {
+        if (!confirm('KOMPLETTER WERKSRESET: Alle Sessions, eigene Maschinen und Plan-Änderungen unwiderruflich auf das Initial-Setup zurücksetzen?')) return;
+        this.state.exercises = JSON.parse(JSON.stringify(INITIAL_EXERCISES));
+        this.state.machines = JSON.parse(JSON.stringify(INITIAL_MACHINES));
+        this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
+        this.state.sessions = [];
+        this.sortSplits();
+        this.state.activeSplitId = this.detectTodaySplitId();
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+        await this.persistAll();
+        this.populateAnalyticsFilters();
+        this.switchTab('workout');
+        this.showToast('Datenbank auf Initial-Setup zurückgesetzt');
+      },
+
+      /***********************************************************************
+       * 15. NAVIGATION & REST TIMER
+       ***********************************************************************/
+      switchTab(tabName) {
+        this.state.currentTab = tabName;
+        ['workout', 'progression', 'analytics', 'history', 'manage', 'backup'].forEach(t => {
+          const el = document.getElementById(`tab-${t}`);
+          if (el) el.classList.toggle('hidden', t !== tabName);
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          const isCurrent = btn.getAttribute('data-tab') === tabName;
+          btn.className = `nav-btn py-2.5 flex flex-col items-center justify-center text-[11px] font-semibold border-t-2 ${
+            isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400'
+          }`;
+        });
+
+        if (tabName === 'workout') this.renderWorkoutTab();
+        if (tabName === 'progression') this.renderProgressionTab();
+        if (tabName === 'analytics') {
+          this.populateAnalyticsFilters();
+          this.renderAnalytics();
+        }
+        if (tabName === 'history') this.renderHistoryTab();
+        if (tabName === 'manage') this.renderManageTab();
+      },
+
+      startRestTimer(seconds) {
+        clearInterval(this.restTimerInterval);
+        this.restTimerRemaining = seconds;
+        const badge = document.getElementById('restTimerBadge');
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+        this.updateRestTimerDisplay();
+
+        this.restTimerInterval = setInterval(() => {
+          this.restTimerRemaining--;
+          if (this.restTimerRemaining <= 0) {
+            this.stopRestTimer();
+            this.showToast('⏱ Satzpause abgelaufen – nächster Satz!');
+          } else {
+            this.updateRestTimerDisplay();
+          }
+        }, 1000);
+      },
+
+      updateRestTimerDisplay() {
+        const mins = String(Math.floor(this.restTimerRemaining / 60)).padStart(2, '0');
+        const secs = String(this.restTimerRemaining % 60).padStart(2, '0');
+        document.getElementById('restTimerDisplay').textContent = `${mins}:${secs}`;
+      },
+
+      stopRestTimer() {
+        clearInterval(this.restTimerInterval);
+        const badge = document.getElementById('restTimerBadge');
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      },
+
+      escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      },
+
+      escapeAttr(str) {
+        return String(str ?? '').replace(/"/g, '&quot;');
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => App.init());
+  </script>
+</body>
+</html>
