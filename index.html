@@ -25,10 +25,6 @@
               card: '#0b0b0e',
               surface: '#121216',
               border: '#222228'
-            },
-            zinc: {
-              925: '#101014',
-              950: '#070709'
             }
           }
         }
@@ -88,17 +84,23 @@
 
     <!-- TAB 1: WORKOUT -->
     <section id="tab-workout" class="space-y-3.5">
-      <!-- Split Selector Bar -->
+      <!-- Split Selector Bar with Dynamic Dates -->
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3">
         <div class="flex items-center justify-between mb-2.5">
           <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Trainingstag / Datum</label>
-          <input type="date" id="workoutDateInput" onchange="App.updateActiveWorkoutDate(this.value)"
+          <input type="date" id="workoutDateInput" onchange="App.onManualDateChange(this.value)"
             class="bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
         </div>
         <div id="splitSelectorButtons" class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
       </div>
 
-      <!-- Active Exercises Container -->
+      <!-- Editing Existing Session Banner -->
+      <div id="editingSessionBanner" class="hidden bg-emerald-950/40 border border-emerald-500/70 rounded-xl p-3 flex items-center justify-between text-xs">
+        <span class="text-emerald-300 font-bold" id="editingSessionText">✏️ Bearbeite gespeicherte Einheit</span>
+        <button onclick="App.cancelSessionEdit()" class="text-zinc-400 active:text-zinc-100 font-bold px-2 py-1 bg-black rounded border border-zinc-800">Abbrechen</button>
+      </div>
+
+      <!-- Active Exercises Container (Mit Kategorie-Trennern) -->
       <div id="workoutExercisesContainer" class="space-y-3.5"></div>
 
       <!-- Quick Add Exercise & Finish Buttons -->
@@ -146,25 +148,19 @@
           </div>
           <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0 WS</span>
         </div>
-        <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1"></div>
+        <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
       </div>
 
       <!-- SUB-VIEW 2A: CALENDAR -->
       <div id="stats-view-calendar" class="space-y-3.5">
         <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3.5">
           <div class="flex items-center justify-between">
-            <button onclick="App.changeCalendarMonth(-1)"
-              class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">
-              ◀
-            </button>
+            <button onclick="App.changeCalendarMonth(-1)" class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">◀</button>
             <div class="text-center">
               <h3 id="calendarMonthLabel" class="text-sm font-extrabold uppercase tracking-wider text-zinc-100">Monat</h3>
-              <p class="text-[11px] text-zinc-400">Tippe auf einen Tag zum Nachtragen / Bearbeiten</p>
+              <p class="text-[11px] text-zinc-400">Tippe auf einen Tag zum Bearbeiten / Nachtragen</p>
             </div>
-            <button onclick="App.changeCalendarMonth(1)"
-              class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">
-              ▶
-            </button>
+            <button onclick="App.changeCalendarMonth(1)" class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">▶</button>
           </div>
 
           <div class="grid grid-cols-3 gap-2">
@@ -245,7 +241,6 @@
             <canvas id="progressionChartCanvas"></canvas>
             <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-oled-card/95">
               <p class="text-sm text-zinc-300 font-bold">Noch keine Arbeitssätze vorhanden.</p>
-              <p class="text-xs text-zinc-500 mt-1">Schließe ein Training ab oder lade Demo-Daten unter „⚙️ Backup".</p>
             </div>
           </div>
         </div>
@@ -345,27 +340,27 @@
       <div id="historySessionsContainer" class="space-y-3"></div>
     </section>
 
-    <!-- TAB 4: PLAN & GERÄTE -->
+    <!-- TAB 4: PLAN & GERÄTE (NACH KATEGORIEN & A-Z SORTIERT) -->
     <section id="tab-manage" class="hidden space-y-5">
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-sm font-extrabold text-zinc-100">Übungen & Geräte</h2>
-            <p class="text-xs text-zinc-400">Maschinen verwalten, Pins / kg wählen & Notizen</p>
+            <p class="text-xs text-zinc-400">Kategorie wählen & A–Z sortiert</p>
           </div>
-          <button onclick="App.promptCreateExercise()"
+          <button onclick="App.openCreateExerciseModal()"
             class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs">
             + Neue Übung
           </button>
         </div>
-        <div id="manageExercisesList" class="space-y-2.5"></div>
+        <div id="manageExercisesGroupedContainer" class="space-y-4"></div>
       </div>
 
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-extrabold text-zinc-100">Trainingsplan / Split (Mo – So)</h2>
-            <p class="text-xs text-zinc-400">Tage sortieren oder Übungen zuordnen</p>
+            <h2 class="text-sm font-extrabold text-zinc-100">Trainingsplan / Split (Vorlage)</h2>
+            <p class="text-xs text-zinc-400">Übungen sortieren (↑/↓) oder dauerhaft austauschen (⇄)</p>
           </div>
           <button onclick="App.promptCreateSplitDay()"
             class="touch-target bg-black active:bg-zinc-800 text-zinc-100 font-bold px-3.5 py-2 rounded-xl text-xs border border-zinc-700">
@@ -395,7 +390,7 @@
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
         <h2 class="text-sm font-extrabold text-zinc-100">JSON-Backup (Export & Import)</h2>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Alle Daten liegen lokal in deiner <code class="text-emerald-400">IndexedDB</code>. Exportiere ab und zu ein Backup in deinen Download-Ordner.
+          Alle Daten liegen lokal in deiner <code class="text-emerald-400">IndexedDB</code>.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
           <button onclick="App.exportDatabaseJson()"
@@ -445,7 +440,7 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toastBanner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap"></div>
 
-  <!-- BOTTOM NAVIGATION (4 TABS) -->
+  <!-- BOTTOM NAVIGATION -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur border-t border-zinc-800/90 pb-[env(safe-area-inset-bottom)]">
     <div class="max-w-3xl mx-auto grid grid-cols-4">
       <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-extrabold border-t-2 border-emerald-500 text-emerald-400">
@@ -468,58 +463,40 @@
   </nav>
 
   <script>
-    /*************************************************************************
-     * 1. INITIAL BASE CATALOG (INCL. UNIT: 'kg' | 'pin')
-     *************************************************************************/
+    const CATEGORIES = [
+      { id: 'Brust', name: 'Brust', icon: '🛡️' },
+      { id: 'Rücken', name: 'Rücken', icon: '🦅' },
+      { id: 'Schultern', name: 'Schultern', icon: '💥' },
+      { id: 'Bizeps', name: 'Bizeps', icon: '💪' },
+      { id: 'Trizeps', name: 'Trizeps', icon: '⚡' },
+      { id: 'Beine', name: 'Beine', icon: '🦵' },
+      { id: 'Po', name: 'Po', icon: '🍑' },
+      { id: 'Bauch', name: 'Bauch', icon: '🍫' },
+      { id: 'Sonstiges', name: 'Sonstiges', icon: '⚙️' }
+    ];
+
     const INITIAL_EXERCISES = [
-      { id: 'ex_shoulder_press', name: 'Schulterdrücken Maschine' },
-      { id: 'ex_lat_raise', name: 'Seitheben Kabel (oder Maschine)' },
-      { id: 'ex_oh_triceps', name: 'Overhead Trizeps Extensions' },
-      { id: 'ex_triceps_pushdown', name: 'Trizeps Pushdowns' },
-      { id: 'ex_chest_press', name: 'Brustpresse' },
-      { id: 'ex_lat_pulldown', name: 'Latzug' },
-      { id: 'ex_chest_row', name: 'Brustgestütztes Rudern' },
-      { id: 'ex_rev_pec_deck', name: 'Reverse Pec Deck' },
-      { id: 'ex_preacher_curls', name: 'Preacher Curls' },
-      { id: 'ex_hammer_curls', name: 'Hammer Curls' },
-      { id: 'ex_seated_leg_curl', name: 'Beinbeuger sitzend' },
-      { id: 'ex_squat_legpress', name: 'Squats (oder Beinpresse)' },
-      { id: 'ex_rdl', name: 'Romanian Deadlift' },
-      { id: 'ex_leg_extension', name: 'Beinstrecker' },
-      { id: 'ex_adductor', name: 'Adduktoren-Maschine' },
-      { id: 'ex_abductor', name: 'Abduktoren-Maschine' },
-      { id: 'ex_calf_raise', name: 'Wadenheben' },
-      { id: 'ex_facepulls', name: 'Facepulls (oder hintere Schulter am Kabel)' },
-      { id: 'ex_single_triceps_pushdown', name: 'Single-Arm Trizeps Pushdowns' },
-      { id: 'ex_incline_hammer_curls', name: 'Incline Hammer Curls' }
+      { id: 'ex_shoulder_press', name: 'Schulterdrücken Maschine', category: 'Schultern' },
+      { id: 'ex_lat_raise', name: 'Seitheben Kabel (oder Maschine)', category: 'Schultern' },
+      { id: 'ex_oh_triceps', name: 'Overhead Trizeps Extensions', category: 'Trizeps' },
+      { id: 'ex_triceps_pushdown', name: 'Trizeps Pushdowns', category: 'Trizeps' },
+      { id: 'ex_chest_press', name: 'Brustpresse', category: 'Brust' },
+      { id: 'ex_lat_pulldown', name: 'Latzug', category: 'Rücken' },
+      { id: 'ex_chest_row', name: 'Brustgestütztes Rudern', category: 'Rücken' },
+      { id: 'ex_rev_pec_deck', name: 'Reverse Pec Deck', category: 'Schultern' },
+      { id: 'ex_preacher_curls', name: 'Preacher Curls', category: 'Bizeps' },
+      { id: 'ex_hammer_curls', name: 'Hammer Curls', category: 'Bizeps' },
+      { id: 'ex_seated_leg_curl', name: 'Beinbeuger sitzend', category: 'Beine' },
+      { id: 'ex_squat_legpress', name: 'Squats (oder Beinpresse)', category: 'Beine' },
+      { id: 'ex_rdl', name: 'Romanian Deadlift', category: 'Beine' },
+      { id: 'ex_leg_extension', name: 'Beinstrecker', category: 'Beine' },
+      { id: 'ex_adductor', name: 'Adduktoren-Maschine', category: 'Beine' },
+      { id: 'ex_abductor', name: 'Abduktoren-Maschine', category: 'Po' },
+      { id: 'ex_calf_raise', name: 'Wadenheben', category: 'Beine' },
+      { id: 'ex_facepulls', name: 'Facepulls am Kabel', category: 'Schultern' },
+      { id: 'ex_single_triceps_pushdown', name: 'Single-Arm Trizeps Pushdowns', category: 'Trizeps' },
+      { id: 'ex_incline_hammer_curls', name: 'Incline Hammer Curls', category: 'Bizeps' }
     ];
-
-    const MUSCLE_GROUP_ORDER = [
-      'Brust', 'Rücken', 'Schultern', 'Trizeps', 'Bizeps', 'Quads', 'Beinbeuger', 'Waden', 'Adduktoren/Abduktoren'
-    ];
-
-    const EXERCISE_MUSCLE_MAP = {
-      ex_chest_press: 'Brust',
-      ex_lat_pulldown: 'Rücken',
-      ex_chest_row: 'Rücken',
-      ex_shoulder_press: 'Schultern',
-      ex_lat_raise: 'Schultern',
-      ex_rev_pec_deck: 'Schultern',
-      ex_facepulls: 'Schultern',
-      ex_oh_triceps: 'Trizeps',
-      ex_triceps_pushdown: 'Trizeps',
-      ex_single_triceps_pushdown: 'Trizeps',
-      ex_preacher_curls: 'Bizeps',
-      ex_hammer_curls: 'Bizeps',
-      ex_incline_hammer_curls: 'Bizeps',
-      ex_squat_legpress: 'Quads',
-      ex_leg_extension: 'Quads',
-      ex_seated_leg_curl: 'Beinbeuger',
-      ex_rdl: 'Beinbeuger',
-      ex_calf_raise: 'Waden',
-      ex_adductor: 'Adduktoren/Abduktoren',
-      ex_abductor: 'Adduktoren/Abduktoren'
-    };
 
     const INITIAL_MACHINES = [
       { id: 'm_sp_1', exerciseId: 'ex_shoulder_press', name: 'Gym80 Schulterpresse (Pin)', setupNote: 'Sitz auf 4, Griff eng', unit: 'pin' },
@@ -609,7 +586,7 @@
         items: [
           { exerciseId: 'ex_shoulder_press', labelOverride: 'Schulterdrücken Maschine', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_sp_1' },
           { exerciseId: 'ex_lat_raise', labelOverride: 'Seitheben Kabel (oder Maschine)', targetSets: 3, targetRepRange: '2–3 WS', defaultMachineId: 'm_lr_1' },
-          { exerciseId: 'ex_facepulls', labelOverride: 'Facepulls (oder hintere Schulter am Kabel)', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_fp_1' },
+          { exerciseId: 'ex_facepulls', labelOverride: 'Facepulls am Kabel', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_fp_1' },
           { exerciseId: 'ex_oh_triceps', labelOverride: 'Overhead Trizeps Extensions', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_oht_1' },
           { exerciseId: 'ex_single_triceps_pushdown', labelOverride: 'Single-Arm Trizeps Pushdowns', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_satp_1' },
           { exerciseId: 'ex_preacher_curls', labelOverride: 'Preacher Curls', targetSets: 2, targetRepRange: '2 WS', defaultMachineId: 'm_pc_1' },
@@ -625,9 +602,6 @@
       }
     ];
 
-    /*************************************************************************
-     * 2. INDEXEDDB STORAGE ENGINE
-     *************************************************************************/
     const StorageEngine = {
       dbName: 'GymProgressDB',
       dbVersion: 1,
@@ -701,9 +675,6 @@
       }
     };
 
-    /*************************************************************************
-     * 3. CORE APPLICATION STATE & LOGIC
-     *************************************************************************/
     const App = {
       state: {
         exercises: [],
@@ -731,7 +702,7 @@
           sessionStorage.removeItem('ironlog_update_msg');
         }
 
-        const currentVer = localStorage.getItem('ironlog_version') || 'v1.5';
+        const currentVer = localStorage.getItem('ironlog_version') || 'v1.7';
         const verLabel = document.getElementById('currentVersionLabel');
         if (verLabel) verLabel.textContent = currentVer;
 
@@ -753,15 +724,24 @@
           this.state.splits = await StorageEngine.getAll('splits');
           this.state.sessions = await StorageEngine.getAll('sessions');
 
-          // Ensure unit property exists
-          let machineUpdated = false;
+          let needsUpdate = false;
+          this.state.exercises.forEach(ex => {
+            if (!ex.category) {
+              ex.category = this.inferCategory(ex.name);
+              needsUpdate = true;
+            }
+          });
           this.state.machines.forEach(m => {
             if (!m.unit) {
               m.unit = (m.name.toLowerCase().includes('pin') || m.name.toLowerCase().includes('kabel')) ? 'pin' : 'kg';
-              machineUpdated = true;
+              needsUpdate = true;
             }
           });
-          if (machineUpdated) StorageEngine.putAll('machines', this.state.machines);
+
+          if (needsUpdate) {
+            await StorageEngine.putAll('exercises', this.state.exercises);
+            await StorageEngine.putAll('machines', this.state.machines);
+          }
 
           this.sortSplits();
           await StorageEngine.putAll('splits', this.state.splits);
@@ -784,6 +764,23 @@
         this.populateAnalyticsFilters();
       },
 
+      inferCategory(name) {
+        const n = String(name || '').toLowerCase();
+        if (n.includes('schulter') || n.includes('seitheben') || n.includes('facepull') || n.includes('overhead press') || n.includes('military')) return 'Schultern';
+        if (n.includes('brust') || n.includes('chest') || n.includes('bankdrück') || n.includes('fly') || n.includes('pec')) return 'Brust';
+        if (n.includes('lat') || n.includes('ruder') || n.includes('row') || n.includes('pull') || n.includes('klimm') || n.includes('rücken')) return 'Rücken';
+        if (n.includes('trizeps') || n.includes('triceps') || n.includes('pushdown') || n.includes('dip') || n.includes('french')) return 'Trizeps';
+        if (n.includes('bizeps') || n.includes('biceps') || n.includes('curl')) return 'Bizeps';
+        if (n.includes('po') || n.includes('glute') || n.includes('hip thrust') || n.includes('abdukt')) return 'Po';
+        if (n.includes('bauch') || n.includes('abs') || n.includes('crunch') || n.includes('core')) return 'Bauch';
+        if (n.includes('squat') || n.includes('bein') || n.includes('leg') || n.includes('quad') || n.includes('hamstring') || n.includes('wade') || n.includes('calf') || n.includes('addukt') || n.includes('hack')) return 'Beine';
+        return 'Sonstiges';
+      },
+
+      getCategoryObj(categoryName) {
+        return CATEGORIES.find(c => c.id === categoryName) || { id: 'Sonstiges', name: categoryName || 'Sonstiges', icon: '⚙️' };
+      },
+
       async checkForUpdates() {
         this.showToast('🔍 Prüfe auf Updates...');
         try {
@@ -792,7 +789,7 @@
           const text = await res.text();
           const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
           const remoteVersion = match ? match[1].replace('ironlog-', '').replace('offline-', '') : 'Unbekannt';
-          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.5';
+          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.7';
 
           if (remoteVersion !== currentVersion) {
             if (confirm(`Neues Update gefunden!\n\nAktuell: ${currentVersion}\nNeu: ${remoteVersion}\n\nJetzt installieren und neu laden?`)) {
@@ -1125,7 +1122,7 @@
       },
 
       /***********************************************************************
-       * 5. EXERCISE SWAP DIRECTLY IN THE WORKOUT CARD
+       * 5. EXERCISE SWAP IN ACTIVE WORKOUT (DOES NOT TOUCH TEMPLATE)
        ***********************************************************************/
       openSwapExerciseModal(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
@@ -1137,21 +1134,39 @@
         const body = document.getElementById('modalBody');
 
         title.textContent = `Übung austauschen`;
-        body.innerHTML = `
-          <p class="text-xs text-zinc-400 mb-2">Tausche „${this.escapeHtml(curEx?.name || 'Übung')}" für das heutige Training aus:</p>
-          <div class="space-y-1.5">
-            ${this.state.exercises.map(ex => {
-              const isCurrent = ex.id === entry.exerciseId;
-              return `
-                <button onclick="App.swapExerciseInDraft(${entryIdx}, '${ex.id}')"
-                  class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-zinc-800 text-zinc-100'} rounded-xl px-3.5 py-3 text-xs font-bold flex items-center justify-between">
-                  <span>${this.escapeHtml(ex.name)}</span>
-                  <span class="text-xs font-mono opacity-60">${this.escapeHtml(this.getMuscleGroupForExercise(ex.id))}</span>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        `;
+
+        let html = `<p class="text-xs text-zinc-400 mb-2.5">Tausche „${this.escapeHtml(curEx?.name || 'Übung')}" für das heutige Training aus:</p>`;
+
+        CATEGORIES.forEach(cat => {
+          const matching = this.state.exercises
+            .filter(e => (e.category || this.inferCategory(e.name)) === cat.id)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          if (matching.length === 0) return;
+
+          html += `
+            <div class="pt-2">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+                <span>${cat.icon}</span>
+                <span>${cat.name}</span>
+              </div>
+              <div class="space-y-1">
+                ${matching.map(ex => {
+                  const isCurrent = ex.id === entry.exerciseId;
+                  return `
+                    <button onclick="App.swapExerciseInDraft(${entryIdx}, '${ex.id}')"
+                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-zinc-800 text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
+                      <span>${this.escapeHtml(ex.name)}</span>
+                      <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        body.innerHTML = html;
         modal.classList.remove('hidden');
       },
 
@@ -1202,6 +1217,7 @@
           StorageEngine.putAll('machines', this.state.machines);
           list = [fallback];
         }
+        list.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         return list;
       },
 
@@ -1273,14 +1289,46 @@
         return null;
       },
 
-      selectSplit(splitId) {
+      // Calculate the specific date for each split in the currently selected week
+      computeDateForSplitInCurrentWeek(split, activeDateStr) {
+        const d = new Date(activeDateStr + 'T12:00:00');
+        const dayOfWeek = d.getDay();
+        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() + diffToMon);
+
+        const rank = this.getWeekdayRank(split);
+        const targetDayOffset = (rank >= 1 && rank <= 7) ? (rank - 1) : 0;
+        const splitDate = new Date(monday);
+        splitDate.setDate(monday.getDate() + targetDayOffset);
+
+        const tzOffset = splitDate.getTimezoneOffset() * 60000;
+        const iso = new Date(splitDate.getTime() - tzOffset).toISOString().slice(0, 10);
+        const dayNum = String(splitDate.getDate()).padStart(2, '0');
+        const monNum = String(splitDate.getMonth() + 1).padStart(2, '0');
+        return {
+          iso,
+          short: `${dayNum}.${monNum}.`
+        };
+      },
+
+      onManualDateChange(newVal) {
+        if (!newVal) return;
+        if (this.state.activeDraft) {
+          this.state.activeDraft.date = newVal;
+        }
+        this.saveDraft();
+        this.renderWorkoutTab();
+      },
+
+      selectSplit(splitId, targetDateIso = null) {
         const hasCompletedSets = this.state.activeDraft?.entries?.some(e => e.sets.some(s => s.completed));
         if (hasCompletedSets && splitId !== this.state.activeSplitId) {
           if (!confirm('Du hast bereits abgehakte Sätze. Tag wechseln und aktuellen Entwurf verwerfen?')) return;
         }
-        const currentDate = this.state.activeDraft?.date || this.todayIso();
+        const activeDate = targetDateIso || this.state.activeDraft?.date || this.todayIso();
         this.state.activeSplitId = splitId;
-        this.state.activeDraft = this.buildDraftForSplit(splitId, currentDate);
+        this.state.activeDraft = this.buildDraftForSplit(splitId, activeDate);
         this.saveDraft();
         this.renderWorkoutTab();
       },
@@ -1294,15 +1342,18 @@
         this.showToast('Entwurf zurückgesetzt');
       },
 
-      updateActiveWorkoutDate(val) {
-        if (!this.state.activeDraft || !val) return;
-        this.state.activeDraft.date = val;
+      cancelSessionEdit() {
+        if (this.state.activeDraft?.editingSessionId) {
+          delete this.state.activeDraft.editingSessionId;
+        }
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
         this.saveDraft();
         this.renderWorkoutTab();
+        this.showToast('Bearbeitung beendet');
       },
 
       /***********************************************************************
-       * 7. WORKOUT UI RENDERING (SWAP BUTTON & PIN SUPPORT INCLUDED)
+       * 7. WORKOUT UI RENDERING (WITH DATE ON DAYS & CATEGORY DIVIDERS)
        ***********************************************************************/
       toggleExerciseCollapse(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
@@ -1331,17 +1382,39 @@
         const dateInput = document.getElementById('workoutDateInput');
         if (dateInput) dateInput.value = activeDate;
 
+        // Editing Banner
+        const editBanner = document.getElementById('editingSessionBanner');
+        const editText = document.getElementById('editingSessionText');
+        if (draft?.editingSessionId) {
+          editBanner.classList.remove('hidden');
+          editText.textContent = `✏️ Bearbeite gespeicherte Einheit vom ${draft.date}`;
+        } else {
+          editBanner.classList.add('hidden');
+        }
+
+        // Split Selector Buttons with short dates (e.g. "Mittwoch (14.10.) – Pause")
         const btnBar = document.getElementById('splitSelectorButtons');
         btnBar.innerHTML = this.state.splits.map(s => {
           const active = s.id === this.state.activeSplitId;
+          const { iso, short } = this.computeDateForSplitInCurrentWeek(s, activeDate);
+
+          // Format clean label with date: e.g. "Montag (12.10.) – Push"
+          let displayLabel = s.name;
+          if (displayLabel.includes(' – ')) {
+            const parts = displayLabel.split(' – ');
+            displayLabel = `${parts[0]} (${short}) – ${parts[1]}`;
+          } else {
+            displayLabel = `${displayLabel} (${short})`;
+          }
+
           return `
-            <button onclick="App.selectSplit('${s.id}')"
+            <button onclick="App.selectSplit('${s.id}', '${iso}')"
               class="touch-target shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-extrabold border transition-none ${
                 active
                   ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
                   : 'bg-black text-zinc-300 border-zinc-800 active:bg-zinc-900'
               }">
-              ${this.escapeHtml(s.name)}
+              ${this.escapeHtml(displayLabel)}
             </button>
           `;
         }).join('');
@@ -1349,12 +1422,12 @@
         const container = document.getElementById('workoutExercisesContainer');
         const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
         const finishBtn = document.getElementById('finishWorkoutMainBtn');
-        const alreadyLoggedToday = this.state.sessions.some(s => s.date === activeDate);
+        const alreadyLoggedToday = this.state.sessions.some(s => s.date === activeDate && (!draft?.editingSessionId || s.id !== draft.editingSessionId));
 
         if (currentSplit && currentSplit.isRest && (!draft.entries || draft.entries.length === 0)) {
           if (finishBtn) {
             finishBtn.textContent = alreadyLoggedToday
-              ? `✓ Pausentag am ${activeDate} bereits abgehakt (nochmal speichern)`
+              ? `✓ Pausentag am ${activeDate} bereits abgehakt (aktualisieren)`
               : `🛋️ Pausentag (${activeDate}) im Kalender abhaken`;
           }
           container.innerHTML = `
@@ -1372,7 +1445,9 @@
         }
 
         if (finishBtn) {
-          finishBtn.textContent = `✓ Training abschließen & im Kalender abhaken`;
+          finishBtn.textContent = draft?.editingSessionId
+            ? `✓ Änderungen für ${draft.date} speichern`
+            : `✓ Training abschließen & im Kalender abhaken`;
         }
 
         if (!draft.entries || draft.entries.length === 0) {
@@ -1384,8 +1459,28 @@
           return;
         }
 
-        container.innerHTML = draft.entries.map((entry, entryIdx) => {
+        let lastCategoryInList = null;
+        const htmlParts = [];
+
+        draft.entries.forEach((entry, entryIdx) => {
           const exercise = this.state.exercises.find(ex => ex.id === entry.exerciseId) || { name: 'Unbekannte Übung' };
+          const categoryName = exercise.category || this.inferCategory(exercise.name);
+          const catObj = this.getCategoryObj(categoryName);
+
+          // Kategorie-Trenner im Training
+          if (categoryName !== lastCategoryInList) {
+            htmlParts.push(`
+              <div class="flex items-center gap-2 pt-3 pb-0.5">
+                <span class="text-xs font-extrabold tracking-wider uppercase text-emerald-400 bg-oled-surface border border-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                  <span>${catObj.icon}</span>
+                  <span>${catObj.name}</span>
+                </span>
+                <div class="h-px bg-zinc-800 flex-1"></div>
+              </div>
+            `);
+            lastCategoryInList = categoryName;
+          }
+
           const displayTitle = entry.labelOverride || exercise.name;
           const machines = this.getMachinesForExercise(entry.exerciseId);
           const selectedMachine = machines.find(m => m.id === entry.machineId) || machines[0];
@@ -1425,9 +1520,8 @@
             `;
           }
 
-          return `
+          htmlParts.push(`
             <div class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/80' : 'border-zinc-800/90'} rounded-2xl overflow-hidden">
-              <!-- Exercise Header -->
               <div class="p-3.5 bg-zinc-950/60 ${isCollapsed ? '' : 'border-b border-zinc-800/80'} space-y-2.5">
                 <div class="flex items-center justify-between gap-2">
                   <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
@@ -1446,8 +1540,7 @@
                   </button>
 
                   <div class="flex items-center gap-1 shrink-0">
-                    <!-- Quick Swap Exercise Button -->
-                    <button type="button" onclick="App.openSwapExerciseModal(${entryIdx})" title="Übung austauschen"
+                    <button type="button" onclick="App.openSwapExerciseModal(${entryIdx})" title="Übung für heute austauschen"
                       class="touch-target px-2.5 py-1 bg-black active:bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1">
                       <span>⇄</span>
                       <span>Tauschen</span>
@@ -1462,7 +1555,6 @@
                 </div>
 
                 ${!isCollapsed ? `
-                  <!-- Machine Dropdown + Unit Toggle (kg / Pin) + Setup Note -->
                   <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                     <div class="sm:col-span-6 flex gap-1.5">
                       <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
@@ -1474,7 +1566,6 @@
                         `).join('')}
                       </select>
 
-                      <!-- Quick Unit Toggle Pill -->
                       <button type="button" onclick="App.toggleMachineUnit('${selectedMachine.id}', ${entryIdx})"
                         class="touch-target px-3 py-2 bg-black active:bg-zinc-800 border ${
                           isPin ? 'border-purple-600/80 text-purple-300' : 'border-zinc-700 text-zinc-300'
@@ -1493,7 +1584,6 @@
                     </div>
                   </div>
 
-                  <!-- Last Session Reference + Copy Button -->
                   <div class="bg-black/80 border border-zinc-800/90 rounded-xl p-2.5">
                     ${lastPerfHtml}
                   </div>
@@ -1505,7 +1595,6 @@
                 `}
               </div>
 
-              <!-- Sets Area (Dynamic Column: kg vs. Pin) -->
               ${!isCollapsed ? `
                 <div class="p-3.5 space-y-2.5">
                   <div class="grid grid-cols-12 gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-1">
@@ -1537,7 +1626,6 @@
                             </select>
                           </div>
 
-                          <!-- Weight / Pin Input -->
                           <div class="col-span-3">
                             <input type="text" inputmode="decimal" onfocus="this.select()"
                               value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
@@ -1546,7 +1634,6 @@
                               class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
-                          <!-- Reps Input -->
                           <div class="col-span-3">
                             <input type="number" inputmode="numeric" onfocus="this.select()"
                               value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
@@ -1555,7 +1642,6 @@
                               class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
-                          <!-- Partials -->
                           <div class="col-span-2">
                             <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
                               class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-extrabold ${
@@ -1565,7 +1651,6 @@
                             </button>
                           </div>
 
-                          <!-- Complete Button -->
                           <div class="col-span-2 flex items-center gap-1">
                             <button type="button" onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
                               class="flex-1 touch-target rounded-xl font-extrabold text-sm ${
@@ -1578,7 +1663,6 @@
                           </div>
                         </div>
 
-                        <!-- Live Beat The Logbook Badge -->
                         <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border ${btlInfo.cls}">
                           ${this.escapeHtml(btlInfo.text)}
                         </div>
@@ -1631,8 +1715,10 @@
                 </div>
               ` : ''}
             </div>
-          `;
-        }).join('');
+          `);
+        });
+
+        container.innerHTML = htmlParts.join('');
       },
 
       onWorkoutMachineChange(entryIdx, newMachineId) {
@@ -1775,23 +1861,43 @@
         const body = document.getElementById('modalBody');
         title.textContent = 'Übung zur Einheit hinzufügen';
 
-        body.innerHTML = `
-          <div class="space-y-1.5">
-            ${this.state.exercises.map(ex => `
-              <button onclick="App.addExerciseToActiveDraft('${ex.id}')"
-                class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-3 text-xs font-bold text-zinc-100 flex items-center justify-between">
-                <span>${this.escapeHtml(ex.name)}</span>
-                <span class="text-emerald-400 font-mono text-base">+</span>
-              </button>
-            `).join('')}
-          </div>
-          <div class="pt-3 border-t border-zinc-800 mt-2">
-            <button onclick="App.promptCreateExercise(true)"
+        let html = '';
+        CATEGORIES.forEach(cat => {
+          const matching = this.state.exercises
+            .filter(e => (e.category || this.inferCategory(e.name)) === cat.id)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          if (matching.length === 0) return;
+
+          html += `
+            <div class="pt-2">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+                <span>${cat.icon}</span>
+                <span>${cat.name}</span>
+              </div>
+              <div class="space-y-1">
+                ${matching.map(ex => `
+                  <button onclick="App.addExerciseToActiveDraft('${ex.id}')"
+                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
+                    <span>${this.escapeHtml(ex.name)}</span>
+                    <span class="text-emerald-400 font-mono text-base">+</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        html += `
+          <div class="pt-3 border-t border-zinc-800 mt-3">
+            <button onclick="App.openCreateExerciseModal(true)"
               class="w-full touch-target bg-emerald-500 text-black font-extrabold py-3 rounded-xl text-xs">
               + Komplett neue Übung anlegen
             </button>
           </div>
         `;
+
+        body.innerHTML = html;
         modal.classList.remove('hidden');
       },
 
@@ -1816,7 +1922,7 @@
       },
 
       /***********************************************************************
-       * 8. FINISH WORKOUT (SUPPORTS REST DAYS & CALENDAR CHECK-OFF)
+       * 8. FINISH WORKOUT (SUPPORTS EDITING EXISTING SESSIONS)
        ***********************************************************************/
       async finishWorkout() {
         const draft = this.state.activeDraft;
@@ -1860,13 +1966,17 @@
         if (cleanedEntries.length === 0) {
           if (!isRestSplit) {
             const checkAnyway = confirm(
-              `Du hast noch keine Sätze mit Last & Reps eingetragen.\n\nMöchtest du den Tag (${targetDate} – ${draft.splitName}) trotzdem als erledigten Tag / Pausentag im Kalender grün abhaken?`
+              `Du hast noch keine Sätze eingetragen.\n\nMöchtest du den Tag (${targetDate} – ${draft.splitName}) trotzdem als erledigten Pausentag im Kalender grün abhaken?`
             );
             if (!checkAnyway) return;
           }
 
+          if (draft.editingSessionId) {
+            this.state.sessions = this.state.sessions.filter(s => s.id !== draft.editingSessionId);
+          }
+
           const restSessionRecord = {
-            id: this.uid('sess'),
+            id: draft.editingSessionId || this.uid('sess'),
             date: targetDate,
             timestamp: Date.now(),
             splitId: draft.splitId || 'rest_day',
@@ -1877,6 +1987,7 @@
 
           this.state.sessions.push(restSessionRecord);
           this.sortSessions();
+          delete draft.editingSessionId;
           this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
           await this.persistAll();
           this.renderWorkoutTab();
@@ -1884,8 +1995,12 @@
           return;
         }
 
+        if (draft.editingSessionId) {
+          this.state.sessions = this.state.sessions.filter(s => s.id !== draft.editingSessionId);
+        }
+
         const sessionRecord = {
-          id: this.uid('sess'),
+          id: draft.editingSessionId || this.uid('sess'),
           date: targetDate,
           timestamp: Date.now(),
           splitId: draft.splitId,
@@ -1896,6 +2011,7 @@
 
         this.state.sessions.push(sessionRecord);
         this.sortSessions();
+        delete draft.editingSessionId;
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
         await this.persistAll();
 
@@ -1904,7 +2020,7 @@
       },
 
       /***********************************************************************
-       * 9. CALENDAR TRACKER
+       * 9. CALENDAR TRACKER (QUICK-LOG WITH LAST VALUES & RETRO EDITING)
        ***********************************************************************/
       changeCalendarMonth(delta) {
         let m = this.state.calendarMonth + delta;
@@ -2008,15 +2124,21 @@
           <div class="space-y-2 mb-3">
             <div class="text-xs font-bold uppercase text-emerald-400">An diesem Tag eingetragen:</div>
             ${logs.map(l => `
-              <div class="bg-black border border-emerald-800/60 rounded-xl p-3 flex items-center justify-between">
+              <div class="bg-black border border-emerald-800/60 rounded-xl p-3 flex items-center justify-between gap-2">
                 <div>
                   <div class="text-xs font-extrabold text-zinc-100">${l.isRestDay ? '🛋️ ' : '🏋️ '}${this.escapeHtml(l.splitName || 'Eintrag')}</div>
                   <div class="text-[11px] text-zinc-400">${l.isRestDay ? 'Pausentag / Abgehakt' : `${(l.entries || []).length} Übungen geloggt`}</div>
                 </div>
-                <button onclick="App.deleteSessionFromCalendar('${l.id}', '${dateIso}')"
-                  class="touch-target bg-red-950/60 border border-red-800 text-red-300 px-3 py-1.5 rounded-lg text-xs font-bold">
-                  Löschen
-                </button>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button onclick="App.editSessionInWorkout('${l.id}')"
+                    class="touch-target bg-emerald-500 active:bg-emerald-600 text-black px-3 py-1.5 rounded-lg text-xs font-extrabold">
+                    ✏️ Bearbeiten
+                  </button>
+                  <button onclick="App.deleteSessionFromCalendar('${l.id}', '${dateIso}')"
+                    class="touch-target bg-red-950/60 border border-red-800 text-red-300 px-2.5 py-1.5 rounded-lg text-xs font-bold">
+                    ✕
+                  </button>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -2029,19 +2151,19 @@
         body.innerHTML = `
           ${existingLogsHtml}
           <div class="space-y-2">
-            <div class="text-xs font-bold uppercase text-zinc-400">Schnell abhaken:</div>
-            <button onclick="App.quickLogCalendarDay('${dateIso}', 'rest_day', 'Pausentag / Regeneration', true)"
+            <div class="text-xs font-bold uppercase text-zinc-400">Schnell abhaken (mit deinen letzten Werten):</div>
+            <button onclick="App.quickLogCalendarDayWithLastValues('${dateIso}', 'rest_day', 'Pausentag / Regeneration', true)"
               class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-between">
               <span>🛋️ Als Pausentag abhaken</span>
               <span>✓</span>
             </button>
 
             <div class="grid grid-cols-1 gap-1.5 pt-1">
-              ${this.state.splits.map(sp => `
-                <button onclick="App.quickLogCalendarDay('${dateIso}', '${sp.id}', '${this.escapeAttr(sp.name)}', ${Boolean(sp.isRest)})"
+              ${this.state.splits.filter(sp => !sp.isRest).map(sp => `
+                <button onclick="App.quickLogCalendarDayWithLastValues('${dateIso}', '${sp.id}', '${this.escapeAttr(sp.name)}', false)"
                   class="w-full touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-200 font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-between">
-                  <span>⚡ „${this.escapeHtml(sp.name)}" schnell abhaken</span>
-                  <span class="text-emerald-400 font-mono">+ Grün</span>
+                  <span>⚡ „${this.escapeHtml(sp.name)}" mit Vorwerten abhaken</span>
+                  <span class="text-emerald-400 font-mono text-[11px]">+ Haken</span>
                 </button>
               `).join('')}
             </div>
@@ -2049,7 +2171,7 @@
             <div class="pt-3 border-t border-zinc-800 mt-3">
               <button onclick="App.jumpToWorkoutForDate('${dateIso}')"
                 class="w-full touch-target bg-zinc-900 active:bg-zinc-800 border border-emerald-500/60 text-emerald-300 font-extrabold py-3 px-4 rounded-xl text-xs">
-                🏋️ Im Trainings-Tab mit Gewichten für ${dateIso} loggen
+                🏋️ Im Trainings-Tab für ${dateIso} neu eingeben
               </button>
             </div>
           </div>
@@ -2057,23 +2179,117 @@
         modal.classList.remove('hidden');
       },
 
-      async quickLogCalendarDay(dateIso, splitId, splitName, isRest) {
+      // Quick log now populates with the latest values for every exercise in the split
+      async quickLogCalendarDayWithLastValues(dateIso, splitId, splitName, isRest) {
+        if (isRest) {
+          const record = {
+            id: this.uid('sess'),
+            date: dateIso,
+            timestamp: Date.now(),
+            splitId,
+            splitName,
+            isRestDay: true,
+            entries: []
+          };
+          this.state.sessions.push(record);
+          this.sortSessions();
+          await this.persistAll();
+          this.closeModal();
+          this.renderStatsTab();
+          this.renderWorkoutTab();
+          this.showToast(`✅ ${dateIso} als Pausentag abgehakt!`);
+          return;
+        }
+
+        const split = this.state.splits.find(s => s.id === splitId);
+        if (!split) return;
+
+        const populatedEntries = [];
+        (split.items || []).forEach(item => {
+          const machines = this.getMachinesForExercise(item.exerciseId);
+          const machineId = this.findLastUsedMachineId(item.exerciseId) || item.defaultMachineId || machines[0].id;
+          const lastPerf = this.getLastPerformance(item.exerciseId, machineId);
+
+          let sets = [];
+          if (lastPerf && Array.isArray(lastPerf.sets) && lastPerf.sets.length > 0) {
+            sets = lastPerf.sets.map(s => ({
+              weight: Number(s.weight) || 0,
+              reps: Number(s.reps) || 0,
+              type: s.type || 'normal',
+              partials: s.partials || 0,
+              drops: Array.isArray(s.drops) ? s.drops.map(d => ({ weight: Number(d.weight) || 0, reps: Number(d.reps) || 0 })) : []
+            }));
+          } else {
+            const count = item.targetSets || 2;
+            for (let i = 0; i < count; i++) {
+              sets.push({ weight: 0, reps: 0, type: 'normal', partials: 0, drops: [] });
+            }
+          }
+
+          populatedEntries.push({
+            exerciseId: item.exerciseId,
+            machineId,
+            sets
+          });
+        });
+
         const record = {
           id: this.uid('sess'),
           date: dateIso,
           timestamp: Date.now(),
           splitId,
           splitName,
-          isRestDay: isRest,
-          entries: []
+          isRestDay: false,
+          entries: populatedEntries
         };
+
         this.state.sessions.push(record);
         this.sortSessions();
         await this.persistAll();
         this.closeModal();
         this.renderStatsTab();
         this.renderWorkoutTab();
-        this.showToast(`✅ ${dateIso} im Kalender grün markiert!`);
+        this.showToast(`✅ „${splitName}" mit Vorwerten für ${dateIso} abgehakt!`);
+      },
+
+      // Load existing session into active draft for easy editing
+      editSessionInWorkout(sessionId) {
+        const sess = this.state.sessions.find(s => s.id === sessionId);
+        if (!sess) return;
+
+        this.state.activeSplitId = sess.splitId || this.state.splits[0].id;
+        this.state.activeDraft = {
+          editingSessionId: sess.id,
+          splitId: sess.splitId,
+          splitName: sess.splitName,
+          isRest: sess.isRestDay,
+          date: sess.date,
+          entries: (sess.entries || []).map(e => {
+            const ex = this.state.exercises.find(x => x.id === e.exerciseId);
+            return {
+              entryId: this.uid('ent'),
+              exerciseId: e.exerciseId,
+              labelOverride: ex ? ex.name : '',
+              targetRepRange: '2 WS',
+              targetSets: (e.sets || []).length || 2,
+              machineId: e.machineId,
+              collapsed: false,
+              sets: (e.sets || []).map(s => ({
+                weight: String(s.weight ?? ''),
+                reps: String(s.reps ?? ''),
+                type: s.type || 'normal',
+                partials: s.partials || 0,
+                drops: (s.drops || []).map(d => ({ weight: String(d.weight ?? ''), reps: String(d.reps ?? '') })),
+                completed: true
+              }))
+            };
+          })
+        };
+
+        this.saveDraft();
+        this.closeModal();
+        this.switchTab('workout');
+        this.showToast(`✏️ Einheit vom ${sess.date} zum Bearbeiten geladen`);
       },
 
       async deleteSessionFromCalendar(sessionId, dateIso) {
@@ -2098,26 +2314,8 @@
       },
 
       /***********************************************************************
-       * 10. STATS TAB: WEEKLY VOLUME + PROGRESSION (EXCLUDES WARMUPS)
+       * 10. STATS TAB
        ***********************************************************************/
-      getMuscleGroupForExercise(exerciseId) {
-        if (EXERCISE_MUSCLE_MAP[exerciseId]) return EXERCISE_MUSCLE_MAP[exerciseId];
-        const ex = this.state.exercises.find(e => e.id === exerciseId);
-        const name = (ex ? ex.name : exerciseId).toLowerCase();
-
-        if (name.includes('brust') || name.includes('chest') || name.includes('bankdrücken') || name.includes('fly')) return 'Brust';
-        if (name.includes('lat') || name.includes('ruder') || name.includes('row') || name.includes('pull') || name.includes('rücken')) return 'Rücken';
-        if (name.includes('schulter') || name.includes('seitheben') || name.includes('facepull') || name.includes('reverse pec')) return 'Schultern';
-        if (name.includes('trizeps') || name.includes('triceps') || name.includes('pushdown') || name.includes('dip')) return 'Trizeps';
-        if (name.includes('bizeps') || name.includes('curl')) return 'Bizeps';
-        if (name.includes('squat') || name.includes('beinpresse') || name.includes('beinstrecker') || name.includes('quad') || name.includes('hack')) return 'Quads';
-        if (name.includes('beinbeuger') || name.includes('rdl') || name.includes('deadlift') || name.includes('hamstring')) return 'Beinbeuger';
-        if (name.includes('wade') || name.includes('calf')) return 'Waden';
-        if (name.includes('adduktor') || name.includes('abduktor') || name.includes('bauch') || name.includes('abs')) return 'Adduktoren/Abduktoren';
-
-        return 'Schultern';
-      },
-
       getCurrentWeekDateBounds() {
         const now = new Date();
         const dayOfWeek = now.getDay();
@@ -2141,7 +2339,7 @@
       renderWeeklyVolume() {
         const { mondayIso, sundayIso, mondayShort, sundayShort } = this.getCurrentWeekDateBounds();
         const counts = {};
-        MUSCLE_GROUP_ORDER.forEach(mg => { counts[mg] = 0; });
+        CATEGORIES.forEach(c => { counts[c.id] = 0; });
 
         let totalWorkingSets = 0;
         for (const sess of this.state.sessions) {
@@ -2149,7 +2347,8 @@
             for (const entry of (sess.entries || [])) {
               const workingSets = (entry.sets || []).filter(s => s.type !== 'warmup' && Number(s.reps) > 0);
               if (workingSets.length > 0) {
-                const group = this.getMuscleGroupForExercise(entry.exerciseId);
+                const ex = this.state.exercises.find(e => e.id === entry.exerciseId);
+                const group = ex?.category || this.inferCategory(ex?.name || '');
                 counts[group] = (counts[group] || 0) + workingSets.length;
                 totalWorkingSets += workingSets.length;
               }
@@ -2165,13 +2364,13 @@
         const gridEl = document.getElementById('weeklyVolumeGrid');
         if (!gridEl) return;
 
-        gridEl.innerHTML = MUSCLE_GROUP_ORDER.map(group => {
-          const count = counts[group] || 0;
+        gridEl.innerHTML = CATEGORIES.filter(c => c.id !== 'Sonstiges').map(cat => {
+          const count = counts[cat.id] || 0;
           const pct = Math.min(100, Math.round((count / 12) * 100));
           return `
             <div class="bg-black border border-zinc-800/90 rounded-xl p-2.5 space-y-1.5">
               <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-zinc-200 truncate pr-1">${this.escapeHtml(group)}</span>
+                <span class="font-bold text-zinc-200 truncate pr-1">${cat.icon} ${this.escapeHtml(cat.name)}</span>
                 <span class="font-mono font-extrabold ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0">${count} WS</span>
               </div>
               <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
@@ -2234,7 +2433,7 @@
           trackedList.push({ id: exId, name: exObj ? exObj.name : exId, sessionCount: count });
         });
 
-        trackedList.sort((a, b) => a.name.localeCompare(b.name));
+        trackedList.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         return trackedList;
       },
 
@@ -2522,14 +2721,15 @@
       },
 
       /***********************************************************************
-       * 11. ANALYTICS SUB-VIEW (MACHINE DETAILS & PIN RECOGNITION)
+       * 11. ANALYTICS SUB-VIEW
        ***********************************************************************/
       populateAnalyticsFilters() {
         const exSelect = document.getElementById('analyticsExerciseSelect');
         if (!exSelect) return;
         const currentEx = exSelect.value || (this.state.exercises[0]?.id || '');
 
-        exSelect.innerHTML = this.state.exercises.map(ex => `
+        const sortedExercises = [...this.state.exercises].sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        exSelect.innerHTML = sortedExercises.map(ex => `
           <option value="${ex.id}" ${ex.id === currentEx ? 'selected' : ''}>
             ${this.escapeHtml(ex.name)}
           </option>
@@ -2795,10 +2995,16 @@
                     <p class="text-[11px] text-zinc-400">Im Kalender grün abgehakt</p>
                   </div>
                 </div>
-                <button onclick="App.deleteSession('${sess.id}')"
-                  class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
-                  Löschen
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="App.editSessionInWorkout('${sess.id}')"
+                    class="touch-target text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-xl font-extrabold">
+                    ✏️ Bearbeiten
+                  </button>
+                  <button onclick="App.deleteSession('${sess.id}')"
+                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
+                    Löschen
+                  </button>
+                </div>
               </div>
             `;
           }
@@ -2836,10 +3042,16 @@
                   <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
                   <h3 class="text-sm font-extrabold text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
                 </div>
-                <button onclick="App.deleteSession('${sess.id}')"
-                  class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
-                  Löschen
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="App.editSessionInWorkout('${sess.id}')"
+                    class="touch-target text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-xl font-extrabold">
+                    ✏️ Bearbeiten
+                  </button>
+                  <button onclick="App.deleteSession('${sess.id}')"
+                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
+                    Löschen
+                  </button>
+                </div>
               </div>
               <div class="space-y-2">${entriesHtml}</div>
             </div>
@@ -2857,58 +3069,87 @@
       },
 
       /***********************************************************************
-       * 13. MANAGE TAB (EXERCISES, MACHINES & SPLITS)
+       * 13. MANAGE TAB (EXERCISE CREATION/EDIT MODAL & TEMPLATE REORDER/SWAP)
        ***********************************************************************/
       renderManageTab() {
         this.sortSplits();
-        const exList = document.getElementById('manageExercisesList');
-        exList.innerHTML = this.state.exercises.map(ex => {
-          const machines = this.getMachinesForExercise(ex.id);
-          return `
-            <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <div class="min-w-0">
-                  <span class="text-xs font-extrabold text-zinc-100">${this.escapeHtml(ex.name)}</span>
-                  <span class="ml-1.5 text-[10px] font-mono bg-oled-card border border-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">${this.escapeHtml(this.getMuscleGroupForExercise(ex.id))}</span>
+        const container = document.getElementById('manageExercisesGroupedContainer');
+
+        let html = '';
+        CATEGORIES.forEach(cat => {
+          const matchingExercises = this.state.exercises
+            .filter(e => (e.category || this.inferCategory(e.name)) === cat.id)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          if (matchingExercises.length === 0) return;
+
+          html += `
+            <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">${cat.icon}</span>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">${this.escapeHtml(cat.name)}</h3>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <button onclick="App.promptAddMachine('${ex.id}')"
-                    class="text-xs bg-oled-card active:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
-                    + Gerät
-                  </button>
-                  <button onclick="App.promptRenameExercise('${ex.id}')"
-                    class="text-xs bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-400 px-2.5 py-1.5 rounded-lg">
-                    ✎
-                  </button>
-                </div>
+                <span class="text-[11px] font-mono text-zinc-400">${matchingExercises.length} Übungen</span>
               </div>
-              <div class="space-y-1.5 pt-1">
-                ${machines.map(m => `
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-oled-card border border-zinc-800/80 rounded-xl px-2.5 py-2 text-xs">
-                    <div class="font-bold text-zinc-200">⚙ ${this.escapeHtml(m.name)}</div>
-                    <div class="flex items-center gap-1.5">
-                      <!-- Unit Switcher Button in Manage -->
-                      <button onclick="App.toggleMachineUnit('${m.id}')"
-                        class="px-2 py-1 bg-black border ${m.unit === 'pin' ? 'border-purple-600/80 text-purple-300' : 'border-zinc-700 text-zinc-300'} rounded-lg text-xs font-extrabold">
-                        ${m.unit === 'pin' ? '📌 PIN' : '⚖️ KG'}
-                      </button>
-                      <input type="text"
-                        value="${this.escapeAttr(m.setupNote || '')}"
-                        placeholder="Sitz-/Polsternotiz..."
-                        onchange="App.updateMachineSetupNote('${m.id}', this.value)"
-                        class="flex-1 sm:w-44 bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 placeholder-zinc-600">
-                      <button onclick="App.promptRenameMachine('${m.id}')"
-                        class="bg-black border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs">✎</button>
-                      <button onclick="App.deleteMachine('${m.id}')"
-                        class="bg-black border border-zinc-800 text-zinc-400 active:text-red-400 px-2.5 py-1.5 rounded-lg text-xs">🗑</button>
+
+              <div class="space-y-2.5">
+                ${matchingExercises.map(ex => {
+                  const machines = this.getMachinesForExercise(ex.id);
+                  return `
+                    <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-extrabold text-zinc-100 truncate">${this.escapeHtml(ex.name)}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                          <button onclick="App.promptAddMachine('${ex.id}')"
+                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
+                            + Gerät
+                          </button>
+                          <!-- Edit Name & Category Button -->
+                          <button onclick="App.openEditExerciseModal('${ex.id}')" title="Übung & Kategorie bearbeiten"
+                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg font-bold">
+                            ✎
+                          </button>
+                          <button onclick="App.deleteExercise('${ex.id}')" title="Übung komplett löschen"
+                            class="text-xs bg-oled-surface active:bg-red-950 border border-zinc-800 text-red-400 px-2.5 py-1.5 rounded-lg font-bold">
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="space-y-1.5 pt-1">
+                        ${machines.map(m => `
+                          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-oled-surface border border-zinc-800/80 rounded-xl px-2.5 py-2 text-xs">
+                            <div class="font-bold text-zinc-200 truncate">⚙ ${this.escapeHtml(m.name)}</div>
+                            <div class="flex items-center gap-1.5">
+                              <button onclick="App.toggleMachineUnit('${m.id}')"
+                                class="px-2 py-1 bg-black border ${m.unit === 'pin' ? 'border-purple-600/80 text-purple-300' : 'border-zinc-700 text-zinc-300'} rounded-lg text-xs font-extrabold shrink-0">
+                                ${m.unit === 'pin' ? '📌 PIN' : '⚖️ KG'}
+                              </button>
+                              <input type="text"
+                                value="${this.escapeAttr(m.setupNote || '')}"
+                                placeholder="Sitz-/Polsternotiz..."
+                                onchange="App.updateMachineSetupNote('${m.id}', this.value)"
+                                class="flex-1 sm:w-44 bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 placeholder-zinc-600">
+                              <button onclick="App.promptRenameMachine('${m.id}')"
+                                class="bg-black border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs">✎</button>
+                              <button onclick="App.deleteMachine('${m.id}')"
+                                class="bg-black border border-zinc-800 text-zinc-400 active:text-red-400 px-2.5 py-1.5 rounded-lg text-xs">🗑</button>
+                            </div>
+                          </div>
+                        `).join('')}
+                      </div>
                     </div>
-                  </div>
-                `).join('')}
+                  `;
+                }).join('')}
               </div>
             </div>
           `;
-        }).join('');
+        });
 
+        container.innerHTML = html;
+
+        // Split List with Reordering (↑/↓) and Template Swap (⇄)
         const splitList = document.getElementById('manageSplitsList');
         splitList.innerHTML = this.state.splits.map((sp, spIdx) => `
           <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
@@ -2925,15 +3166,25 @@
               </div>
             </div>
             ${sp.items.length > 0 ? `
-              <div class="space-y-1 pt-1">
+              <div class="space-y-1.5 pt-1">
                 ${sp.items.map((it, itIdx) => {
                   const ex = this.state.exercises.find(e => e.id === it.exerciseId);
                   return `
-                    <div class="flex items-center justify-between bg-oled-card border border-zinc-800 rounded-lg px-2.5 py-2 text-xs">
-                      <span class="text-zinc-200 font-semibold">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
-                      <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-mono text-zinc-400">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
-                        <button onclick="App.removeSplitItem(${spIdx}, ${itIdx})" class="text-zinc-500 active:text-red-400 text-xs px-1.5">✕</button>
+                    <div class="flex items-center justify-between gap-1.5 bg-oled-card border border-zinc-800 rounded-xl px-2.5 py-2 text-xs">
+                      <span class="text-zinc-200 font-semibold truncate flex-1">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span class="text-[10px] font-mono text-zinc-400 mr-1">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
+                        <!-- Move Up / Down inside Split Template -->
+                        <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, -1)" ${itIdx === 0 ? 'disabled' : ''}
+                          class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
+                        <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, 1)" ${itIdx === sp.items.length - 1 ? 'disabled' : ''}
+                          class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▼</button>
+                        <!-- Swap Exercise in Split Template -->
+                        <button onclick="App.openSwapSplitTemplateExerciseModal(${spIdx}, ${itIdx})" title="Im Plan dauerhaft austauschen"
+                          class="px-2 py-1 bg-black active:bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-lg text-xs font-bold">
+                          ⇄
+                        </button>
+                        <button onclick="App.removeSplitItem(${spIdx}, ${itIdx})" class="text-zinc-500 active:text-red-400 text-xs px-1.5 font-bold">✕</button>
                       </div>
                     </div>
                   `;
@@ -2944,40 +3195,258 @@
         `).join('');
       },
 
-      promptCreateExercise(addToWorkoutAfter = false) {
-        const name = prompt('Name der neuen Übung:');
-        if (!name || !name.trim()) return;
-        const machineName = prompt('Erstes Gerät für diese Übung:', 'Standard-Gerät') || 'Standard-Gerät';
-        const isPin = confirm('Nutzt dieses Gerät Pins / Steckgewichte?\n\n[OK] = Pins\n[Abbrechen] = kg');
+      // Modal: Create Exercise with Category Dropdown
+      openCreateExerciseModal(addToWorkoutAfter = false) {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = '+ Neue Übung anlegen';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Name der Übung</label>
+              <input type="text" id="newExNameInput" placeholder="z. B. Incline Dumbbell Press"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie / Muskelgruppe</label>
+              <select id="newExCategorySelect"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                ${CATEGORIES.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Erstes Gerät / Maschine</label>
+              <input type="text" id="newExMachineInput" value="Standard-Gerät"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Einheit</label>
+              <select id="newExUnitSelect"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                <option value="kg">⚖️ Freies Gewicht / Plate-Loaded (kg)</option>
+                <option value="pin">📌 Steckgewichte (Pins / Stufen)</option>
+              </select>
+            </div>
+
+            <button onclick="App.saveNewExerciseModal(${Boolean(addToWorkoutAfter)})"
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
+              Speichern & Anlegen
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+        setTimeout(() => document.getElementById('newExNameInput')?.focus(), 50);
+      },
+
+      saveNewExerciseModal(addToWorkoutAfter) {
+        const name = document.getElementById('newExNameInput')?.value.trim();
+        const category = document.getElementById('newExCategorySelect')?.value || 'Sonstiges';
+        const machineName = document.getElementById('newExMachineInput')?.value.trim() || 'Standard-Gerät';
+        const unit = document.getElementById('newExUnitSelect')?.value || 'kg';
+
+        if (!name) {
+          alert('Bitte einen Übungsnamen eingeben.');
+          return;
+        }
+
         const exId = this.uid('ex');
         const machId = this.uid('m');
 
-        this.state.exercises.push({ id: exId, name: name.trim() });
+        this.state.exercises.push({ id: exId, name, category });
         this.state.machines.push({
           id: machId,
           exerciseId: exId,
-          name: machineName.trim(),
+          name: machineName,
           setupNote: '',
-          unit: isPin ? 'pin' : 'kg'
+          unit
         });
+
         this.persistAll();
         this.populateAnalyticsFilters();
+        this.closeModal();
 
-        if (addToWorkoutAfter) this.addExerciseToActiveDraft(exId);
-        else this.renderManageTab();
-        this.showToast(`Übung "${name.trim()}" erstellt`);
+        if (addToWorkoutAfter) {
+          this.addExerciseToActiveDraft(exId);
+        } else {
+          this.renderManageTab();
+        }
+        this.showToast(`Übung „${name}" in ${category} angelegt!`);
       },
 
-      promptRenameExercise(exerciseId) {
+      // Modal: Edit Name & Category
+      openEditExerciseModal(exerciseId) {
         const ex = this.state.exercises.find(e => e.id === exerciseId);
         if (!ex) return;
-        const next = prompt('Neuer Name der Übung:', ex.name);
-        if (!next || !next.trim()) return;
-        ex.name = next.trim();
+
+        const currentCat = ex.category || this.inferCategory(ex.name);
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = `Übung bearbeiten`;
+        body.innerHTML = `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Name der Übung</label>
+              <input type="text" id="editExNameInput" value="${this.escapeAttr(ex.name)}"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie / Muskelgruppe</label>
+              <select id="editExCategorySelect"
+                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                ${CATEGORIES.map(c => `
+                  <option value="${c.id}" ${c.id === currentCat ? 'selected' : ''}>
+                    ${c.icon} ${c.name}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <button onclick="App.saveEditExerciseModal('${ex.id}')"
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
+              Änderungen speichern
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+      },
+
+      saveEditExerciseModal(exerciseId) {
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        if (!ex) return;
+
+        const nextName = document.getElementById('editExNameInput')?.value.trim();
+        const nextCat = document.getElementById('editExCategorySelect')?.value || 'Sonstiges';
+
+        if (!nextName) {
+          alert('Name darf nicht leer sein.');
+          return;
+        }
+
+        ex.name = nextName;
+        ex.category = nextCat;
+
         this.persistAll();
+        this.closeModal();
         this.renderManageTab();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
+        this.showToast(`Übung auf ${nextCat} aktualisiert`);
+      },
+
+      // Move exercise up or down in split template
+      moveSplitItem(splitIdx, itemIdx, direction) {
+        const sp = this.state.splits[splitIdx];
+        if (!sp || !Array.isArray(sp.items)) return;
+        const targetIdx = itemIdx + direction;
+        if (targetIdx < 0 || targetIdx >= sp.items.length) return;
+
+        const temp = sp.items[itemIdx];
+        sp.items[itemIdx] = sp.items[targetIdx];
+        sp.items[targetIdx] = temp;
+
+        StorageEngine.putAll('splits', this.state.splits);
+        this.renderManageTab();
+      },
+
+      // Modal: Swap exercise inside Split Template
+      openSwapSplitTemplateExerciseModal(spIdx, itIdx) {
+        const sp = this.state.splits[spIdx];
+        const it = sp?.items?.[itIdx];
+        if (!it) return;
+
+        const curEx = this.state.exercises.find(e => e.id === it.exerciseId);
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = `Vorlage anpassen (${sp.name})`;
+
+        let html = `<p class="text-xs text-zinc-400 mb-2.5">Ersetze „${this.escapeHtml(curEx?.name || 'Übung')}" dauerhaft in diesem Split:</p>`;
+
+        CATEGORIES.forEach(cat => {
+          const matching = this.state.exercises
+            .filter(e => (e.category || this.inferCategory(e.name)) === cat.id)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          if (matching.length === 0) return;
+
+          html += `
+            <div class="pt-2">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+                <span>${cat.icon}</span>
+                <span>${cat.name}</span>
+              </div>
+              <div class="space-y-1">
+                ${matching.map(ex => {
+                  const isCurrent = ex.id === it.exerciseId;
+                  return `
+                    <button onclick="App.swapSplitTemplateExercise(${spIdx}, ${itIdx}, '${ex.id}')"
+                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-zinc-800 text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
+                      <span>${this.escapeHtml(ex.name)}</span>
+                      <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        body.innerHTML = html;
+        modal.classList.remove('hidden');
+      },
+
+      swapSplitTemplateExercise(spIdx, itIdx, newExerciseId) {
+        const sp = this.state.splits[spIdx];
+        const it = sp?.items?.[itIdx];
+        const newEx = this.state.exercises.find(e => e.id === newExerciseId);
+        if (!it || !newEx) return;
+
+        const machines = this.getMachinesForExercise(newExerciseId);
+        it.exerciseId = newExerciseId;
+        it.labelOverride = newEx.name;
+        it.defaultMachineId = machines[0]?.id || '';
+
+        StorageEngine.putAll('splits', this.state.splits);
+        this.closeModal();
+        this.renderManageTab();
+        this.showToast(`Vorlage aktualisiert: ${newEx.name}`);
+      },
+
+      async deleteExercise(exerciseId) {
+        const ex = this.state.exercises.find(e => e.id === exerciseId);
+        if (!ex) return;
+
+        const machinesCount = this.state.machines.filter(m => m.exerciseId === exerciseId).length;
+        if (!confirm(`Übung „${ex.name}" und alle zugehörigen ${machinesCount} Geräte wirklich komplett löschen?`)) {
+          return;
+        }
+
+        this.state.exercises = this.state.exercises.filter(e => e.id !== exerciseId);
+        this.state.machines = this.state.machines.filter(m => m.exerciseId !== exerciseId);
+
+        this.state.splits.forEach(sp => {
+          sp.items = (sp.items || []).filter(it => it.exerciseId !== exerciseId);
+        });
+
+        if (this.state.activeDraft && Array.isArray(this.state.activeDraft.entries)) {
+          this.state.activeDraft.entries = this.state.activeDraft.entries.filter(e => e.exerciseId !== exerciseId);
+        }
+
+        await this.persistAll();
+        this.populateAnalyticsFilters();
+        this.renderManageTab();
+        if (this.state.currentTab === 'workout') this.renderWorkoutTab();
+        if (this.state.currentTab === 'stats') this.renderStatsTab();
+        this.showToast(`Übung „${ex.name}" restlos gelöscht`);
       },
 
       promptAddMachine(exerciseId) {
@@ -3089,13 +3558,34 @@
         const body = document.getElementById('modalBody');
         title.textContent = 'Übung zum Split-Tag hinzufügen';
 
-        body.innerHTML = this.state.exercises.map(ex => `
-          <button onclick="App.addExerciseToSplitDay('${splitId}', '${ex.id}')"
-            class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-3 text-xs font-bold text-zinc-100 flex items-center justify-between">
-            <span>${this.escapeHtml(ex.name)}</span>
-            <span class="text-emerald-400 font-mono text-base">+</span>
-          </button>
-        `).join('');
+        let html = '';
+        CATEGORIES.forEach(cat => {
+          const matching = this.state.exercises
+            .filter(e => (e.category || this.inferCategory(e.name)) === cat.id)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+
+          if (matching.length === 0) return;
+
+          html += `
+            <div class="pt-2">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+                <span>${cat.icon}</span>
+                <span>${cat.name}</span>
+              </div>
+              <div class="space-y-1">
+                ${matching.map(ex => `
+                  <button onclick="App.addExerciseToSplitDay('${splitId}', '${ex.id}')"
+                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
+                    <span>${this.escapeHtml(ex.name)}</span>
+                    <span class="text-emerald-400 font-mono text-base">+</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        body.innerHTML = html;
         modal.classList.remove('hidden');
       },
 
@@ -3147,7 +3637,7 @@
       exportDatabaseJson() {
         const payload = {
           app: 'IRONLOG_GYM_TRACKER',
-          version: 4,
+          version: 6,
           exportedAt: new Date().toISOString(),
           data: {
             exercises: this.state.exercises,
@@ -3177,7 +3667,11 @@
             this.state.splits = data.splits;
             this.state.sessions = data.sessions;
 
+            this.state.exercises.forEach(ex => {
+              if (!ex.category) ex.category = this.inferCategory(ex.name);
+            });
             this.state.machines.forEach(m => { if (!m.unit) m.unit = 'kg'; });
+
             this.sortSplits();
             this.sortSessions();
             this.state.activeSplitId = this.state.splits[0]?.id || '';
@@ -3293,7 +3787,7 @@
         await this.persistAll();
         this.populateAnalyticsFilters();
         this.renderWorkoutTab();
-        this.showToast('Demo-Sessions (inkl. Pins & Kalender) geladen!');
+        this.showToast('Demo-Sessions geladen!');
       },
 
       async clearAllSessionsOnly() {
