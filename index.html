@@ -63,7 +63,7 @@
         <div class="w-2.5 h-6 bg-emerald-500 rounded-sm shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
         <div>
           <h1 class="text-base font-extrabold tracking-wider uppercase text-zinc-100 leading-none">IRONLOG</h1>
-          <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Ready</p>
+          <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Persistent</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -100,7 +100,7 @@
         <button onclick="App.cancelSessionEdit()" class="text-zinc-400 active:text-zinc-100 font-bold px-2 py-1 bg-black rounded border border-zinc-800">Abbrechen</button>
       </div>
 
-      <!-- Active Exercises Container (Mit Kategorie-Trennern) -->
+      <!-- Active Exercises Container -->
       <div id="workoutExercisesContainer" class="space-y-3.5"></div>
 
       <!-- Quick Add Exercise & Finish Buttons -->
@@ -340,7 +340,7 @@
       <div id="historySessionsContainer" class="space-y-3"></div>
     </section>
 
-    <!-- TAB 4: PLAN & GERÄTE (NACH KATEGORIEN & A-Z SORTIERT) -->
+    <!-- TAB 4: PLAN & GERÄTE -->
     <section id="tab-manage" class="hidden space-y-5">
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
         <div class="flex items-center justify-between">
@@ -681,6 +681,7 @@
         machines: [],
         splits: [],
         sessions: [],
+        drafts: {},
         activeSplitId: 'day_mon_push',
         activeDraft: null,
         analyticsMetric: 'e1rm',
@@ -695,14 +696,22 @@
       progressionChartInstance: null,
       deferredPwaPrompt: null,
 
+      getDraftKey(splitId, dateStr) {
+        return `${dateStr || this.todayIso()}_${splitId || 'default'}`;
+      },
+
       async init() {
+        if (navigator.storage && navigator.storage.persist) {
+          navigator.storage.persist().catch(() => {});
+        }
+
         const updateMsg = sessionStorage.getItem('ironlog_update_msg');
         if (updateMsg) {
           this.showToast(updateMsg);
           sessionStorage.removeItem('ironlog_update_msg');
         }
 
-        const currentVer = localStorage.getItem('ironlog_version') || 'v1.7';
+        const currentVer = localStorage.getItem('ironlog_version') || 'v1.8';
         const verLabel = document.getElementById('currentVersionLabel');
         if (verLabel) verLabel.textContent = currentVer;
 
@@ -715,6 +724,7 @@
           this.state.machines = JSON.parse(JSON.stringify(INITIAL_MACHINES));
           this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
           this.state.sessions = [];
+          this.state.drafts = {};
           this.sortSplits();
           await this.persistAll();
           await StorageEngine.setMeta('initialized', true);
@@ -723,6 +733,7 @@
           this.state.machines = await StorageEngine.getAll('machines');
           this.state.splits = await StorageEngine.getAll('splits');
           this.state.sessions = await StorageEngine.getAll('sessions');
+          this.state.drafts = (await StorageEngine.getMeta('draftsMap')) || {};
 
           let needsUpdate = false;
           this.state.exercises.forEach(ex => {
@@ -749,16 +760,27 @@
 
         this.sortSessions();
 
+        const defaultSplitId = this.detectTodaySplitId();
+        const todayIsoStr = this.todayIso();
         const savedDraft = await StorageEngine.getMeta('activeDraft');
+
         if (savedDraft && savedDraft.splitId && this.state.splits.some(s => s.id === savedDraft.splitId)) {
           this.state.activeSplitId = savedDraft.splitId;
           this.state.activeDraft = savedDraft;
+          const k = this.getDraftKey(savedDraft.splitId, savedDraft.date);
+          this.state.drafts[k] = savedDraft;
         } else {
-          const defaultSplitId = this.detectTodaySplitId();
           this.state.activeSplitId = defaultSplitId;
-          this.state.activeDraft = this.buildDraftForSplit(defaultSplitId);
+          const k = this.getDraftKey(defaultSplitId, todayIsoStr);
+          if (this.state.drafts[k]) {
+            this.state.activeDraft = this.state.drafts[k];
+          } else {
+            this.state.activeDraft = this.buildDraftForSplit(defaultSplitId, todayIsoStr);
+            this.state.drafts[k] = this.state.activeDraft;
+          }
         }
 
+        await this.saveDraft();
         this.updateHeaderStatus();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
@@ -789,7 +811,7 @@
           const text = await res.text();
           const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
           const remoteVersion = match ? match[1].replace('ironlog-', '').replace('offline-', '') : 'Unbekannt';
-          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.7';
+          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.8';
 
           if (remoteVersion !== currentVersion) {
             if (confirm(`Neues Update gefunden!\n\nAktuell: ${currentVersion}\nNeu: ${remoteVersion}\n\nJetzt installieren und neu laden?`)) {
@@ -935,13 +957,20 @@
           StorageEngine.putAll('machines', this.state.machines),
           StorageEngine.putAll('splits', this.state.splits),
           StorageEngine.putAll('sessions', this.state.sessions),
+          StorageEngine.setMeta('draftsMap', this.state.drafts),
           StorageEngine.setMeta('activeDraft', this.state.activeDraft)
         ]);
         this.updateHeaderStatus();
       },
 
       async saveDraft() {
-        await StorageEngine.setMeta('activeDraft', this.state.activeDraft);
+        if (this.state.activeDraft) {
+          const key = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[key] = this.state.activeDraft;
+          await StorageEngine.setMeta('draftsMap', this.state.drafts);
+          await StorageEngine.setMeta('activeDraft', this.state.activeDraft);
+        }
       },
 
       sortSessions() {
@@ -1092,7 +1121,7 @@
         const el = document.getElementById(`btl-badge-${entryIdx}-${setIdx}`);
         if (!entry || !set || !el) return;
         const info = this.computeBeatLogbookInfo(entry, set, setIdx);
-        el.className = `text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-none ${info.cls}`;
+        el.className = `text-[11px] font-mono px-2.5 py-1 rounded-lg border transition-none flex-1 truncate ${info.cls}`;
         el.textContent = info.text;
       },
 
@@ -1121,8 +1150,41 @@
         this.showToast('📋 Letzte Werte in alle Sätze kopiert!');
       },
 
+      // AUTOFILL UPGRADE: Copy values from this set down to the next row
+      copySetDown(entryIdx, setIdx) {
+        const entry = this.state.activeDraft?.entries?.[entryIdx];
+        if (!entry || !entry.sets || !entry.sets[setIdx]) return;
+        const cur = entry.sets[setIdx];
+        const w = cur.weight;
+        const r = cur.reps;
+
+        if (setIdx + 1 < entry.sets.length) {
+          const next = entry.sets[setIdx + 1];
+          next.weight = w !== '' ? String(w) : '';
+          next.reps = r !== '' ? String(r) : '';
+          next.type = cur.type || 'normal';
+          next.partials = cur.partials || 0;
+          if (cur.type === 'dropset' && Array.isArray(cur.drops)) {
+            next.drops = JSON.parse(JSON.stringify(cur.drops));
+          }
+        } else {
+          entry.sets.push({
+            weight: w !== '' ? String(w) : '',
+            reps: r !== '' ? String(r) : '',
+            type: cur.type || 'normal',
+            partials: cur.partials || 0,
+            drops: cur.type === 'dropset' && Array.isArray(cur.drops) ? JSON.parse(JSON.stringify(cur.drops)) : [],
+            completed: false
+          });
+        }
+
+        this.saveDraft();
+        this.renderWorkoutTab();
+        this.showToast('↓ Werte in Folgesatz kopiert');
+      },
+
       /***********************************************************************
-       * 5. EXERCISE SWAP IN ACTIVE WORKOUT (DOES NOT TOUCH TEMPLATE)
+       * 5. EXERCISE SWAP IN ACTIVE WORKOUT
        ***********************************************************************/
       openSwapExerciseModal(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
@@ -1289,7 +1351,6 @@
         return null;
       },
 
-      // Calculate the specific date for each split in the currently selected week
       computeDateForSplitInCurrentWeek(split, activeDateStr) {
         const d = new Date(activeDateStr + 'T12:00:00');
         const dayOfWeek = d.getDay();
@@ -1315,28 +1376,54 @@
       onManualDateChange(newVal) {
         if (!newVal) return;
         if (this.state.activeDraft) {
-          this.state.activeDraft.date = newVal;
+          const oldKey = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[oldKey] = this.state.activeDraft;
         }
+
+        const newKey = this.getDraftKey(this.state.activeSplitId, newVal);
+        if (this.state.drafts && this.state.drafts[newKey]) {
+          this.state.activeDraft = this.state.drafts[newKey];
+        } else {
+          this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, newVal);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[newKey] = this.state.activeDraft;
+        }
+
         this.saveDraft();
         this.renderWorkoutTab();
       },
 
       selectSplit(splitId, targetDateIso = null) {
-        const hasCompletedSets = this.state.activeDraft?.entries?.some(e => e.sets.some(s => s.completed));
-        if (hasCompletedSets && splitId !== this.state.activeSplitId) {
-          if (!confirm('Du hast bereits abgehakte Sätze. Tag wechseln und aktuellen Entwurf verwerfen?')) return;
+        if (this.state.activeDraft) {
+          const curKey = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[curKey] = this.state.activeDraft;
         }
-        const activeDate = targetDateIso || this.state.activeDraft?.date || this.todayIso();
+
+        const targetDate = targetDateIso || this.state.activeDraft?.date || this.todayIso();
         this.state.activeSplitId = splitId;
-        this.state.activeDraft = this.buildDraftForSplit(splitId, activeDate);
+        const nextKey = this.getDraftKey(splitId, targetDate);
+
+        if (this.state.drafts && this.state.drafts[nextKey]) {
+          this.state.activeDraft = this.state.drafts[nextKey];
+        } else {
+          this.state.activeDraft = this.buildDraftForSplit(splitId, targetDate);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[nextKey] = this.state.activeDraft;
+        }
+
         this.saveDraft();
         this.renderWorkoutTab();
       },
 
       resetActiveDraft() {
         if (!confirm('Aktuelle Eingaben für diesen Tag zurücksetzen?')) return;
-        const currentDate = this.state.activeDraft?.date || this.todayIso();
-        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, currentDate);
+        const curDate = this.state.activeDraft?.date || this.todayIso();
+        const key = this.getDraftKey(this.state.activeSplitId, curDate);
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, curDate);
+        if (!this.state.drafts) this.state.drafts = {};
+        this.state.drafts[key] = this.state.activeDraft;
         this.saveDraft();
         this.renderWorkoutTab();
         this.showToast('Entwurf zurückgesetzt');
@@ -1353,7 +1440,7 @@
       },
 
       /***********************************************************************
-       * 7. WORKOUT UI RENDERING (WITH DATE ON DAYS & CATEGORY DIVIDERS)
+       * 7. WORKOUT UI RENDERING
        ***********************************************************************/
       toggleExerciseCollapse(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
@@ -1382,7 +1469,6 @@
         const dateInput = document.getElementById('workoutDateInput');
         if (dateInput) dateInput.value = activeDate;
 
-        // Editing Banner
         const editBanner = document.getElementById('editingSessionBanner');
         const editText = document.getElementById('editingSessionText');
         if (draft?.editingSessionId) {
@@ -1392,13 +1478,11 @@
           editBanner.classList.add('hidden');
         }
 
-        // Split Selector Buttons with short dates (e.g. "Mittwoch (14.10.) – Pause")
         const btnBar = document.getElementById('splitSelectorButtons');
         btnBar.innerHTML = this.state.splits.map(s => {
           const active = s.id === this.state.activeSplitId;
           const { iso, short } = this.computeDateForSplitInCurrentWeek(s, activeDate);
 
-          // Format clean label with date: e.g. "Montag (12.10.) – Push"
           let displayLabel = s.name;
           if (displayLabel.includes(' – ')) {
             const parts = displayLabel.split(' – ');
@@ -1467,7 +1551,6 @@
           const categoryName = exercise.category || this.inferCategory(exercise.name);
           const catObj = this.getCategoryObj(categoryName);
 
-          // Kategorie-Trenner im Training
           if (categoryName !== lastCategoryInList) {
             htmlParts.push(`
               <div class="flex items-center gap-2 pt-3 pb-0.5">
@@ -1663,8 +1746,16 @@
                           </div>
                         </div>
 
-                        <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border ${btlInfo.cls}">
-                          ${this.escapeHtml(btlInfo.text)}
+                        <!-- Status row with Beat-the-Logbook badge AND Auto-Fill Down button -->
+                        <div class="flex items-center gap-2 pt-0.5">
+                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
+                            ${this.escapeHtml(btlInfo.text)}
+                          </div>
+                          <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Werte in nächsten Satz übernehmen"
+                            class="px-2.5 py-1 bg-oled-surface active:bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg text-xs font-mono font-bold shrink-0 flex items-center gap-1">
+                            <span>↓</span>
+                            <span>Nach unten</span>
+                          </button>
                         </div>
 
                         ${s.type === 'dropset' ? `
@@ -1815,6 +1906,14 @@
             });
           }
           set.completed = true;
+
+          // AUTO-FILL NACH UNTEN (BEI HÄKCHEN)
+          if (setIdx + 1 < entry.sets.length) {
+            const nextSet = entry.sets[setIdx + 1];
+            if (!nextSet.completed && (nextSet.weight === '' || nextSet.weight === null)) {
+              nextSet.weight = String(set.weight);
+            }
+          }
         } else {
           set.completed = false;
         }
@@ -1922,7 +2021,7 @@
       },
 
       /***********************************************************************
-       * 8. FINISH WORKOUT (SUPPORTS EDITING EXISTING SESSIONS)
+       * 8. FINISH WORKOUT
        ***********************************************************************/
       async finishWorkout() {
         const draft = this.state.activeDraft;
@@ -1987,8 +2086,14 @@
 
           this.state.sessions.push(restSessionRecord);
           this.sortSessions();
+
+          const key = this.getDraftKey(draft.splitId, targetDate);
+          if (this.state.drafts) delete this.state.drafts[key];
           delete draft.editingSessionId;
+
           this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
+          this.state.drafts[this.getDraftKey(this.state.activeSplitId, this.todayIso())] = this.state.activeDraft;
+
           await this.persistAll();
           this.renderWorkoutTab();
           this.showToast(`✅ ${targetDate} im Kalender grün abgehakt!`);
@@ -2011,16 +2116,21 @@
 
         this.state.sessions.push(sessionRecord);
         this.sortSessions();
-        delete draft.editingSessionId;
-        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
-        await this.persistAll();
 
+        const key = this.getDraftKey(draft.splitId, targetDate);
+        if (this.state.drafts) delete this.state.drafts[key];
+        delete draft.editingSessionId;
+
+        this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
+        this.state.drafts[this.getDraftKey(this.state.activeSplitId, this.todayIso())] = this.state.activeDraft;
+
+        await this.persistAll();
         this.renderWorkoutTab();
         this.showToast(`✅ Training gespeichert & im Kalender abgehakt!`);
       },
 
       /***********************************************************************
-       * 9. CALENDAR TRACKER (QUICK-LOG WITH LAST VALUES & RETRO EDITING)
+       * 9. CALENDAR TRACKER
        ***********************************************************************/
       changeCalendarMonth(delta) {
         let m = this.state.calendarMonth + delta;
@@ -2179,7 +2289,6 @@
         modal.classList.remove('hidden');
       },
 
-      // Quick log now populates with the latest values for every exercise in the split
       async quickLogCalendarDayWithLastValues(dateIso, splitId, splitName, isRest) {
         if (isRest) {
           const record = {
@@ -2252,7 +2361,6 @@
         this.showToast(`✅ „${splitName}" mit Vorwerten für ${dateIso} abgehakt!`);
       },
 
-      // Load existing session into active draft for easy editing
       editSessionInWorkout(sessionId) {
         const sess = this.state.sessions.find(s => s.id === sessionId);
         if (!sess) return;
@@ -3069,7 +3177,7 @@
       },
 
       /***********************************************************************
-       * 13. MANAGE TAB (EXERCISE CREATION/EDIT MODAL & TEMPLATE REORDER/SWAP)
+       * 13. MANAGE TAB
        ***********************************************************************/
       renderManageTab() {
         this.sortSplits();
@@ -3105,7 +3213,6 @@
                             class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
                             + Gerät
                           </button>
-                          <!-- Edit Name & Category Button -->
                           <button onclick="App.openEditExerciseModal('${ex.id}')" title="Übung & Kategorie bearbeiten"
                             class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg font-bold">
                             ✎
@@ -3149,7 +3256,6 @@
 
         container.innerHTML = html;
 
-        // Split List with Reordering (↑/↓) and Template Swap (⇄)
         const splitList = document.getElementById('manageSplitsList');
         splitList.innerHTML = this.state.splits.map((sp, spIdx) => `
           <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
@@ -3174,12 +3280,10 @@
                       <span class="text-zinc-200 font-semibold truncate flex-1">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
                       <div class="flex items-center gap-1 shrink-0">
                         <span class="text-[10px] font-mono text-zinc-400 mr-1">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
-                        <!-- Move Up / Down inside Split Template -->
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, -1)" ${itIdx === 0 ? 'disabled' : ''}
                           class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, 1)" ${itIdx === sp.items.length - 1 ? 'disabled' : ''}
                           class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▼</button>
-                        <!-- Swap Exercise in Split Template -->
                         <button onclick="App.openSwapSplitTemplateExerciseModal(${spIdx}, ${itIdx})" title="Im Plan dauerhaft austauschen"
                           class="px-2 py-1 bg-black active:bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-lg text-xs font-bold">
                           ⇄
@@ -3195,7 +3299,6 @@
         `).join('');
       },
 
-      // Modal: Create Exercise with Category Dropdown
       openCreateExerciseModal(addToWorkoutAfter = false) {
         const modal = document.getElementById('modalOverlay');
         const title = document.getElementById('modalTitle');
@@ -3278,7 +3381,6 @@
         this.showToast(`Übung „${name}" in ${category} angelegt!`);
       },
 
-      // Modal: Edit Name & Category
       openEditExerciseModal(exerciseId) {
         const ex = this.state.exercises.find(e => e.id === exerciseId);
         if (!ex) return;
@@ -3341,7 +3443,6 @@
         this.showToast(`Übung auf ${nextCat} aktualisiert`);
       },
 
-      // Move exercise up or down in split template
       moveSplitItem(splitIdx, itemIdx, direction) {
         const sp = this.state.splits[splitIdx];
         if (!sp || !Array.isArray(sp.items)) return;
@@ -3356,7 +3457,6 @@
         this.renderManageTab();
       },
 
-      // Modal: Swap exercise inside Split Template
       openSwapSplitTemplateExerciseModal(spIdx, itIdx) {
         const sp = this.state.splits[spIdx];
         const it = sp?.items?.[itIdx];
@@ -3632,18 +3732,19 @@
       },
 
       /***********************************************************************
-       * 14. BACKUP (JSON EXPORT / IMPORT) & DEMO SEEDER
+       * 14. BACKUP & DIAGNOSTICS
        ***********************************************************************/
       exportDatabaseJson() {
         const payload = {
           app: 'IRONLOG_GYM_TRACKER',
-          version: 6,
+          version: 7,
           exportedAt: new Date().toISOString(),
           data: {
             exercises: this.state.exercises,
             machines: this.state.machines,
             splits: this.state.splits,
-            sessions: this.state.sessions
+            sessions: this.state.sessions,
+            drafts: this.state.drafts
           }
         };
         this.triggerDownloadFile(`ironlog_backup_${this.todayIso()}.json`, JSON.stringify(payload, null, 2), 'application/json');
@@ -3666,6 +3767,7 @@
             this.state.machines = data.machines;
             this.state.splits = data.splits;
             this.state.sessions = data.sessions;
+            this.state.drafts = data.drafts || {};
 
             this.state.exercises.forEach(ex => {
               if (!ex.category) ex.category = this.inferCategory(ex.name);
@@ -3793,6 +3895,7 @@
       async clearAllSessionsOnly() {
         if (!confirm('Alle gespeicherten Einheiten & Kalender-Haken löschen?')) return;
         this.state.sessions = [];
+        this.state.drafts = {};
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
         await this.persistAll();
         this.renderWorkoutTab();
@@ -3805,6 +3908,7 @@
         this.state.machines = JSON.parse(JSON.stringify(INITIAL_MACHINES));
         this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
         this.state.sessions = [];
+        this.state.drafts = {};
         this.sortSplits();
         this.state.activeSplitId = this.detectTodaySplitId();
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
