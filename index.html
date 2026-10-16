@@ -54,18 +54,19 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .touch-target { min-height: 44px; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body class="min-h-screen bg-black selection:bg-emerald-500 selection:text-black">
 
-  <!-- TOP HEADER -->
+  <!-- TOP HEADER WITH REAL-TIME PROGRESS BAR -->
   <header class="sticky top-0 z-30 bg-black/95 backdrop-blur-md border-b border-oled-border px-3.5 py-2.5">
     <div class="max-w-3xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-2.5">
-        <div class="w-2 h-5 bg-emerald-500 rounded-sm shadow-[0_0_12px_rgba(16,185,129,0.6)]"></div>
+        <div class="w-2 h-5 bg-emerald-500 rounded-sm shadow-[0_0_12px_rgba(16,185,129,0.7)]"></div>
         <div>
           <h1 class="text-sm font-black tracking-widest uppercase text-zinc-100 leading-none">IRONLOG</h1>
-          <p id="headerSubtitle" class="text-[10px] text-zinc-400 font-mono mt-0.5 tracking-tight">IndexedDB Sync</p>
+          <p id="headerSubtitle" class="text-[10px] text-zinc-400 font-mono mt-0.5 tracking-tight tabular-nums">IndexedDB Sync</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -79,6 +80,10 @@
         </button>
       </div>
     </div>
+    <!-- 2PX MINIMAL SESSION PROGRESS BAR -->
+    <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-zinc-950">
+      <div id="headerSessionProgressBar" class="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)] transition-all duration-300 ease-out" style="width: 0%;"></div>
+    </div>
   </header>
 
   <!-- MAIN CONTAINER -->
@@ -89,11 +94,10 @@
       
       <!-- ERGONOMIC 7-DAY WEEK STRIP + SPLIT PILLS -->
       <div class="bg-oled-card border border-oled-border rounded-2xl p-3 space-y-2.5 shadow-lg">
-        <!-- Week Header & Nav -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span id="weekLabelCurrent" class="text-xs font-black uppercase tracking-wider text-emerald-400 font-mono">KW --</span>
-            <span id="weekSpanDateLabel" class="text-[11px] text-zinc-400 font-mono">Lade...</span>
+            <span id="weekLabelCurrent" class="text-xs font-black uppercase tracking-wider text-emerald-400 font-mono tabular-nums">KW --</span>
+            <span id="weekSpanDateLabel" class="text-[11px] text-zinc-400 font-mono tabular-nums">Lade...</span>
           </div>
           <div class="flex items-center gap-1">
             <button onclick="App.shiftWeek(-7)" class="touch-target px-2.5 py-1 bg-black border border-oled-border rounded-lg text-xs text-zinc-300 active:bg-oled-surface font-mono">◀</button>
@@ -109,7 +113,7 @@
         <!-- 7 Days Grid -->
         <div id="weekDaysGrid" class="grid grid-cols-7 gap-1.5 pt-0.5"></div>
 
-        <!-- Split Selector Badges (No messy dates) -->
+        <!-- Split Selector Badges -->
         <div class="pt-1.5 border-t border-oled-borderSubtle">
           <div class="text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-wider">Plan für diesen Tag:</div>
           <div id="splitSelectorButtons" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
@@ -129,7 +133,7 @@
       <div id="workoutFooterActions" class="space-y-2.5 pt-1">
         <div class="flex gap-2">
           <button onclick="App.openAddExerciseToWorkoutModal()"
-            class="flex-1 touch-target bg-oled-surface active:bg-oled-elevated border border-oled-border text-zinc-200 py-3 rounded-xl text-xs font-bold">
+            class="flex-1 touch-target bg-oled-surface active:bg-oled-elevated border border-oled-border text-zinc-200 py-3 rounded-xl text-xs font-bold shadow-sm">
             + Übung zur Einheit hinzufügen
           </button>
           <button onclick="App.resetActiveDraft()"
@@ -146,7 +150,7 @@
 
     <!-- TAB 2: STATS -->
     <section id="tab-stats" class="hidden space-y-3.5">
-      <div class="bg-oled-card border border-oled-border rounded-2xl p-1.5 grid grid-cols-3 gap-1.5">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-1.5 grid grid-cols-3 gap-1.5 shadow-sm">
         <button id="statsBtnCalendar" onclick="App.switchStatsSubTab('calendar')"
           class="touch-target py-2 px-2 rounded-xl text-xs font-black transition-none bg-emerald-500 text-black">
           📅 Kalender
@@ -165,9 +169,9 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xs font-black uppercase tracking-wider text-emerald-400">Wochenvolumen (Arbeitssätze)</h2>
-            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono">Aktuelle KW (ohne Warmups)</p>
+            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono tabular-nums">Aktuelle KW (ohne Warmups)</p>
           </div>
-          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400">0 WS</span>
+          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400 tabular-nums">0 WS</span>
         </div>
         <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
       </div>
@@ -187,15 +191,15 @@
           <div class="grid grid-cols-3 gap-2">
             <div class="bg-black border border-emerald-950 rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Abgehakt</div>
-              <div id="calCompletedCount" class="text-base font-black font-mono text-emerald-400 mt-0.5">0</div>
+              <div id="calCompletedCount" class="text-base font-black font-mono text-emerald-400 mt-0.5 tabular-nums">0</div>
             </div>
             <div class="bg-black border border-red-950 rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Vergessen</div>
-              <div id="calMissedCount" class="text-base font-black font-mono text-red-400 mt-0.5">0</div>
+              <div id="calMissedCount" class="text-base font-black font-mono text-red-400 mt-0.5 tabular-nums">0</div>
             </div>
             <div class="bg-black border border-oled-border rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Quote</div>
-              <div id="calRateBadge" class="text-base font-black font-mono text-zinc-100 mt-0.5">0%</div>
+              <div id="calRateBadge" class="text-base font-black font-mono text-zinc-100 mt-0.5 tabular-nums">0%</div>
             </div>
           </div>
 
@@ -245,7 +249,7 @@
         <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-2 shadow-md">
           <div class="flex items-center justify-between">
             <span id="progressionChartTitle" class="text-xs font-bold text-zinc-200">Entwicklungsdiagramm</span>
-            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-oled-border"></span>
+            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-oled-border tabular-nums"></span>
           </div>
           <div class="relative h-64 w-full">
             <canvas id="progressionChartCanvas"></canvas>
@@ -258,15 +262,15 @@
         <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2">
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] uppercase text-zinc-400">Start</div>
-            <div id="progStartVal" class="text-sm font-black font-mono text-zinc-200 mt-0.5">—</div>
+            <div id="progStartVal" class="text-sm font-black font-mono text-zinc-200 mt-0.5 tabular-nums">—</div>
           </div>
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] uppercase text-zinc-400">Aktuell</div>
-            <div id="progEndVal" class="text-sm font-black font-mono text-emerald-400 mt-0.5">—</div>
+            <div id="progEndVal" class="text-sm font-black font-mono text-emerald-400 mt-0.5 tabular-nums">—</div>
           </div>
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] uppercase text-zinc-400">Delta</div>
-            <div id="progDeltaVal" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
+            <div id="progDeltaVal" class="text-sm font-black font-mono text-zinc-100 mt-0.5 tabular-nums">—</div>
           </div>
         </div>
       </div>
@@ -301,19 +305,19 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="analyticsKpiGrid">
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] text-zinc-400 uppercase font-mono">Best e1RM</div>
-            <div id="kpiE1rm" class="text-sm font-black font-mono text-emerald-400 mt-0.5">—</div>
+            <div id="kpiE1rm" class="text-sm font-black font-mono text-emerald-400 mt-0.5 tabular-nums">—</div>
           </div>
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] text-zinc-400 uppercase font-mono">Max Last</div>
-            <div id="kpiMaxWeight" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
+            <div id="kpiMaxWeight" class="text-sm font-black font-mono text-zinc-100 mt-0.5 tabular-nums">—</div>
           </div>
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] text-zinc-400 uppercase font-mono">Max Vol</div>
-            <div id="kpiMaxVolume" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
+            <div id="kpiMaxVolume" class="text-sm font-black font-mono text-zinc-100 mt-0.5 tabular-nums">—</div>
           </div>
           <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] text-zinc-400 uppercase font-mono">Logs</div>
-            <div id="kpiSessions" class="text-sm font-black font-mono text-zinc-100 mt-0.5">0</div>
+            <div id="kpiSessions" class="text-sm font-black font-mono text-zinc-100 mt-0.5 tabular-nums">0</div>
           </div>
         </div>
 
@@ -344,7 +348,7 @@
           <h2 class="text-sm font-black text-zinc-100">Trainingsarchiv</h2>
           <p class="text-xs text-zinc-400">Alle Einheiten & Pausentage aus deiner IndexedDB</p>
         </div>
-        <span id="historyCountBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400">0 Logs</span>
+        <span id="historyCountBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400 tabular-nums">0 Logs</span>
       </div>
       <div id="historySessionsContainer" class="space-y-2.5"></div>
     </section>
@@ -441,10 +445,10 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toastBanner" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-black font-black text-xs px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap"></div>
 
-  <!-- BOTTOM NAVIGATION -->
+  <!-- BOTTOM NAVIGATION WITH AMBIENT GLOW -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-oled-border pb-[env(safe-area-inset-bottom)]">
     <div class="max-w-3xl mx-auto grid grid-cols-4">
-      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-black border-t-2 border-emerald-500 text-emerald-400">
+      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-black border-t-2 border-emerald-500 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-transparent shadow-[0_-8px_16px_rgba(16,185,129,0.15)]">
         <span class="text-base leading-none mb-1">🏋️</span>
         <span>Training</span>
       </button>
@@ -1236,7 +1240,7 @@
                     <button onclick="App.swapExerciseInDraft(${entryIdx}, '${ex.id}')"
                       class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-oled-border text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
                       <span>${this.escapeHtml(ex.name)}</span>
-                      <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
+                      <span class="text-xs font-mono text-zinc-500 tabular-nums">${this.getMachinesForExercise(ex.id).length} Geräte</span>
                     </button>
                   `;
                 }).join('')}
@@ -1485,7 +1489,7 @@
                         : 'bg-black text-zinc-300 border-oled-border active:bg-oled-surface')
                 }">
                 <span class="text-[9px] uppercase tracking-wider ${isSel ? 'text-black font-extrabold' : 'text-zinc-500'}">${d.name}</span>
-                <span class="text-xs font-mono font-black mt-0.5">${d.dayNum}</span>
+                <span class="text-xs font-mono font-black mt-0.5 tabular-nums">${d.dayNum}</span>
                 <div class="w-1.5 h-1.5 rounded-full mt-1 ${
                   hasSession ? (isSel ? 'bg-black' : 'bg-emerald-400') : 'bg-transparent'
                 }"></div>
@@ -1494,7 +1498,7 @@
           }).join('');
         }
 
-        // 2. SPLIT SELECTOR BUTTONS (CLEAN, NO REDUNDANT DATES)
+        // 2. SPLIT SELECTOR BUTTONS
         const btnBar = document.getElementById('splitSelectorButtons');
         if (btnBar) {
           btnBar.innerHTML = this.state.splits.map(s => {
@@ -1526,7 +1530,20 @@
           editBanner.classList.add('hidden');
         }
 
-        // 4. CONTAINER
+        // 4. REAL-TIME PROGRESS BAR IN HEADER
+        let totalSetsInSession = 0;
+        let completedSetsInSession = 0;
+        (draft?.entries || []).forEach(e => {
+          (e.sets || []).forEach(s => {
+            totalSetsInSession++;
+            if (s.completed) completedSetsInSession++;
+          });
+        });
+        const progressPct = totalSetsInSession > 0 ? Math.round((completedSetsInSession / totalSetsInSession) * 100) : 0;
+        const progressEl = document.getElementById('headerSessionProgressBar');
+        if (progressEl) progressEl.style.width = `${progressPct}%`;
+
+        // 5. CONTAINER
         const container = document.getElementById('workoutExercisesContainer');
         const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
         const finishBtn = document.getElementById('finishWorkoutMainBtn');
@@ -1606,14 +1623,14 @@
               const dropStr = (s.type === 'dropset' && s.drops && s.drops.length > 0)
                 ? ' ↳ ' + s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join('/')
                 : '';
-              return `<span class="inline-block bg-black border border-oled-border rounded-lg px-2 py-0.5 text-[11px] font-mono text-zinc-200">
+              return `<span class="inline-block bg-black border border-oled-border rounded-lg px-2 py-0.5 text-[11px] font-mono text-zinc-200 tabular-nums">
                 <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeTag}:</strong> ${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}${partStr}${dropStr}
               </span>`;
             }).join(' ');
             lastPerfHtml = `
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-[10px] font-mono uppercase text-zinc-400">Letztes Mal (${lastPerf.date}):</span>
+                  <span class="text-[10px] font-mono uppercase text-zinc-400 tabular-nums">Letztes Mal (${lastPerf.date}):</span>
                   <button type="button" onclick="App.copyLastPerformanceToEntry(${entryIdx})"
                     class="bg-emerald-500/15 active:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1">
                     <span>📋</span>
@@ -1626,7 +1643,7 @@
           }
 
           htmlParts.push(`
-            <div class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/70' : 'border-oled-border'} rounded-2xl overflow-hidden shadow-md">
+            <div id="workout-card-${entryIdx}" class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/70 opacity-75 hover:opacity-100' : 'border-oled-border'} rounded-2xl overflow-hidden shadow-md transition-all duration-300 scroll-mt-20">
               <div class="p-3 bg-oled-surface/70 ${isCollapsed ? '' : 'border-b border-oled-border'} space-y-2">
                 <div class="flex items-center justify-between gap-2">
                   <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
@@ -1635,7 +1652,7 @@
                     <h3 class="text-sm font-black truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
                       ${isAllCompleted ? '✓ ' : ''}${this.escapeHtml(displayTitle)}
                     </h3>
-                    <span class="shrink-0 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                    <span class="shrink-0 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md tabular-nums ${
                       isAllCompleted
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
                         : 'bg-black text-zinc-300 border border-oled-border'
@@ -1695,7 +1712,7 @@
                 ` : `
                   <div onclick="App.toggleExerciseCollapse(${entryIdx})" class="flex items-center justify-between text-xs text-zinc-400 font-mono px-1 cursor-pointer">
                     <span class="truncate">⚙ ${this.escapeHtml(selectedMachine.name)} [${(selectedMachine.unit || 'kg').toUpperCase()}]${selectedMachine.setupNote ? ` • 📌 ${this.escapeHtml(selectedMachine.setupNote)}` : ''}</span>
-                    <span class="text-emerald-400 shrink-0 ml-2">Öffnen</span>
+                    <span class="text-emerald-400 shrink-0 ml-2 font-bold">Öffnen ▸</span>
                   </div>
                 `}
               </div>
@@ -1736,7 +1753,7 @@
                               value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
                               placeholder="${weightPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
-                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 focus:shadow-[0_0_10px_rgba(16,185,129,0.25)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none tabular-nums">
                           </div>
 
                           <div class="col-span-3">
@@ -1744,12 +1761,12 @@
                               value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
                               placeholder="${repsPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
-                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 focus:shadow-[0_0_10px_rgba(16,185,129,0.25)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.8)] rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none tabular-nums">
                           </div>
 
                           <div class="col-span-2">
                             <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
-                              class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-black ${
+                              class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-black tabular-nums ${
                                 (s.partials || 0) > 0 ? 'text-amber-400 border-amber-500/70' : 'text-zinc-500 border-oled-border'
                               }">
                               +${s.partials || 0}P
@@ -1769,7 +1786,7 @@
                         </div>
 
                         <div class="flex items-center gap-1.5 pt-0.5">
-                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
+                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
                             ${this.escapeHtml(btlInfo.text)}
                           </div>
                           <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Werte nach unten übernehmen"
@@ -1798,14 +1815,14 @@
                                       value="${drop.weight !== '' ? drop.weight : ''}"
                                       placeholder="${prevDrop ? prevDrop.weight : (isPin ? 'Pin' : 'kg')}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
-                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 tabular-nums">
                                   </div>
                                   <div class="col-span-4">
                                     <input type="number" inputmode="numeric" onfocus="this.select()"
                                       value="${drop.reps !== '' ? drop.reps : ''}"
                                       placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
-                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600 tabular-nums">
                                   </div>
                                   <div class="col-span-2 text-right">
                                     <button type="button" onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
@@ -1900,8 +1917,10 @@
         this.saveDraft();
       },
 
+      // AUTO-COLLAPSE & AUTO-SCROLL TO NEXT EXERCISE
       toggleSetComplete(entryIdx, setIdx) {
         const entry = this.state.activeDraft.entries[entryIdx];
+        const wasAllCompleted = entry.sets.length > 0 && entry.sets.every(s => s.completed);
         const set = entry.sets[setIdx];
         const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
         const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
@@ -1928,6 +1947,7 @@
           }
           set.completed = true;
 
+          // Auto-Fill nach unten
           if (setIdx + 1 < entry.sets.length) {
             const nextSet = entry.sets[setIdx + 1];
             if (!nextSet.completed && (nextSet.weight === '' || nextSet.weight === null)) {
@@ -1938,8 +1958,29 @@
           set.completed = false;
         }
 
+        const nowAllCompleted = entry.sets.length > 0 && entry.sets.every(s => s.completed);
+        let shouldAutoAdvance = false;
+
+        // Wenn die Übung soeben fertig wurde: automatisch einklappen und weiterspringen
+        if (!wasAllCompleted && nowAllCompleted) {
+          entry.collapsed = true;
+          shouldAutoAdvance = true;
+        }
+
         this.saveDraft();
         this.renderWorkoutTab();
+
+        if (shouldAutoAdvance) {
+          setTimeout(() => {
+            const nextCard = document.getElementById(`workout-card-${entryIdx + 1}`);
+            if (nextCard) {
+              nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              const finishBtn = document.getElementById('finishWorkoutMainBtn');
+              if (finishBtn) finishBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 120);
+        }
       },
 
       addSetRow(entryIdx) {
@@ -2220,7 +2261,7 @@
             <button type="button" onclick="App.openCalendarDayModal('${dateIso}')"
               class="h-12 border rounded-xl p-1 flex flex-col items-center justify-between active:scale-95 transition-transform ${cellCls}">
               <div class="w-full flex items-center justify-between px-1">
-                <span class="text-xs font-mono font-bold">${day}</span>
+                <span class="text-xs font-mono font-bold tabular-nums">${day}</span>
                 <span class="text-[9px] leading-none">${statusIcon}</span>
               </div>
               <div class="text-[8px] font-bold truncate w-full text-center opacity-90">${this.escapeHtml(subText)}</div>
@@ -2490,7 +2531,7 @@
             <div class="bg-black border border-oled-border rounded-xl p-2.5 space-y-1">
               <div class="flex items-center justify-between text-xs">
                 <span class="font-bold text-zinc-200 truncate pr-1">${cat.icon} ${this.escapeHtml(cat.name)}</span>
-                <span class="font-mono font-black ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0">${count} WS</span>
+                <span class="font-mono font-black ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0 tabular-nums">${count} WS</span>
               </div>
               <div class="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
                 <div class="h-full ${count > 0 ? 'bg-emerald-500' : 'bg-zinc-800'}" style="width: ${pct}%"></div>
@@ -2703,6 +2744,8 @@
           ? machineGroups
           : machineGroups.filter(g => g.machineId === this.state.progressionMachineFilter);
 
+        const canvas = document.getElementById('progressionChartCanvas');
+        const ctx = canvas.getContext('2d');
         const datasets = [];
         const allVisiblePoints = [];
 
@@ -2724,16 +2767,25 @@
           allVisiblePoints.push(...inWindow);
 
           if (inWindow.length > 0) {
+            let bgFill = color + '15';
+            if (filteredGroups.length === 1) {
+              const grad = ctx.createLinearGradient(0, 0, 0, 240);
+              grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+              grad.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+              grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+              bgFill = grad;
+            }
+
             datasets.push({
               label: `${group.machineName} (${group.unit})`,
               data: inWindow,
               borderColor: color,
-              backgroundColor: color + '22',
+              backgroundColor: bgFill,
               borderWidth: 2.5,
               pointBackgroundColor: color,
               pointRadius: 4,
               pointHoverRadius: 6,
-              tension: 0.2,
+              tension: 0.25,
               fill: filteredGroups.length === 1
             });
           }
@@ -2764,7 +2816,7 @@
         document.getElementById('progEndVal').textContent = `${lastVal}`;
         const deltaEl = document.getElementById('progDeltaVal');
         deltaEl.textContent = `${sign}${diff.toFixed(1)} (${sign}${pct}%)`;
-        deltaEl.className = `text-sm font-black font-mono mt-0.5 ${
+        deltaEl.className = `text-sm font-black font-mono mt-0.5 tabular-nums ${
           diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-red-400' : 'text-zinc-300')
         }`;
 
@@ -2775,8 +2827,7 @@
         }
 
         emptyOverlay.classList.add('hidden');
-        const canvas = document.getElementById('progressionChartCanvas');
-        this.progressionChartInstance = new Chart(canvas.getContext('2d'), {
+        this.progressionChartInstance = new Chart(ctx, {
           type: 'line',
           data: { datasets },
           options: {
@@ -3006,8 +3057,13 @@
           }
 
           document.getElementById('chartTitleLabel').textContent = labelText;
+          const ctx = canvas.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, 0, 240);
+          grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+          grad.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-          this.chartInstance = new Chart(canvas.getContext('2d'), {
+          this.chartInstance = new Chart(ctx, {
             type: 'line',
             data: {
               labels,
@@ -3015,11 +3071,11 @@
                 label: labelText,
                 data: values,
                 borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                backgroundColor: grad,
                 borderWidth: 2.5,
                 pointBackgroundColor: '#10b981',
                 pointRadius: 4,
-                tension: 0.2,
+                tension: 0.25,
                 fill: true
               }]
             },
@@ -3062,7 +3118,7 @@
               const drops = (s.type === 'dropset' && s.drops && s.drops.length > 0)
                 ? ` ↳ [${s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join(', ')}]`
                 : '';
-              return `<span class="inline-block bg-black border ${badgeColor} rounded-lg px-2 py-0.5 text-xs font-mono">
+              return `<span class="inline-block bg-black border ${badgeColor} rounded-lg px-2 py-0.5 text-xs font-mono tabular-nums">
                 ${typeLabel}: <strong>${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}</strong>${part}${drops}
               </span>`;
             }).join(' ');
@@ -3070,8 +3126,8 @@
             return `
               <div class="bg-black border border-oled-border rounded-xl p-2.5 space-y-1">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="font-bold font-mono text-zinc-200">${pt.date}</span>
-                  <span class="font-mono text-[11px] text-emerald-400">e1RM: ${pt.e1rm}${unitSuffix} | Vol: ${pt.volume}</span>
+                  <span class="font-bold font-mono text-zinc-200 tabular-nums">${pt.date}</span>
+                  <span class="font-mono text-[11px] text-emerald-400 tabular-nums">e1RM: ${pt.e1rm}${unitSuffix} | Vol: ${pt.volume}</span>
                 </div>
                 <div class="flex flex-wrap gap-1">${setsHtml}</div>
               </div>
@@ -3101,7 +3157,7 @@
                 <div class="flex items-center gap-2.5">
                   <span class="text-lg">🛋️</span>
                   <div>
-                    <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
+                    <span class="text-xs font-mono font-bold text-emerald-400 tabular-nums">${sess.date}</span>
                     <h3 class="text-xs font-black text-zinc-100">${this.escapeHtml(sess.splitName || 'Pausentag')}</h3>
                   </div>
                 </div>
@@ -3129,7 +3185,7 @@
               const drops = (s.type === 'dropset' && s.drops?.length)
                 ? ` ↳ ${s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join('/')}`
                 : '';
-              return `<span class="bg-black border border-oled-border px-1.5 py-0.5 rounded-lg font-mono text-[10px] text-zinc-200">
+              return `<span class="bg-black border border-oled-border px-1.5 py-0.5 rounded-lg font-mono text-[10px] text-zinc-200 tabular-nums">
                 <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeLabel}:</strong> ${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}${part}${drops}
               </span>`;
             }).join(' ');
@@ -3149,7 +3205,7 @@
             <div class="bg-oled-card border border-oled-border rounded-2xl p-3 space-y-2 shadow-sm">
               <div class="flex items-center justify-between border-b border-oled-border pb-1.5">
                 <div>
-                  <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
+                  <span class="text-xs font-mono font-bold text-emerald-400 tabular-nums">${sess.date}</span>
                   <h3 class="text-xs font-black text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
                 </div>
                 <div class="flex items-center gap-1.5">
@@ -3197,7 +3253,7 @@
                   <span class="text-sm">${cat.icon}</span>
                   <h3 class="text-xs font-black uppercase tracking-wider text-emerald-400">${this.escapeHtml(cat.name)}</h3>
                 </div>
-                <span class="text-[10px] font-mono text-zinc-500">${matchingExercises.length} Übungen</span>
+                <span class="text-[10px] font-mono text-zinc-500 tabular-nums">${matchingExercises.length} Übungen</span>
               </div>
 
               <div class="space-y-2">
@@ -3261,7 +3317,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <h4 class="text-xs font-black text-zinc-100">${this.escapeHtml(sp.name)}</h4>
-                <span class="text-[10px] text-zinc-500">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
+                <span class="text-[10px] text-zinc-500 tabular-nums">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
               </div>
               <div class="flex items-center gap-1">
                 <button onclick="App.moveSplitDay(${spIdx}, -1)" class="text-xs bg-oled-surface border border-oled-border text-zinc-300 px-2 py-1 rounded-lg">↑</button>
@@ -3278,7 +3334,7 @@
                     <div class="flex items-center justify-between gap-1.5 bg-oled-surface border border-oled-border rounded-xl px-2 py-1.5 text-xs">
                       <span class="text-zinc-200 font-semibold truncate flex-1">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
                       <div class="flex items-center gap-1 shrink-0">
-                        <span class="text-[10px] font-mono text-zinc-400 mr-1">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
+                        <span class="text-[10px] font-mono text-zinc-400 mr-1 tabular-nums">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, -1)" ${itIdx === 0 ? 'disabled' : ''}
                           class="w-6 h-6 bg-black border border-oled-border disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, 1)" ${itIdx === sp.items.length - 1 ? 'disabled' : ''}
@@ -3490,7 +3546,7 @@
                     <button onclick="App.swapSplitTemplateExercise(${spIdx}, ${itIdx}, '${ex.id}')"
                       class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-oled-border text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
                       <span>${this.escapeHtml(ex.name)}</span>
-                      <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
+                      <span class="text-xs font-mono text-zinc-500 tabular-nums">${this.getMachinesForExercise(ex.id).length} Geräte</span>
                     </button>
                   `;
                 }).join('')}
@@ -3998,8 +4054,10 @@
 
         document.querySelectorAll('.nav-btn').forEach(btn => {
           const isCurrent = btn.getAttribute('data-tab') === tabName;
-          btn.className = `nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-black border-t-2 ${
-            isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400'
+          btn.className = `nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] ${
+            isCurrent 
+              ? 'font-black border-t-2 border-emerald-500 text-emerald-400 bg-gradient-to-b from-emerald-500/10 to-transparent shadow-[0_-8px_16px_rgba(16,185,129,0.15)]' 
+              : 'font-bold border-t-2 border-transparent text-zinc-400'
           }`;
         });
 
