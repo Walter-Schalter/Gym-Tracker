@@ -8,11 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="IRONLOG">
-  <title>IRONLOG // Offline Gym Tracker</title>
+  <title>IRONLOG // Precision Gym Tracker</title>
   <link id="pwaManifestLink" rel="manifest" href="">
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="">
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="">
-  <!-- Offline-Hinweis: Sobald du die Dateien lokal in assets/ hast, ersetze die src durch ./tailwind.js und ./chart.umd.min.js -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script>
@@ -23,9 +22,11 @@
           colors: {
             oled: {
               bg: '#000000',
-              card: '#0b0b0e',
-              surface: '#121216',
-              border: '#222228'
+              card: '#0d0d11',
+              surface: '#14141a',
+              elevated: '#1a1a24',
+              border: '#22222b',
+              borderSubtle: '#191921'
             }
           }
         }
@@ -42,7 +43,7 @@
     }
     body {
       padding-top: env(safe-area-inset-top);
-      padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
@@ -58,21 +59,21 @@
 <body class="min-h-screen bg-black selection:bg-emerald-500 selection:text-black">
 
   <!-- TOP HEADER -->
-  <header class="sticky top-0 z-30 bg-black/95 backdrop-blur border-b border-zinc-800/90 px-3.5 py-3">
+  <header class="sticky top-0 z-30 bg-black/95 backdrop-blur-md border-b border-oled-border px-3.5 py-2.5">
     <div class="max-w-3xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-2.5">
-        <div class="w-2.5 h-6 bg-emerald-500 rounded-sm shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+        <div class="w-2 h-5 bg-emerald-500 rounded-sm shadow-[0_0_12px_rgba(16,185,129,0.6)]"></div>
         <div>
-          <h1 class="text-base font-extrabold tracking-wider uppercase text-zinc-100 leading-none">IRONLOG</h1>
-          <p id="headerSubtitle" class="text-[11px] text-zinc-400 font-mono mt-0.5">IndexedDB Persistent</p>
+          <h1 class="text-sm font-black tracking-widest uppercase text-zinc-100 leading-none">IRONLOG</h1>
+          <p id="headerSubtitle" class="text-[10px] text-zinc-400 font-mono mt-0.5 tracking-tight">IndexedDB Sync</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-3 py-2 rounded-lg text-xs">
+        <button id="pwaInstallHeaderBtn" onclick="App.triggerPwaInstall()" class="hidden bg-emerald-500 active:bg-emerald-400 text-black font-extrabold px-3 py-1.5 rounded-lg text-xs">
           📲 Installieren
         </button>
-        <button id="headerBackupBtn" onclick="App.switchTab('backup')" title="Backup & Einstellungen"
-          class="bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 min-h-[40px]">
+        <button id="headerBackupBtn" onclick="App.switchTab('backup')" title="Backup"
+          class="bg-oled-surface active:bg-oled-elevated border border-oled-border text-zinc-300 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
           <span>⚙️</span>
           <span>Backup</span>
         </button>
@@ -81,146 +82,159 @@
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="max-w-3xl mx-auto px-3 pt-3.5">
+  <main class="max-w-3xl mx-auto px-3 pt-3">
 
     <!-- TAB 1: WORKOUT -->
-    <section id="tab-workout" class="space-y-3.5">
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3">
-        <div class="flex items-center justify-between mb-2.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Trainingstag / Datum</label>
-          <input type="date" id="workoutDateInput" onchange="App.onManualDateChange(this.value)"
-            class="bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-emerald-400 focus:outline-none focus:border-emerald-500">
+    <section id="tab-workout" class="space-y-3">
+      
+      <!-- ERGONOMIC 7-DAY WEEK STRIP + SPLIT PILLS -->
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-3 space-y-2.5 shadow-lg">
+        <!-- Week Header & Nav -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="weekLabelCurrent" class="text-xs font-black uppercase tracking-wider text-emerald-400 font-mono">KW --</span>
+            <span id="weekSpanDateLabel" class="text-[11px] text-zinc-400 font-mono">Lade...</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="App.shiftWeek(-7)" class="touch-target px-2.5 py-1 bg-black border border-oled-border rounded-lg text-xs text-zinc-300 active:bg-oled-surface font-mono">◀</button>
+            <button onclick="App.jumpToToday()" class="touch-target px-2.5 py-1 bg-black border border-oled-border rounded-lg text-[11px] font-bold text-zinc-300 active:bg-oled-surface">Heute</button>
+            <button onclick="App.shiftWeek(7)" class="touch-target px-2.5 py-1 bg-black border border-oled-border rounded-lg text-xs text-zinc-300 active:bg-oled-surface font-mono">▶</button>
+            <label class="touch-target p-2 bg-black border border-oled-border rounded-lg text-xs text-zinc-300 active:bg-oled-surface cursor-pointer flex items-center justify-center">
+              <span>📅</span>
+              <input type="date" id="nativeDateHidden" onchange="App.onManualDateChange(this.value)" class="sr-only">
+            </label>
+          </div>
         </div>
-        <div id="splitSelectorButtons" class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
+
+        <!-- 7 Days Grid -->
+        <div id="weekDaysGrid" class="grid grid-cols-7 gap-1.5 pt-0.5"></div>
+
+        <!-- Split Selector Badges (No messy dates) -->
+        <div class="pt-1.5 border-t border-oled-borderSubtle">
+          <div class="text-[10px] uppercase font-bold text-zinc-500 mb-1.5 tracking-wider">Plan für diesen Tag:</div>
+          <div id="splitSelectorButtons" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5"></div>
+        </div>
       </div>
 
+      <!-- Editing Existing Session Banner -->
       <div id="editingSessionBanner" class="hidden bg-emerald-950/40 border border-emerald-500/70 rounded-xl p-3 flex items-center justify-between text-xs">
         <span class="text-emerald-300 font-bold" id="editingSessionText">✏️ Bearbeite gespeicherte Einheit</span>
         <button onclick="App.cancelSessionEdit()" class="text-zinc-400 active:text-zinc-100 font-bold px-2 py-1 bg-black rounded border border-zinc-800">Abbrechen</button>
       </div>
 
-      <div id="workoutExercisesContainer" class="space-y-3.5"></div>
+      <!-- Active Exercises Container -->
+      <div id="workoutExercisesContainer" class="space-y-3"></div>
 
-      <div id="workoutFooterActions" class="space-y-3 pt-1">
+      <!-- Quick Add Exercise & Finish Buttons -->
+      <div id="workoutFooterActions" class="space-y-2.5 pt-1">
         <div class="flex gap-2">
           <button onclick="App.openAddExerciseToWorkoutModal()"
-            class="flex-1 touch-target bg-oled-card active:bg-zinc-800 border border-zinc-800 text-zinc-200 py-3 rounded-xl text-xs font-bold">
+            class="flex-1 touch-target bg-oled-surface active:bg-oled-elevated border border-oled-border text-zinc-200 py-3 rounded-xl text-xs font-bold">
             + Übung zur Einheit hinzufügen
           </button>
           <button onclick="App.resetActiveDraft()"
-            class="touch-target bg-oled-card active:bg-red-950/60 border border-zinc-800 text-zinc-400 px-4 py-3 rounded-xl text-xs font-bold">
+            class="touch-target bg-oled-surface active:bg-red-950/60 border border-oled-border text-zinc-400 px-4 py-3 rounded-xl text-xs font-bold">
             Reset
           </button>
         </div>
         <button id="finishWorkoutMainBtn" onclick="App.finishWorkout()"
-          class="w-full touch-target bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-black font-extrabold py-4 rounded-xl text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.25)]">
+          class="w-full touch-target bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-black font-black py-4 rounded-xl text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(16,185,129,0.3)]">
           ✓ Training abschließen & abhaken
         </button>
       </div>
     </section>
 
     <!-- TAB 2: STATS -->
-    <section id="tab-stats" class="hidden space-y-4">
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-1.5 grid grid-cols-3 gap-1.5">
+    <section id="tab-stats" class="hidden space-y-3.5">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-1.5 grid grid-cols-3 gap-1.5">
         <button id="statsBtnCalendar" onclick="App.switchStatsSubTab('calendar')"
-          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none bg-emerald-500 text-black">
+          class="touch-target py-2 px-2 rounded-xl text-xs font-black transition-none bg-emerald-500 text-black">
           📅 Kalender
         </button>
         <button id="statsBtnProgression" onclick="App.switchStatsSubTab('progression')"
-          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none text-zinc-400">
+          class="touch-target py-2 px-2 rounded-xl text-xs font-bold transition-none text-zinc-400">
           📈 Zeitachse
         </button>
         <button id="statsBtnAnalytics" onclick="App.switchStatsSubTab('analytics')"
-          class="touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none text-zinc-400">
+          class="touch-target py-2 px-2 rounded-xl text-xs font-bold transition-none text-zinc-400">
           ⚙️ Maschinen
         </button>
       </div>
 
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2.5">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-2.5 shadow-md">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Wochenvolumen (Arbeitssätze)</h2>
+            <h2 class="text-xs font-black uppercase tracking-wider text-emerald-400">Wochenvolumen (Arbeitssätze)</h2>
             <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono">Aktuelle KW (ohne Warmups)</p>
           </div>
-          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0 WS</span>
+          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400">0 WS</span>
         </div>
         <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
       </div>
 
       <!-- SUB-VIEW 2A: CALENDAR -->
-      <div id="stats-view-calendar" class="space-y-3.5">
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3.5">
+      <div id="stats-view-calendar" class="space-y-3">
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-3 shadow-md">
           <div class="flex items-center justify-between">
-            <button onclick="App.changeCalendarMonth(-1)" class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">◀</button>
+            <button onclick="App.changeCalendarMonth(-1)" class="touch-target bg-black active:bg-oled-surface border border-oled-border text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-mono font-bold">◀</button>
             <div class="text-center">
-              <h3 id="calendarMonthLabel" class="text-sm font-extrabold uppercase tracking-wider text-zinc-100">Monat</h3>
-              <p class="text-[11px] text-zinc-400">Tippe auf einen Tag zum Bearbeiten / Nachtragen</p>
+              <h3 id="calendarMonthLabel" class="text-sm font-black uppercase tracking-wider text-zinc-100">Monat</h3>
+              <p class="text-[10px] text-zinc-400">Tippe auf einen Tag zum Bearbeiten / Nachtragen</p>
             </div>
-            <button onclick="App.changeCalendarMonth(1)" class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-zinc-200 px-3.5 py-2 rounded-xl text-xs font-bold">▶</button>
+            <button onclick="App.changeCalendarMonth(1)" class="touch-target bg-black active:bg-oled-surface border border-oled-border text-zinc-200 px-3 py-1.5 rounded-xl text-xs font-mono font-bold">▶</button>
           </div>
 
           <div class="grid grid-cols-3 gap-2">
-            <div class="bg-black border border-emerald-900/60 rounded-xl p-2.5 text-center">
+            <div class="bg-black border border-emerald-950 rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Abgehakt</div>
-              <div id="calCompletedCount" class="text-base font-extrabold font-mono text-emerald-400 mt-0.5">0</div>
+              <div id="calCompletedCount" class="text-base font-black font-mono text-emerald-400 mt-0.5">0</div>
             </div>
-            <div class="bg-black border border-red-900/60 rounded-xl p-2.5 text-center">
+            <div class="bg-black border border-red-950 rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Vergessen</div>
-              <div id="calMissedCount" class="text-base font-extrabold font-mono text-red-400 mt-0.5">0</div>
+              <div id="calMissedCount" class="text-base font-black font-mono text-red-400 mt-0.5">0</div>
             </div>
-            <div class="bg-black border border-zinc-800 rounded-xl p-2.5 text-center">
+            <div class="bg-black border border-oled-border rounded-xl p-2.5 text-center">
               <div class="text-[10px] uppercase font-bold text-zinc-400">Quote</div>
-              <div id="calRateBadge" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">0%</div>
+              <div id="calRateBadge" class="text-base font-black font-mono text-zinc-100 mt-0.5">0%</div>
             </div>
           </div>
 
-          <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-bold uppercase text-zinc-500 pt-1">
+          <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-zinc-500 pt-1">
             <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
           </div>
 
           <div id="calendarGrid" class="grid grid-cols-7 gap-1.5"></div>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80 text-[11px] text-zinc-400">
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500 inline-block"></span>
-              <span>Training / Pause erledigt</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded bg-red-950/80 border border-red-700 inline-block"></span>
-              <span>Vergessen (antippen zum Nachtragen)</span>
-            </div>
-          </div>
         </div>
       </div>
 
       <!-- SUB-VIEW 2B: PROGRESSION -->
-      <div id="stats-view-progression" class="hidden space-y-4">
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
+      <div id="stats-view-progression" class="hidden space-y-3">
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-3 shadow-md">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">Progression & Zeitachse</h2>
-              <p class="text-[11px] text-zinc-400">Exklusive Warmup-Sätze • „Heute" am rechten Rand</p>
+              <h2 class="text-xs font-black uppercase tracking-wider text-emerald-400">Progression & Zeitachse</h2>
+              <p class="text-[11px] text-zinc-400">Warmups exklusive • Zeitachse chronologisch</p>
             </div>
-            <div class="grid grid-cols-3 bg-black border border-zinc-800 rounded-xl p-1 gap-1">
-              <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">1M</button>
-              <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">1J</button>
-              <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-2 rounded-lg text-xs font-bold">Alle</button>
+            <div class="grid grid-cols-3 bg-black border border-oled-border rounded-xl p-1 gap-1">
+              <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn px-3 py-1.5 rounded-lg text-xs font-bold">1M</button>
+              <button onclick="App.setProgressionRange('1Y')" data-range="1Y" class="prog-range-btn px-3 py-1.5 rounded-lg text-xs font-bold">1J</button>
+              <button onclick="App.setProgressionRange('ALL')" data-range="ALL" class="prog-range-btn px-3 py-1.5 rounded-lg text-xs font-bold">Alle</button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
             <div class="sm:col-span-2">
               <label class="block text-[11px] text-zinc-400 mb-1">Getrackte Übung</label>
               <select id="progressionExerciseSelect" onchange="App.onProgressionExerciseChange()"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
             <div>
-              <label class="block text-[11px] text-zinc-400 mb-1">Metrik (ohne Warmup)</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">Metrik</label>
               <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                 <option value="e1rm">Est. 1RM (Epley / Pins)</option>
                 <option value="maxWeight">Max Last (kg/Pin)</option>
-                <option value="volume">Volumen (nur WS/Drop)</option>
+                <option value="volume">Volumen (WS)</option>
               </select>
             </div>
           </div>
@@ -228,97 +242,96 @@
           <div id="progressionMachineFilterBar" class="flex flex-wrap gap-1.5 pt-1"></div>
         </div>
 
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2">
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-2 shadow-md">
           <div class="flex items-center justify-between">
             <span id="progressionChartTitle" class="text-xs font-bold text-zinc-200">Entwicklungsdiagramm</span>
-            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-zinc-800"></span>
+            <span id="progressionDateSpanLabel" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-oled-border"></span>
           </div>
           <div class="relative h-64 w-full">
             <canvas id="progressionChartCanvas"></canvas>
             <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-oled-card/95">
-              <p class="text-sm text-zinc-300 font-bold" id="progressionEmptyMsg">Noch keine Arbeitssätze vorhanden.</p>
+              <p class="text-sm text-zinc-400 font-bold" id="progressionEmptyMsg">Noch keine Daten vorhanden.</p>
             </div>
           </div>
         </div>
 
         <div id="progressionDeltaCards" class="grid grid-cols-3 gap-2">
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
-            <div class="text-[10px] uppercase text-zinc-400">Startwert</div>
-            <div id="progStartVal" class="text-sm font-extrabold font-mono text-zinc-200 mt-0.5">—</div>
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
+            <div class="text-[10px] uppercase text-zinc-400">Start</div>
+            <div id="progStartVal" class="text-sm font-black font-mono text-zinc-200 mt-0.5">—</div>
           </div>
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] uppercase text-zinc-400">Aktuell</div>
-            <div id="progEndVal" class="text-sm font-extrabold font-mono text-emerald-400 mt-0.5">—</div>
+            <div id="progEndVal" class="text-sm font-black font-mono text-emerald-400 mt-0.5">—</div>
           </div>
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
             <div class="text-[10px] uppercase text-zinc-400">Delta</div>
-            <div id="progDeltaVal" class="text-sm font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
+            <div id="progDeltaVal" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
           </div>
         </div>
       </div>
 
       <!-- SUB-VIEW 2C: MACHINE DETAILS -->
-      <div id="stats-view-analytics" class="hidden space-y-4">
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
-          <h2 class="text-xs font-extrabold uppercase tracking-wider text-zinc-400">Geräte-Spezifische Detail-Statistik</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+      <div id="stats-view-analytics" class="hidden space-y-3">
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-3 shadow-md">
+          <h2 class="text-xs font-black uppercase tracking-wider text-zinc-400">Geräte-Detailstatistik</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-zinc-400 mb-1">1. Übung auswählen</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">1. Übung</label>
               <select id="analyticsExerciseSelect" onchange="App.onAnalyticsExerciseChange()"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
             <div>
-              <label class="block text-[11px] text-zinc-400 mb-1">2. Maschine / Gerät</label>
+              <label class="block text-[11px] text-zinc-400 mb-1">2. Maschine</label>
               <select id="analyticsMachineSelect" onchange="App.renderAnalytics()"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500"></select>
             </div>
           </div>
 
           <div class="pt-1">
-            <label class="block text-[11px] text-zinc-400 mb-1.5">Metrik (Warmup-Sätze ausgeschlossen)</label>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5" id="metricButtonsContainer">
-              <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm" class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border">Est. 1RM</button>
-              <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight" class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border">Max Last</button>
-              <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet" class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border">Top-Set</button>
-              <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume" class="metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-bold border">Volumen (WS)</button>
+              <button onclick="App.setAnalyticsMetric('e1rm')" data-metric="e1rm" class="metric-btn touch-target py-2 px-2 rounded-xl text-xs font-bold border">Est. 1RM</button>
+              <button onclick="App.setAnalyticsMetric('maxWeight')" data-metric="maxWeight" class="metric-btn touch-target py-2 px-2 rounded-xl text-xs font-bold border">Max Last</button>
+              <button onclick="App.setAnalyticsMetric('topSet')" data-metric="topSet" class="metric-btn touch-target py-2 px-2 rounded-xl text-xs font-bold border">Top-Set</button>
+              <button onclick="App.setAnalyticsMetric('volume')" data-metric="volume" class="metric-btn touch-target py-2 px-2 rounded-xl text-xs font-bold border">Volumen</button>
             </div>
           </div>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="analyticsKpiGrid">
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
-            <div class="text-[11px] text-zinc-400">Bestes e1RM</div>
-            <div id="kpiE1rm" class="text-base font-extrabold font-mono text-emerald-400 mt-0.5">—</div>
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
+            <div class="text-[10px] text-zinc-400 uppercase font-mono">Best e1RM</div>
+            <div id="kpiE1rm" class="text-sm font-black font-mono text-emerald-400 mt-0.5">—</div>
           </div>
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
-            <div class="text-[11px] text-zinc-400">Max Last</div>
-            <div id="kpiMaxWeight" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
+            <div class="text-[10px] text-zinc-400 uppercase font-mono">Max Last</div>
+            <div id="kpiMaxWeight" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
           </div>
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
-            <div class="text-[11px] text-zinc-400">Max Volumen (WS)</div>
-            <div id="kpiMaxVolume" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">—</div>
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
+            <div class="text-[10px] text-zinc-400 uppercase font-mono">Max Vol</div>
+            <div id="kpiMaxVolume" class="text-sm font-black font-mono text-zinc-100 mt-0.5">—</div>
           </div>
-          <div class="bg-oled-card border border-zinc-800/90 rounded-xl p-3">
-            <div class="text-[11px] text-zinc-400">Sessions</div>
-            <div id="kpiSessions" class="text-base font-extrabold font-mono text-zinc-100 mt-0.5">0</div>
+          <div class="bg-oled-card border border-oled-border rounded-xl p-2.5">
+            <div class="text-[10px] text-zinc-400 uppercase font-mono">Logs</div>
+            <div id="kpiSessions" class="text-sm font-black font-mono text-zinc-100 mt-0.5">0</div>
           </div>
         </div>
 
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 shadow-md">
           <div class="flex items-center justify-between mb-2">
             <span id="chartTitleLabel" class="text-xs font-bold text-zinc-300">Progress-Verlauf</span>
-            <span id="chartSetupNoteBadge" class="text-[11px] font-mono text-zinc-400 bg-black px-2 py-0.5 rounded border border-zinc-800"></span>
+            <span id="chartSetupNoteBadge" class="text-[10px] font-mono text-amber-300 bg-black px-2 py-0.5 rounded border border-oled-border"></span>
           </div>
           <div class="relative h-64 w-full">
             <canvas id="progressChart"></canvas>
             <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-              <p class="text-sm text-zinc-400 font-bold" id="chartEmptyMsg">Noch keine Arbeitssätze für dieses Gerät gespeichert.</p>
+              <p class="text-sm text-zinc-400 font-bold" id="chartEmptyMsg">Noch keine Daten gespeichert.</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
-          <h3 class="text-xs font-extrabold uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
+        <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 shadow-md">
+          <h3 class="text-xs font-black uppercase tracking-wider text-zinc-400 mb-2.5">Historie an dieser Maschine</h3>
           <div id="analyticsHistoryList" class="space-y-2"></div>
         </div>
       </div>
@@ -326,86 +339,86 @@
 
     <!-- TAB 3: HISTORY -->
     <section id="tab-history" class="hidden space-y-3">
-      <div class="flex items-center justify-between bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5">
+      <div class="flex items-center justify-between bg-oled-card border border-oled-border rounded-2xl p-3.5 shadow-md">
         <div>
-          <h2 class="text-sm font-extrabold text-zinc-100">Gespeicherte Einheiten & Pausentage</h2>
-          <p class="text-xs text-zinc-400">Kompletter Trainingsverlauf aus deiner IndexedDB</p>
+          <h2 class="text-sm font-black text-zinc-100">Trainingsarchiv</h2>
+          <p class="text-xs text-zinc-400">Alle Einheiten & Pausentage aus deiner IndexedDB</p>
         </div>
-        <span id="historyCountBadge" class="text-xs font-mono font-bold bg-black border border-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0</span>
+        <span id="historyCountBadge" class="text-xs font-mono font-bold bg-black border border-oled-border px-2.5 py-1 rounded-lg text-emerald-400">0 Logs</span>
       </div>
-      <div id="historySessionsContainer" class="space-y-3"></div>
+      <div id="historySessionsContainer" class="space-y-2.5"></div>
     </section>
 
     <!-- TAB 4: PLAN & GERÄTE -->
-    <section id="tab-manage" class="hidden space-y-5">
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
+    <section id="tab-manage" class="hidden space-y-4">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-3 shadow-md">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-extrabold text-zinc-100">Übungen & Geräte</h2>
-            <p class="text-xs text-zinc-400">Kategorie wählen & A–Z sortiert</p>
+            <h2 class="text-sm font-black text-zinc-100">Übungen & Maschinen</h2>
+            <p class="text-xs text-zinc-400">Geräteeinstellungen & Einheiten verwalten</p>
           </div>
           <button onclick="App.openCreateExerciseModal()"
-            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs">
+            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-black px-3.5 py-2 rounded-xl text-xs">
             + Neue Übung
           </button>
         </div>
-        <div id="manageExercisesGroupedContainer" class="space-y-4"></div>
+        <div id="manageExercisesGroupedContainer" class="space-y-3"></div>
       </div>
 
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-3.5 space-y-3 shadow-md">
         <div class="flex items-center justify-between">
           <div>
-            <h2 class="text-sm font-extrabold text-zinc-100">Trainingsplan / Split (Vorlage)</h2>
-            <p class="text-xs text-zinc-400">Übungen sortieren (↑/↓) oder dauerhaft austauschen (⇄)</p>
+            <h2 class="text-sm font-black text-zinc-100">Trainingsplan-Vorlagen</h2>
+            <p class="text-xs text-zinc-400">Reihenfolge sortieren (↑/↓) oder Übung austauschen (⇄)</p>
           </div>
           <button onclick="App.promptCreateSplitDay()"
-            class="touch-target bg-black active:bg-zinc-800 text-zinc-100 font-bold px-3.5 py-2 rounded-xl text-xs border border-zinc-700">
+            class="touch-target bg-black active:bg-oled-surface text-zinc-100 font-bold px-3 py-1.5 rounded-xl text-xs border border-oled-border">
             + Neuer Tag
           </button>
         </div>
-        <div id="manageSplitsList" class="space-y-3"></div>
+        <div id="manageSplitsList" class="space-y-2.5"></div>
       </div>
     </section>
 
-    <!-- TAB 5: BACKUP & UPDATES -->
-    <section id="tab-backup" class="hidden space-y-4">
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
-        <h2 class="text-sm font-extrabold text-zinc-100">JSON-Backup (Export & Import)</h2>
+    <!-- TAB 5: BACKUP -->
+    <section id="tab-backup" class="hidden space-y-3.5">
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-4 space-y-3 shadow-md">
+        <h2 class="text-sm font-black text-zinc-100 uppercase tracking-wider">Daten-Backup (Export & Import)</h2>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Alle Daten liegen lokal in deiner persistenten <code class="text-emerald-400 font-mono">IndexedDB</code>.
+          Deine Trainingsdaten liegen in deiner lokalen <code class="text-emerald-400 font-mono">IndexedDB</code>. Sichere sie regelmäßig per Klick in die Zwischenablage.
         </p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
           <button onclick="App.exportDatabaseJson()"
-            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider">
+            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider">
             ⬇ Backup anzeigen & kopieren
           </button>
           <button onclick="App.openImportTextModal()"
-            class="touch-target bg-black active:bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider text-center flex items-center justify-center">
+            class="touch-target bg-oled-surface active:bg-oled-elevated border border-oled-border text-zinc-200 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center">
             ⬆ Backup einfügen (Text)
           </button>
         </div>
-        <div class="pt-2">
-          <label class="touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold py-2.5 px-4 rounded-xl text-xs text-center cursor-pointer flex items-center justify-center">
-            <span>📁 Datei importieren (Fallback)</span>
+        <div class="pt-1">
+          <label class="touch-target bg-black active:bg-oled-surface border border-oled-border text-zinc-400 font-bold py-2.5 px-4 rounded-xl text-xs text-center cursor-pointer flex items-center justify-center">
+            <span>📁 JSON-Datei laden (Fallback)</span>
             <input type="file" accept=".json,application/json" onchange="App.importDatabaseJson(event)" class="hidden">
           </label>
         </div>
       </div>
 
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
-        <h2 class="text-sm font-extrabold text-zinc-100">Diagnose & Datenbank-Tools</h2>
+      <div class="bg-oled-card border border-oled-border rounded-2xl p-4 space-y-3 shadow-md">
+        <h2 class="text-sm font-black text-zinc-100 uppercase tracking-wider">Datenbank-Aktionen</h2>
         <div class="flex flex-col sm:flex-row gap-2 pt-1">
           <button onclick="App.seedDemoSessions()"
-            class="touch-target bg-black active:bg-zinc-800 border border-zinc-700 text-zinc-200 px-3.5 py-3 rounded-xl text-xs font-bold">
+            class="touch-target bg-black active:bg-oled-surface border border-oled-border text-zinc-300 px-3.5 py-2.5 rounded-xl text-xs font-bold">
             Demo-Verlauf generieren
           </button>
           <button onclick="App.clearAllSessionsOnly()"
-            class="touch-target bg-black active:bg-zinc-800 border border-zinc-800 text-amber-400 px-3.5 py-3 rounded-xl text-xs font-bold">
+            class="touch-target bg-black active:bg-oled-surface border border-oled-border text-amber-400 px-3.5 py-2.5 rounded-xl text-xs font-bold">
             Nur Sessions leeren
           </button>
           <button onclick="App.factoryResetDatabase()"
-            class="touch-target bg-black active:bg-red-950 border border-red-900/60 text-red-400 px-3.5 py-3 rounded-xl text-xs font-bold">
-            Kompletter Werksreset
+            class="touch-target bg-black active:bg-red-950/60 border border-red-950 text-red-400 px-3.5 py-2.5 rounded-xl text-xs font-bold">
+            Werksreset
           </button>
         </div>
       </div>
@@ -415,10 +428,10 @@
 
   <!-- BOTTOM SHEET MODAL -->
   <div id="modalOverlay" onclick="if(event.target === this) App.closeModal()" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-oled-card border-t sm:border border-zinc-800 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl">
+    <div class="bg-oled-card border-t sm:border border-oled-border rounded-t-3xl sm:rounded-2xl w-full max-w-md p-4 space-y-3 max-h-[85vh] flex flex-col shadow-2xl">
       <div class="w-10 h-1 bg-zinc-700 rounded-full mx-auto mb-1 sm:hidden"></div>
-      <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
-        <h3 id="modalTitle" class="text-sm font-extrabold text-zinc-100">Auswahl</h3>
+      <div class="flex items-center justify-between border-b border-oled-border pb-2.5">
+        <h3 id="modalTitle" class="text-sm font-black text-zinc-100">Auswahl</h3>
         <button onclick="App.closeModal()" class="touch-target text-zinc-400 hover:text-zinc-100 text-xl font-bold px-3">×</button>
       </div>
       <div id="modalBody" class="overflow-y-auto space-y-2 py-1 flex-1 no-scrollbar"></div>
@@ -426,25 +439,25 @@
   </div>
 
   <!-- TOAST NOTIFICATION -->
-  <div id="toastBanner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap"></div>
+  <div id="toastBanner" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-black font-black text-xs px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap"></div>
 
   <!-- BOTTOM NAVIGATION -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur border-t border-zinc-800/90 pb-[env(safe-area-inset-bottom)]">
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-oled-border pb-[env(safe-area-inset-bottom)]">
     <div class="max-w-3xl mx-auto grid grid-cols-4">
-      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-extrabold border-t-2 border-emerald-500 text-emerald-400">
-        <span class="text-lg leading-none mb-1">🏋️</span>
+      <button onclick="App.switchTab('workout')" data-tab="workout" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-black border-t-2 border-emerald-500 text-emerald-400">
+        <span class="text-base leading-none mb-1">🏋️</span>
         <span>Training</span>
       </button>
-      <button onclick="App.switchTab('stats')" data-tab="stats" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
-        <span class="text-lg leading-none mb-1">📊</span>
+      <button onclick="App.switchTab('stats')" data-tab="stats" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">📊</span>
         <span>Stats</span>
       </button>
-      <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
-        <span class="text-lg leading-none mb-1">🗂</span>
+      <button onclick="App.switchTab('history')" data-tab="history" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">🗂</span>
         <span>Verlauf</span>
       </button>
-      <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-bold border-t-2 border-transparent text-zinc-400">
-        <span class="text-lg leading-none mb-1">🛠️</span>
+      <button onclick="App.switchTab('manage')" data-tab="manage" class="nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-bold border-t-2 border-transparent text-zinc-400">
+        <span class="text-base leading-none mb-1">🛠️</span>
         <span>Geräte</span>
       </button>
     </div>
@@ -630,13 +643,8 @@
       },
 
       async putAll(storeName, items) {
-        // Falls keine IndexedDB vorhanden ist, Fallback auf localStorage
         if (!this.db) {
-          try {
-            localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(items));
-          } catch (e) {
-            console.warn('localStorage full:', e);
-          }
+          try { localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(items)); } catch(e){}
           return;
         }
         return new Promise((resolve, reject) => {
@@ -664,11 +672,7 @@
 
       async setMeta(key, value) {
         if (!this.db) {
-          try {
-            localStorage.setItem(`ironlog_meta_${key}`, JSON.stringify(value));
-          } catch (e) {
-            console.warn('localStorage full:', e);
-          }
+          try { localStorage.setItem(`ironlog_meta_${key}`, JSON.stringify(value)); } catch(e){}
           return;
         }
         return new Promise((resolve) => {
@@ -864,7 +868,6 @@
         const manifestLink = document.getElementById('pwaManifestLink');
         if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
 
-        // ServiceWorker nur auf echten HTTP/HTTPS Hosts registrieren
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
           navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
@@ -898,7 +901,7 @@
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
         } catch (e) {
-          console.warn('Download fehlgeschlagen:', e);
+          console.warn('Download fail:', e);
         }
       },
 
@@ -951,7 +954,7 @@
       updateHeaderStatus() {
         const sub = document.getElementById('headerSubtitle');
         if (sub) {
-          sub.textContent = `${this.state.sessions.length} Logs | ${this.state.machines.length} Geräte`;
+          sub.textContent = `${this.state.sessions.length} Logs • ${this.state.machines.length} Geräte`;
         }
       },
 
@@ -961,7 +964,7 @@
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+        this._toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
       },
 
       todayIso() {
@@ -998,6 +1001,58 @@
         return isNaN(num) ? null : num;
       },
 
+      /***********************************************************************
+       * WOCHENSTREIFEN (WEEK STRIP) LOGIK
+       ***********************************************************************/
+      getWeekDays(activeDateStr) {
+        const d = new Date(activeDateStr + 'T12:00:00');
+        const dayOfWeek = d.getDay();
+        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(d);
+        monday.setDate(d.getDate() + diffToMon);
+
+        const days = [];
+        const weekdayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+        for (let i = 0; i < 7; i++) {
+          const cur = new Date(monday);
+          cur.setDate(monday.getDate() + i);
+          const tzOffset = cur.getTimezoneOffset() * 60000;
+          const iso = new Date(cur.getTime() - tzOffset).toISOString().slice(0, 10);
+          days.push({
+            iso,
+            name: weekdayNames[i],
+            dayNum: cur.getDate(),
+            isToday: iso === this.todayIso(),
+            isSelected: iso === activeDateStr
+          });
+        }
+        return days;
+      },
+
+      getWeekNumber(dateObj) {
+        const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+      },
+
+      shiftWeek(dayDelta) {
+        const curDate = this.state.activeDraft?.date || this.todayIso();
+        const d = new Date(curDate + 'T12:00:00');
+        d.setDate(d.getDate() + dayDelta);
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        const nextIso = new Date(d.getTime() - tzOffset).toISOString().slice(0, 10);
+        this.onManualDateChange(nextIso);
+      },
+
+      jumpToToday() {
+        this.onManualDateChange(this.todayIso());
+      },
+
+      /***********************************************************************
+       * BEAT THE LOGBOOK
+       ***********************************************************************/
       async toggleMachineUnit(machineId, entryIdx = null) {
         const machine = this.state.machines.find(m => m.id === machineId);
         if (!machine) return;
@@ -1007,7 +1062,7 @@
         if (this.state.currentTab === 'workout') this.renderWorkoutTab();
         if (this.state.currentTab === 'manage') this.renderManageTab();
         if (this.state.currentTab === 'stats') this.renderStatsTab();
-        this.showToast(`Einheit auf ${machine.unit.toUpperCase()} umgestellt`);
+        this.showToast(`Einheit: ${machine.unit.toUpperCase()}`);
       },
 
       computeBeatLogbookInfo(entry, set, setIdx) {
@@ -1027,8 +1082,8 @@
 
         if (!prevSet || prevSet.type === 'warmup') {
           return {
-            text: 'Kein Vorwert für diesen Satz-Slot',
-            cls: 'text-zinc-500 bg-black border-zinc-800/80'
+            text: 'Kein Vorwert für Satz ' + (setIdx + 1),
+            cls: 'text-zinc-500 bg-black border-oled-borderSubtle'
           };
         }
 
@@ -1039,8 +1094,8 @@
 
         if (currW === null || currR === null || currR <= 0) {
           return {
-            text: `🎯 Ziel schlagen: > ${isPin ? 'Pin ' : ''}${prevW} ${isPin ? '' : 'kg '}× ${prevR} Reps`,
-            cls: 'text-zinc-400 bg-black border-zinc-800'
+            text: `🎯 Vorwert: ${isPin ? 'Pin ' : ''}${prevW} ${isPin ? '' : 'kg '}× ${prevR} Reps`,
+            cls: 'text-zinc-400 bg-black border-oled-border'
           };
         }
 
@@ -1065,18 +1120,18 @@
         }
         if (diffE1rm > 0.15) {
           return {
-            text: `▲ Progression (+${diffE1rm.toFixed(1)} ${unitLabel}-Index vs. ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : 'kg'}×${prevR})`,
+            text: `▲ Progression (+${diffE1rm.toFixed(1)} Index vs. ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : 'kg'}×${prevR})`,
             cls: 'text-emerald-400 bg-emerald-950/30 border-emerald-700/50 font-bold'
           };
         }
         if (currW === prevW && currR === prevR) {
           return {
             text: `= Leistung gehalten (${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : ' kg'} × ${prevR})`,
-            cls: 'text-zinc-300 bg-zinc-900 border-zinc-700'
+            cls: 'text-zinc-300 bg-oled-surface border-oled-border'
           };
         }
         return {
-          text: `▼ Unter Vorwoche (Letztes Mal: ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : ' kg'} × ${prevR})`,
+          text: `▼ Unter Vorwert (Letztes Mal: ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : ' kg'} × ${prevR})`,
           cls: 'text-red-300 bg-red-950/30 border-red-900/50'
         };
       },
@@ -1096,7 +1151,7 @@
         if (!entry) return;
         const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
         if (!lastPerf || !lastPerf.sets || lastPerf.sets.length === 0) {
-          this.showToast('⚠️ Noch keine Vorwerte an diesem Gerät');
+          this.showToast('⚠️ Keine Vorwerte vorhanden');
           return;
         }
 
@@ -1113,7 +1168,7 @@
 
         this.saveDraft();
         this.renderWorkoutTab();
-        this.showToast('📋 Letzte Werte in alle Sätze kopiert!');
+        this.showToast('📋 Letzte Werte übernommen');
       },
 
       copySetDown(entryIdx, setIdx) {
@@ -1145,7 +1200,7 @@
 
         this.saveDraft();
         this.renderWorkoutTab();
-        this.showToast('↓ Werte in Folgesatz kopiert');
+        this.showToast('↓ Nach unten kopiert');
       },
 
       openSwapExerciseModal(entryIdx) {
@@ -1170,7 +1225,7 @@
 
           html += `
             <div class="pt-2">
-              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+              <div class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
                 <span>${cat.icon}</span>
                 <span>${cat.name}</span>
               </div>
@@ -1179,7 +1234,7 @@
                   const isCurrent = ex.id === entry.exerciseId;
                   return `
                     <button onclick="App.swapExerciseInDraft(${entryIdx}, '${ex.id}')"
-                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-zinc-800 text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
+                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-oled-border text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
                       <span>${this.escapeHtml(ex.name)}</span>
                       <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
                     </button>
@@ -1211,7 +1266,7 @@
         this.saveDraft();
         this.closeModal();
         this.renderWorkoutTab();
-        this.showToast(`⇄ Zu „${newEx.name}" gewechselt!`);
+        this.showToast(`⇄ ${newEx.name}`);
       },
 
       getLastPerformance(exerciseId, machineId) {
@@ -1310,28 +1365,6 @@
         return null;
       },
 
-      computeDateForSplitInCurrentWeek(split, activeDateStr) {
-        const d = new Date(activeDateStr + 'T12:00:00');
-        const dayOfWeek = d.getDay();
-        const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-        const monday = new Date(d);
-        monday.setDate(d.getDate() + diffToMon);
-
-        const rank = this.getWeekdayRank(split);
-        const targetDayOffset = (rank >= 1 && rank <= 7) ? (rank - 1) : 0;
-        const splitDate = new Date(monday);
-        splitDate.setDate(monday.getDate() + targetDayOffset);
-
-        const tzOffset = splitDate.getTimezoneOffset() * 60000;
-        const iso = new Date(splitDate.getTime() - tzOffset).toISOString().slice(0, 10);
-        const dayNum = String(splitDate.getDate()).padStart(2, '0');
-        const monNum = String(splitDate.getMonth() + 1).padStart(2, '0');
-        return {
-          iso,
-          short: `${dayNum}.${monNum}.`
-        };
-      },
-
       onManualDateChange(newVal) {
         if (!newVal) return;
         if (this.state.activeDraft) {
@@ -1422,9 +1455,68 @@
         this.sortSplits();
         const draft = this.state.activeDraft;
         const activeDate = draft?.date || this.todayIso();
-        const dateInput = document.getElementById('workoutDateInput');
-        if (dateInput) dateInput.value = activeDate;
 
+        // 1. UPDATE ERGONOMIC WEEK STRIP
+        const weekDays = this.getWeekDays(activeDate);
+        const curDateObj = new Date(activeDate + 'T12:00:00');
+        const kwNum = this.getWeekNumber(curDateObj);
+        
+        const weekLabelEl = document.getElementById('weekLabelCurrent');
+        const weekSpanEl = document.getElementById('weekSpanDateLabel');
+        if (weekLabelEl) weekLabelEl.textContent = `KW ${kwNum}`;
+        if (weekSpanEl) {
+          const monShort = this.formatShortDateFromTs(new Date(weekDays[0].iso + 'T12:00:00').getTime(), false);
+          const sunShort = this.formatShortDateFromTs(new Date(weekDays[6].iso + 'T12:00:00').getTime(), false);
+          weekSpanEl.textContent = `${monShort} – ${sunShort}`;
+        }
+
+        const weekGrid = document.getElementById('weekDaysGrid');
+        if (weekGrid) {
+          weekGrid.innerHTML = weekDays.map(d => {
+            const hasSession = this.state.sessions.some(s => s.date === d.iso);
+            const isSel = d.isSelected;
+            return `
+              <button type="button" onclick="App.onManualDateChange('${d.iso}')"
+                class="touch-target py-2 px-1 rounded-xl flex flex-col items-center justify-between border transition-all ${
+                  isSel
+                    ? 'bg-emerald-500 text-black border-emerald-400 font-black shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                    : (d.isToday 
+                        ? 'bg-oled-surface text-emerald-400 border-emerald-500/50' 
+                        : 'bg-black text-zinc-300 border-oled-border active:bg-oled-surface')
+                }">
+                <span class="text-[9px] uppercase tracking-wider ${isSel ? 'text-black font-extrabold' : 'text-zinc-500'}">${d.name}</span>
+                <span class="text-xs font-mono font-black mt-0.5">${d.dayNum}</span>
+                <div class="w-1.5 h-1.5 rounded-full mt-1 ${
+                  hasSession ? (isSel ? 'bg-black' : 'bg-emerald-400') : 'bg-transparent'
+                }"></div>
+              </button>
+            `;
+          }).join('');
+        }
+
+        // 2. SPLIT SELECTOR BUTTONS (CLEAN, NO REDUNDANT DATES)
+        const btnBar = document.getElementById('splitSelectorButtons');
+        if (btnBar) {
+          btnBar.innerHTML = this.state.splits.map(s => {
+            const active = s.id === this.state.activeSplitId;
+            let label = s.name;
+            if (label.includes(' – ')) {
+              label = label.split(' – ')[1];
+            }
+            return `
+              <button onclick="App.selectSplit('${s.id}')"
+                class="touch-target shrink-0 px-3 py-1.5 rounded-xl text-xs font-black border transition-none ${
+                  active
+                    ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                    : 'bg-black text-zinc-300 border-oled-border active:bg-oled-surface'
+                }">
+                ${s.isRest ? '🛋️ ' : ''}${this.escapeHtml(label)}
+              </button>
+            `;
+          }).join('');
+        }
+
+        // 3. EDIT BANNER
         const editBanner = document.getElementById('editingSessionBanner');
         const editText = document.getElementById('editingSessionText');
         if (draft?.editingSessionId) {
@@ -1434,31 +1526,7 @@
           editBanner.classList.add('hidden');
         }
 
-        const btnBar = document.getElementById('splitSelectorButtons');
-        btnBar.innerHTML = this.state.splits.map(s => {
-          const active = s.id === this.state.activeSplitId;
-          const { iso, short } = this.computeDateForSplitInCurrentWeek(s, activeDate);
-
-          let displayLabel = s.name;
-          if (displayLabel.includes(' – ')) {
-            const parts = displayLabel.split(' – ');
-            displayLabel = `${parts[0]} (${short}) – ${parts[1]}`;
-          } else {
-            displayLabel = `${displayLabel} (${short})`;
-          }
-
-          return `
-            <button onclick="App.selectSplit('${s.id}', '${iso}')"
-              class="touch-target shrink-0 px-3.5 py-2.5 rounded-xl text-xs font-extrabold border transition-none ${
-                active
-                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
-                  : 'bg-black text-zinc-300 border-zinc-800 active:bg-zinc-900'
-              }">
-              ${this.escapeHtml(displayLabel)}
-            </button>
-          `;
-        }).join('');
-
+        // 4. CONTAINER
         const container = document.getElementById('workoutExercisesContainer');
         const currentSplit = this.state.splits.find(s => s.id === this.state.activeSplitId);
         const finishBtn = document.getElementById('finishWorkoutMainBtn');
@@ -1467,17 +1535,15 @@
         if (currentSplit && currentSplit.isRest && (!draft.entries || draft.entries.length === 0)) {
           if (finishBtn) {
             finishBtn.textContent = alreadyLoggedToday
-              ? `✓ Pausentag am ${activeDate} bereits abgehakt (aktualisieren)`
+              ? `✓ Pausentag (${activeDate}) bereits abgehakt`
               : `🛋️ Pausentag (${activeDate}) im Kalender abhaken`;
           }
           container.innerHTML = `
-            <div class="bg-oled-card border ${alreadyLoggedToday ? 'border-emerald-600/80' : 'border-zinc-800'} rounded-2xl p-6 text-center space-y-2.5">
+            <div class="bg-oled-card border ${alreadyLoggedToday ? 'border-emerald-500/70' : 'border-oled-border'} rounded-2xl p-6 text-center space-y-2">
               <div class="text-3xl">${alreadyLoggedToday ? '✅' : '🛋️'}</div>
-              <h3 class="text-base font-extrabold text-zinc-100">${this.escapeHtml(currentSplit.name)}</h3>
-              <p class="text-xs text-zinc-400 leading-relaxed">
-                ${alreadyLoggedToday
-                  ? `Dieser Tag (${activeDate}) ist im Kalender bereits grün abgehakt!`
-                  : 'Planmäßiger Regenerations-/Pausentag. Tippe unten auf den grünen Button, um den Tag im Kalender grün abzuhaken.'}
+              <h3 class="text-sm font-black text-zinc-100">${this.escapeHtml(currentSplit.name)}</h3>
+              <p class="text-xs text-zinc-400">
+                ${alreadyLoggedToday ? `Dieser Tag ist im Kalender grün abgehakt.` : `Planmäßiger Rest Day. Tippe unten auf den Button zum Abhaken.`}
               </p>
             </div>
           `;
@@ -1492,8 +1558,8 @@
 
         if (!draft.entries || draft.entries.length === 0) {
           container.innerHTML = `
-            <div class="bg-oled-card border border-zinc-800 rounded-2xl p-6 text-center text-xs text-zinc-400">
-              Keine Übungen in dieser Einheit. Tippe unten auf "+ Übung zur Einheit hinzufügen".
+            <div class="bg-oled-card border border-oled-border rounded-2xl p-6 text-center text-xs text-zinc-400">
+              Keine Übungen in dieser Einheit. Tippe unten auf „+ Übung zur Einheit hinzufügen".
             </div>
           `;
           return;
@@ -1509,12 +1575,12 @@
 
           if (categoryName !== lastCategoryInList) {
             htmlParts.push(`
-              <div class="flex items-center gap-2 pt-3 pb-0.5">
-                <span class="text-xs font-extrabold tracking-wider uppercase text-emerald-400 bg-oled-surface border border-zinc-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+              <div class="flex items-center gap-2 pt-2.5 pb-0.5">
+                <span class="text-[11px] font-black tracking-wider uppercase text-emerald-400 bg-oled-surface border border-oled-border px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                   <span>${catObj.icon}</span>
                   <span>${catObj.name}</span>
                 </span>
-                <div class="h-px bg-zinc-800 flex-1"></div>
+                <div class="h-px bg-oled-border flex-1"></div>
               </div>
             `);
             lastCategoryInList = categoryName;
@@ -1540,64 +1606,64 @@
               const dropStr = (s.type === 'dropset' && s.drops && s.drops.length > 0)
                 ? ' ↳ ' + s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join('/')
                 : '';
-              return `<span class="inline-block bg-black border border-zinc-800 rounded-lg px-2 py-1 text-[11px] font-mono text-zinc-200">
+              return `<span class="inline-block bg-black border border-oled-border rounded-lg px-2 py-0.5 text-[11px] font-mono text-zinc-200">
                 <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeTag}:</strong> ${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}${partStr}${dropStr}
               </span>`;
             }).join(' ');
             lastPerfHtml = `
-              <div class="flex flex-col gap-2">
+              <div class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-[11px] font-mono uppercase text-zinc-400">Letztes Mal (${lastPerf.date}):</span>
+                  <span class="text-[10px] font-mono uppercase text-zinc-400">Letztes Mal (${lastPerf.date}):</span>
                   <button type="button" onclick="App.copyLastPerformanceToEntry(${entryIdx})"
-                    class="bg-emerald-500/15 active:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 px-2.5 py-1 rounded-lg text-[11px] font-extrabold flex items-center gap-1">
+                    class="bg-emerald-500/15 active:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 px-2 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1">
                     <span>📋</span>
-                    <span>Letztes Mal kopieren</span>
+                    <span>Kopieren</span>
                   </button>
                 </div>
-                <div class="flex flex-wrap items-center gap-1.5">${pills}</div>
+                <div class="flex flex-wrap items-center gap-1">${pills}</div>
               </div>
             `;
           }
 
           htmlParts.push(`
-            <div class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/80' : 'border-zinc-800/90'} rounded-2xl overflow-hidden">
-              <div class="p-3.5 bg-zinc-950/60 ${isCollapsed ? '' : 'border-b border-zinc-800/80'} space-y-2.5">
+            <div class="bg-oled-card border ${isAllCompleted ? 'border-emerald-500/70' : 'border-oled-border'} rounded-2xl overflow-hidden shadow-md">
+              <div class="p-3 bg-oled-surface/70 ${isCollapsed ? '' : 'border-b border-oled-border'} space-y-2">
                 <div class="flex items-center justify-between gap-2">
                   <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
-                    class="flex-1 flex items-center gap-2 text-left min-w-0 py-1">
+                    class="flex-1 flex items-center gap-2 text-left min-w-0 py-0.5">
                     <span class="text-xs font-mono text-zinc-400 shrink-0">${isCollapsed ? '▸' : '▾'}</span>
-                    <h3 class="text-sm font-extrabold truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
+                    <h3 class="text-sm font-black truncate ${isAllCompleted ? 'text-emerald-400' : 'text-zinc-100'}">
                       ${isAllCompleted ? '✓ ' : ''}${this.escapeHtml(displayTitle)}
                     </h3>
-                    <span class="shrink-0 text-[11px] font-mono font-bold px-2 py-0.5 rounded-md ${
+                    <span class="shrink-0 text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
                       isAllCompleted
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-                        : 'bg-zinc-900 text-zinc-300 border border-zinc-800'
+                        : 'bg-black text-zinc-300 border border-oled-border'
                     }">
                       ${completedSetsCount}/${totalSetsCount}
                     </span>
                   </button>
 
                   <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" onclick="App.openSwapExerciseModal(${entryIdx})" title="Übung für heute austauschen"
-                      class="touch-target px-2.5 py-1 bg-black active:bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1">
+                    <button type="button" onclick="App.openSwapExerciseModal(${entryIdx})" title="Übung austauschen"
+                      class="touch-target px-2.5 py-1 bg-black active:bg-zinc-900 border border-oled-border text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1">
                       <span>⇄</span>
                       <span>Tauschen</span>
                     </button>
                     <button type="button" onclick="App.moveDraftExercise(${entryIdx}, -1)" ${entryIdx === 0 ? 'disabled' : ''}
-                      class="w-8 h-8 bg-black active:bg-zinc-800 disabled:opacity-25 border border-zinc-800 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
+                      class="w-7 h-7 bg-black active:bg-zinc-800 disabled:opacity-20 border border-oled-border text-zinc-300 rounded-lg text-xs font-mono">▲</button>
                     <button type="button" onclick="App.moveDraftExercise(${entryIdx}, 1)" ${entryIdx === draft.entries.length - 1 ? 'disabled' : ''}
-                      class="w-8 h-8 bg-black active:bg-zinc-800 disabled:opacity-25 border border-zinc-800 text-zinc-300 rounded-lg text-xs font-mono">▼</button>
+                      class="w-7 h-7 bg-black active:bg-zinc-800 disabled:opacity-20 border border-oled-border text-zinc-300 rounded-lg text-xs font-mono">▼</button>
                     <button type="button" onclick="App.removeExerciseFromDraft(${entryIdx})"
-                      class="w-8 h-8 bg-black active:bg-red-950 border border-zinc-800 text-zinc-400 rounded-lg text-xs">✕</button>
+                      class="w-7 h-7 bg-black active:bg-red-950 border border-oled-border text-zinc-400 rounded-lg text-xs">✕</button>
                   </div>
                 </div>
 
                 ${!isCollapsed ? `
-                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                  <div class="grid grid-cols-1 sm:grid-cols-12 gap-1.5 items-center">
                     <div class="sm:col-span-6 flex gap-1.5">
                       <select onchange="App.onWorkoutMachineChange(${entryIdx}, this.value)"
-                        class="flex-1 touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                        class="flex-1 touch-target bg-black border border-oled-border rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                         ${machines.map(m => `
                           <option value="${m.id}" ${m.id === selectedMachine.id ? 'selected' : ''}>
                             ⚙ ${this.escapeHtml(m.name)} (${(m.unit || 'kg').toUpperCase()})
@@ -1606,24 +1672,24 @@
                       </select>
 
                       <button type="button" onclick="App.toggleMachineUnit('${selectedMachine.id}', ${entryIdx})"
-                        class="touch-target px-3 py-2 bg-black active:bg-zinc-800 border ${
-                          isPin ? 'border-purple-600/80 text-purple-300' : 'border-zinc-700 text-zinc-300'
-                        } rounded-xl text-xs font-extrabold flex items-center gap-1 shrink-0">
+                        class="touch-target px-2.5 py-1.5 bg-black active:bg-zinc-800 border ${
+                          isPin ? 'border-purple-600/80 text-purple-300' : 'border-oled-border text-zinc-300'
+                        } rounded-xl text-xs font-black flex items-center gap-1 shrink-0">
                         <span>${isPin ? '📌 Pin' : '⚖️ kg'}</span>
                       </button>
                     </div>
 
-                    <div class="sm:col-span-6 touch-target flex items-center gap-2 bg-black border border-zinc-800 rounded-xl px-3 py-2">
+                    <div class="sm:col-span-6 touch-target flex items-center gap-2 bg-black border border-oled-border rounded-xl px-2.5 py-1.5">
                       <span class="text-xs text-zinc-400 shrink-0">📌</span>
                       <input type="text"
                         value="${this.escapeAttr(selectedMachine.setupNote || '')}"
-                        placeholder="Sitz / Polster Notiz..."
+                        placeholder="Sitz-/Polster Notiz..."
                         onchange="App.updateMachineSetupNote('${selectedMachine.id}', this.value)"
                         class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
                     </div>
                   </div>
 
-                  <div class="bg-black/80 border border-zinc-800/90 rounded-xl p-2.5">
+                  <div class="bg-black/90 border border-oled-border rounded-xl p-2.5">
                     ${lastPerfHtml}
                   </div>
                 ` : `
@@ -1635,8 +1701,8 @@
               </div>
 
               ${!isCollapsed ? `
-                <div class="p-3.5 space-y-2.5">
-                  <div class="grid grid-cols-12 gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-1">
+                <div class="p-3 space-y-2">
+                  <div class="grid grid-cols-12 gap-1 text-[9px] font-black uppercase tracking-wider text-zinc-400 px-1">
                     <div class="col-span-2">Satz</div>
                     <div class="col-span-3 text-center ${isPin ? 'text-purple-400' : ''}">${unitHeader}</div>
                     <div class="col-span-3 text-center">Reps</div>
@@ -1648,7 +1714,7 @@
                     const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
                     const weightPlaceholder = prevSet ? `${prevSet.weight}` : (isPin ? 'Pin' : 'kg');
                     const repsPlaceholder = prevSet ? `${prevSet.reps}` : 'Reps';
-                    const rowBg = s.completed ? 'bg-emerald-950/25 border-emerald-500/70' : 'bg-black border-zinc-800';
+                    const rowBg = s.completed ? 'bg-emerald-950/20 border-emerald-500/60' : 'bg-black border-oled-border';
                     const btlInfo = this.computeBeatLogbookInfo(entry, s, setIdx);
 
                     return `
@@ -1656,7 +1722,7 @@
                         <div class="grid grid-cols-12 gap-1.5 items-center">
                           <div class="col-span-2">
                             <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
-                              class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-1.5 text-xs font-extrabold text-center ${
+                              class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-1 text-xs font-black text-center ${
                                 s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')
                               } focus:outline-none">
                               <option value="normal" ${s.type === 'normal' ? 'selected' : ''}>WS</option>
@@ -1670,7 +1736,7 @@
                               value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
                               placeholder="${weightPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
-                              class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
                           <div class="col-span-3">
@@ -1678,13 +1744,13 @@
                               value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
                               placeholder="${repsPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
-                              class="w-full touch-target bg-oled-surface border border-zinc-700 focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-extrabold text-zinc-100 placeholder-zinc-600 focus:outline-none">
+                              class="w-full touch-target bg-oled-surface border border-oled-border focus:border-emerald-500 rounded-xl px-2 text-center text-base font-mono font-black text-zinc-100 placeholder-zinc-600 focus:outline-none">
                           </div>
 
                           <div class="col-span-2">
                             <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
-                              class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-extrabold ${
-                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-500/70' : 'text-zinc-500 border-zinc-700'
+                              class="w-full touch-target bg-oled-surface active:bg-zinc-800 border rounded-xl text-xs font-mono font-black ${
+                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-500/70' : 'text-zinc-500 border-oled-border'
                               }">
                               +${s.partials || 0}P
                             </button>
@@ -1692,58 +1758,58 @@
 
                           <div class="col-span-2 flex items-center gap-1">
                             <button type="button" onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
-                              class="flex-1 touch-target rounded-xl font-extrabold text-sm ${
+                              class="flex-1 touch-target rounded-xl font-black text-sm ${
                                 s.completed ? 'bg-emerald-500 text-black shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-zinc-800 active:bg-zinc-700 text-zinc-200'
                               }">
                               ✓
                             </button>
                             <button type="button" onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
-                              class="touch-target text-zinc-500 active:text-red-400 px-1.5 text-sm font-bold">×</button>
+                              class="touch-target text-zinc-500 active:text-red-400 px-1 text-sm font-bold">×</button>
                           </div>
                         </div>
 
-                        <div class="flex items-center gap-2 pt-0.5">
-                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
+                        <div class="flex items-center gap-1.5 pt-0.5">
+                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
                             ${this.escapeHtml(btlInfo.text)}
                           </div>
-                          <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Werte in nächsten Satz übernehmen"
-                            class="px-2.5 py-1 bg-oled-surface active:bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg text-xs font-mono font-bold shrink-0 flex items-center gap-1">
+                          <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Werte nach unten übernehmen"
+                            class="px-2.5 py-1 bg-oled-surface active:bg-zinc-800 border border-oled-border text-zinc-300 rounded-lg text-xs font-mono font-bold shrink-0 flex items-center gap-1">
                             <span>↓</span>
-                            <span>Nach unten</span>
+                            <span>Kopieren</span>
                           </button>
                         </div>
 
                         ${s.type === 'dropset' ? `
-                          <div class="pl-3 border-l-2 border-purple-500/70 space-y-2 pt-1">
+                          <div class="pl-2.5 border-l-2 border-purple-500/70 space-y-1.5 pt-1">
                             <div class="flex items-center justify-between">
-                              <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
+                              <span class="text-[10px] font-black uppercase tracking-wider text-purple-400">↳ Dropset-Stufen</span>
                               <button type="button" onclick="App.addDropStage(${entryIdx}, ${setIdx})"
-                                class="text-xs bg-purple-950/80 active:bg-purple-900 border border-purple-700/70 text-purple-200 px-2.5 py-1 rounded-lg font-bold">
+                                class="text-xs bg-purple-950/80 active:bg-purple-900 border border-purple-700/70 text-purple-200 px-2 py-0.5 rounded-lg font-bold">
                                 + Drop
                               </button>
                             </div>
                             ${(s.drops || []).map((drop, dropIdx) => {
                               const prevDrop = prevSet && prevSet.drops && prevSet.drops[dropIdx] ? prevSet.drops[dropIdx] : null;
                               return `
-                                <div class="grid grid-cols-12 gap-1.5 items-center">
+                                <div class="grid grid-cols-12 gap-1 items-center">
                                   <div class="col-span-2 text-xs font-mono font-bold text-purple-300">Drop ${dropIdx + 1}</div>
                                   <div class="col-span-4">
                                     <input type="text" inputmode="decimal" onfocus="this.select()"
                                       value="${drop.weight !== '' ? drop.weight : ''}"
                                       placeholder="${prevDrop ? prevDrop.weight : (isPin ? 'Pin' : 'kg')}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'weight', this.value)"
-                                      class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
                                   </div>
                                   <div class="col-span-4">
                                     <input type="number" inputmode="numeric" onfocus="this.select()"
                                       value="${drop.reps !== '' ? drop.reps : ''}"
                                       placeholder="${prevDrop ? prevDrop.reps + ' Reps' : 'Reps'}"
                                       oninput="App.onDropFieldInput(${entryIdx}, ${setIdx}, ${dropIdx}, 'reps', this.value)"
-                                      class="w-full touch-target bg-oled-surface border border-zinc-700 rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
+                                      class="w-full touch-target bg-oled-surface border border-oled-border rounded-xl px-2 text-center text-sm font-mono font-bold text-zinc-100 placeholder-zinc-600">
                                   </div>
                                   <div class="col-span-2 text-right">
                                     <button type="button" onclick="App.removeDropStage(${entryIdx}, ${setIdx}, ${dropIdx})"
-                                      class="touch-target text-zinc-400 active:text-red-400 text-sm px-2.5">✕</button>
+                                      class="touch-target text-zinc-400 active:text-red-400 text-sm px-2">✕</button>
                                   </div>
                                 </div>
                               `;
@@ -1755,7 +1821,7 @@
                   }).join('')}
 
                   <button type="button" onclick="App.addSetRow(${entryIdx})"
-                    class="w-full touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-300 py-2.5 rounded-xl text-xs font-extrabold">
+                    class="w-full touch-target bg-black active:bg-zinc-900 border border-oled-border text-zinc-300 py-2.5 rounded-xl text-xs font-black">
                     + Satz (WS) hinzufügen
                   </button>
                 </div>
@@ -1784,7 +1850,7 @@
         if (!machine) return;
         machine.setupNote = noteText.trim();
         StorageEngine.putAll('machines', this.state.machines);
-        this.showToast('📌 Sitzeinstellung gespeichert');
+        this.showToast('📌 Notiz gespeichert');
       },
 
       onSetTypeChange(entryIdx, setIdx, newType) {
@@ -1924,14 +1990,14 @@
 
           html += `
             <div class="pt-2">
-              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+              <div class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
                 <span>${cat.icon}</span>
                 <span>${cat.name}</span>
               </div>
               <div class="space-y-1">
                 ${matching.map(ex => `
                   <button onclick="App.addExerciseToActiveDraft('${ex.id}')"
-                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
+                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-oled-border rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
                     <span>${this.escapeHtml(ex.name)}</span>
                     <span class="text-emerald-400 font-mono text-base">+</span>
                   </button>
@@ -1942,9 +2008,9 @@
         });
 
         html += `
-          <div class="pt-3 border-t border-zinc-800 mt-3">
+          <div class="pt-3 border-t border-oled-border mt-3">
             <button onclick="App.openCreateExerciseModal(true)"
-              class="w-full touch-target bg-emerald-500 text-black font-extrabold py-3 rounded-xl text-xs">
+              class="w-full touch-target bg-emerald-500 text-black font-black py-3 rounded-xl text-xs">
               + Komplett neue Übung anlegen
             </button>
           </div>
@@ -2047,7 +2113,7 @@
 
           await this.persistAll();
           this.renderWorkoutTab();
-          this.showToast(`✅ ${targetDate} im Kalender grün abgehakt!`);
+          this.showToast(`✅ ${targetDate} abgehakt!`);
           return;
         }
 
@@ -2077,7 +2143,7 @@
 
         await this.persistAll();
         this.renderWorkoutTab();
-        this.showToast(`✅ Training gespeichert & im Kalender abgehakt!`);
+        this.showToast(`✅ Training gespeichert!`);
       },
 
       changeCalendarMonth(delta) {
@@ -2112,7 +2178,7 @@
         const cellsHtml = [];
 
         for (let i = 0; i < startOffset; i++) {
-          cellsHtml.push(`<div class="h-14 rounded-xl bg-transparent"></div>`);
+          cellsHtml.push(`<div class="h-12 rounded-xl bg-transparent"></div>`);
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -2122,7 +2188,7 @@
           const isPast = dateIso < todayStr;
           const isToday = dateIso === todayStr;
 
-          let cellCls = 'bg-black border-zinc-800/80 text-zinc-500';
+          let cellCls = 'bg-black border-oled-border text-zinc-500';
           let statusIcon = '';
           let subText = '';
 
@@ -2141,7 +2207,7 @@
             subText = shortSplit.slice(0, 6);
           } else if (isPast) {
             missedDaysCount++;
-            cellCls = 'bg-red-950/45 border-red-800/80 text-red-300';
+            cellCls = 'bg-red-950/45 border-red-900/60 text-red-300';
             statusIcon = '✕';
             subText = 'Offen';
           } else if (isToday) {
@@ -2152,12 +2218,12 @@
 
           cellsHtml.push(`
             <button type="button" onclick="App.openCalendarDayModal('${dateIso}')"
-              class="h-14 border rounded-xl p-1 flex flex-col items-center justify-between active:scale-95 transition-transform ${cellCls}">
+              class="h-12 border rounded-xl p-1 flex flex-col items-center justify-between active:scale-95 transition-transform ${cellCls}">
               <div class="w-full flex items-center justify-between px-1">
-                <span class="text-xs font-mono font-extrabold">${day}</span>
-                <span class="text-[10px] leading-none">${statusIcon}</span>
+                <span class="text-xs font-mono font-bold">${day}</span>
+                <span class="text-[9px] leading-none">${statusIcon}</span>
               </div>
-              <div class="text-[9px] font-bold truncate w-full text-center opacity-90">${this.escapeHtml(subText)}</div>
+              <div class="text-[8px] font-bold truncate w-full text-center opacity-90">${this.escapeHtml(subText)}</div>
             </button>
           `);
         }
@@ -2184,12 +2250,12 @@
             ${logs.map(l => `
               <div class="bg-black border border-emerald-800/60 rounded-xl p-3 flex items-center justify-between gap-2">
                 <div>
-                  <div class="text-xs font-extrabold text-zinc-100">${l.isRestDay ? '🛋️ ' : '🏋️ '}${this.escapeHtml(l.splitName || 'Eintrag')}</div>
+                  <div class="text-xs font-black text-zinc-100">${l.isRestDay ? '🛋️ ' : '🏋️ '}${this.escapeHtml(l.splitName || 'Eintrag')}</div>
                   <div class="text-[11px] text-zinc-400">${l.isRestDay ? 'Pausentag / Abgehakt' : `${(l.entries || []).length} Übungen geloggt`}</div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button onclick="App.editSessionInWorkout('${l.id}')"
-                    class="touch-target bg-emerald-500 active:bg-emerald-600 text-black px-3 py-1.5 rounded-lg text-xs font-extrabold">
+                    class="touch-target bg-emerald-500 active:bg-emerald-600 text-black px-3 py-1.5 rounded-lg text-xs font-black">
                     ✏️ Bearbeiten
                   </button>
                   <button onclick="App.deleteSessionFromCalendar('${l.id}', '${dateIso}')"
@@ -2209,9 +2275,9 @@
         body.innerHTML = `
           ${existingLogsHtml}
           <div class="space-y-2">
-            <div class="text-xs font-bold uppercase text-zinc-400">Schnell abhaken (mit deinen letzten Werten):</div>
+            <div class="text-xs font-bold uppercase text-zinc-400">Schnell abhaken (mit Vorwerten):</div>
             <button onclick="App.quickLogCalendarDayWithLastValues('${dateIso}', 'rest_day', 'Pausentag / Regeneration', true)"
-              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-between">
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-black py-3 px-4 rounded-xl text-xs flex items-center justify-between">
               <span>🛋️ Als Pausentag abhaken</span>
               <span>✓</span>
             </button>
@@ -2219,16 +2285,16 @@
             <div class="grid grid-cols-1 gap-1.5 pt-1">
               ${this.state.splits.filter(sp => !sp.isRest).map(sp => `
                 <button onclick="App.quickLogCalendarDayWithLastValues('${dateIso}', '${sp.id}', '${this.escapeAttr(sp.name)}', false)"
-                  class="w-full touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-200 font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-between">
+                  class="w-full touch-target bg-black active:bg-zinc-900 border border-oled-border text-zinc-200 font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-between">
                   <span>⚡ „${this.escapeHtml(sp.name)}" mit Vorwerten abhaken</span>
                   <span class="text-emerald-400 font-mono text-[11px]">+ Haken</span>
                 </button>
               `).join('')}
             </div>
 
-            <div class="pt-3 border-t border-zinc-800 mt-3">
+            <div class="pt-3 border-t border-oled-border mt-3">
               <button onclick="App.jumpToWorkoutForDate('${dateIso}')"
-                class="w-full touch-target bg-zinc-900 active:bg-zinc-800 border border-emerald-500/60 text-emerald-300 font-extrabold py-3 px-4 rounded-xl text-xs">
+                class="w-full touch-target bg-oled-surface active:bg-zinc-800 border border-emerald-500/60 text-emerald-300 font-black py-3 px-4 rounded-xl text-xs">
                 🏋️ Im Trainings-Tab für ${dateIso} neu eingeben
               </button>
             </div>
@@ -2254,7 +2320,7 @@
           this.closeModal();
           this.renderStatsTab();
           this.renderWorkoutTab();
-          this.showToast(`✅ ${dateIso} als Pausentag abgehakt!`);
+          this.showToast(`✅ ${dateIso} abgehakt!`);
           return;
         }
 
@@ -2306,7 +2372,7 @@
         this.closeModal();
         this.renderStatsTab();
         this.renderWorkoutTab();
-        this.showToast(`✅ „${splitName}" mit Vorwerten für ${dateIso} abgehakt!`);
+        this.showToast(`✅ ${splitName} eingetragen!`);
       },
 
       editSessionInWorkout(sessionId) {
@@ -2345,7 +2411,7 @@
         this.saveDraft();
         this.closeModal();
         this.switchTab('workout');
-        this.showToast(`✏️ Einheit vom ${sess.date} zum Bearbeiten geladen`);
+        this.showToast(`✏️ Geladen: ${sess.date}`);
       },
 
       async deleteSessionFromCalendar(sessionId, dateIso) {
@@ -2366,7 +2432,7 @@
         this.saveDraft();
         this.closeModal();
         this.switchTab('workout');
-        this.showToast(`📅 Datum auf ${dateIso} gesetzt`);
+        this.showToast(`📅 Datum: ${dateIso}`);
       },
 
       getCurrentWeekDateBounds() {
@@ -2410,7 +2476,7 @@
         }
 
         const dateLabel = document.getElementById('weeklyVolumeDateLabel');
-        if (dateLabel) dateLabel.textContent = `KW (${mondayShort} – ${sundayShort}) • Warmups ignoriert`;
+        if (dateLabel) dateLabel.textContent = `KW (${mondayShort} – ${sundayShort}) • Warmups exkl.`;
         const totalBadge = document.getElementById('weeklyTotalSetsBadge');
         if (totalBadge) totalBadge.textContent = `${totalWorkingSets} WS`;
 
@@ -2421,12 +2487,12 @@
           const count = counts[cat.id] || 0;
           const pct = Math.min(100, Math.round((count / 12) * 100));
           return `
-            <div class="bg-black border border-zinc-800/90 rounded-xl p-2.5 space-y-1.5">
+            <div class="bg-black border border-oled-border rounded-xl p-2.5 space-y-1">
               <div class="flex items-center justify-between text-xs">
                 <span class="font-bold text-zinc-200 truncate pr-1">${cat.icon} ${this.escapeHtml(cat.name)}</span>
-                <span class="font-mono font-extrabold ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0">${count} WS</span>
+                <span class="font-mono font-black ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0">${count} WS</span>
               </div>
-              <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+              <div class="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
                 <div class="h-full ${count > 0 ? 'bg-emerald-500' : 'bg-zinc-800'}" style="width: ${pct}%"></div>
               </div>
             </div>
@@ -2450,7 +2516,7 @@
 
         const setBtnStyle = (btn, active) => {
           if (!btn) return;
-          btn.className = `touch-target py-2.5 px-2 rounded-xl text-xs font-extrabold transition-none ${
+          btn.className = `touch-target py-2 px-2 rounded-xl text-xs font-black transition-none ${
             active ? 'bg-emerald-500 text-black' : 'text-zinc-400'
           }`;
         };
@@ -2508,7 +2574,7 @@
       renderProgressionTab() {
         document.querySelectorAll('.prog-range-btn').forEach(btn => {
           const active = btn.getAttribute('data-range') === this.state.progressionRange;
-          btn.className = `prog-range-btn px-3 py-2 rounded-lg text-xs font-extrabold transition-none ${
+          btn.className = `prog-range-btn px-3 py-1.5 rounded-lg text-xs font-black transition-none ${
             active ? 'bg-emerald-500 text-black' : 'text-zinc-400'
           }`;
         });
@@ -2610,17 +2676,17 @@
         if (machineGroups.length > 1) {
           filterBar.innerHTML = [
             `<button onclick="App.setProgressionMachineFilter('ALL')"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold border ${
+              class="px-2.5 py-1 rounded-lg text-xs font-bold border ${
                 this.state.progressionMachineFilter === 'ALL'
                   ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                  : 'bg-black border-zinc-800 text-zinc-400'
+                  : 'bg-black border-oled-border text-zinc-400'
               }">Alle (${machineGroups.length})</button>`,
             ...machineGroups.map(mg => `
               <button onclick="App.setProgressionMachineFilter('${mg.machineId}')"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold border ${
+                class="px-2.5 py-1 rounded-lg text-xs font-bold border ${
                   this.state.progressionMachineFilter === mg.machineId
                     ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                    : 'bg-black border-zinc-800 text-zinc-400'
+                    : 'bg-black border-oled-border text-zinc-400'
                 }">⚙ ${this.escapeHtml(mg.machineName)} [${mg.unit.toUpperCase()}]</button>
             `)
           ].join('');
@@ -2698,14 +2764,13 @@
         document.getElementById('progEndVal').textContent = `${lastVal}`;
         const deltaEl = document.getElementById('progDeltaVal');
         deltaEl.textContent = `${sign}${diff.toFixed(1)} (${sign}${pct}%)`;
-        deltaEl.className = `text-sm font-extrabold font-mono mt-0.5 ${
+        deltaEl.className = `text-sm font-black font-mono mt-0.5 ${
           diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-red-400' : 'text-zinc-300')
         }`;
 
-        // Schutz gegen fehlendes Chart.js im Offline-Modus
         if (typeof Chart === 'undefined') {
           emptyOverlay.classList.remove('hidden');
-          document.getElementById('progressionEmptyMsg').textContent = 'Chart.js offline nicht verfügbar (bitte lokal einbinden).';
+          document.getElementById('progressionEmptyMsg').textContent = 'Chart.js offline nicht verfügbar.';
           return;
         }
 
@@ -2720,14 +2785,14 @@
             animation: false,
             parsing: false,
             plugins: {
-              legend: { display: datasets.length > 1, labels: { color: '#e4e4e7', font: { size: 11 } } },
+              legend: { display: datasets.length > 1, labels: { color: '#e4e4e7', font: { size: 10 } } },
               tooltip: {
-                backgroundColor: '#000000',
-                borderColor: '#3f3f46',
+                backgroundColor: '#0d0d11',
+                borderColor: '#22222b',
                 borderWidth: 1,
                 titleColor: '#f4f4f5',
                 bodyColor: '#10b981',
-                padding: 10,
+                padding: 8,
                 callbacks: {
                   title: (items) => {
                     const raw = items[0]?.raw;
@@ -2739,7 +2804,7 @@
                     return [
                       `e1RM: ${raw.e1rm} ${u}`,
                       `Max Last: ${raw.maxWeight} ${u}`,
-                      `Arbeitsvolumen: ${raw.volume} ${u}`
+                      `Volumen: ${raw.volume} ${u}`
                     ];
                   }
                 }
@@ -2750,31 +2815,20 @@
                 type: 'linear',
                 min: minTs,
                 max: maxTs,
-                afterBuildTicks: (axis) => {
-                  const tickCount = 5;
-                  const step = (maxTs - minTs) / (tickCount - 1);
-                  const customTicks = [];
-                  for (let i = 0; i < tickCount - 1; i++) {
-                    customTicks.push({ value: Math.round(minTs + i * step) });
-                  }
-                  customTicks.push({ value: maxTs });
-                  axis.ticks = customTicks;
-                },
                 ticks: {
                   color: '#a1a1aa',
-                  font: { size: 10 },
+                  font: { size: 9 },
                   maxRotation: 0,
-                  autoSkip: false,
                   callback: (val) => {
                     if (Math.abs(val - maxTs) < 10000) return 'Heute';
                     return this.formatShortDateFromTs(val, includeYearInTicks);
                   }
                 },
-                grid: { color: '#18181b' }
+                grid: { color: '#14141a' }
               },
               y: {
-                ticks: { color: '#a1a1aa', font: { size: 11 } },
-                grid: { color: '#18181b' }
+                ticks: { color: '#a1a1aa', font: { size: 10 } },
+                grid: { color: '#14141a' }
               }
             }
           }
@@ -2882,8 +2936,8 @@
 
         document.querySelectorAll('.metric-btn').forEach(btn => {
           const active = btn.getAttribute('data-metric') === this.state.analyticsMetric;
-          btn.className = `metric-btn touch-target py-2.5 px-2.5 rounded-xl text-xs font-extrabold border ${
-            active ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-black text-zinc-300 border-zinc-800'
+          btn.className = `metric-btn touch-target py-2 px-2 rounded-xl text-xs font-black border ${
+            active ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-black text-zinc-300 border-oled-border'
           }`;
         });
 
@@ -2892,7 +2946,7 @@
         const unitSuffix = isPin ? ' Pin' : ' kg';
 
         const setupBadge = document.getElementById('chartSetupNoteBadge');
-        setupBadge.textContent = machine?.setupNote ? `📌 ${machine.setupNote}` : 'Keine Sitz-Notiz';
+        setupBadge.textContent = machine?.setupNote ? `📌 ${machine.setupNote}` : '';
 
         const dataPoints = this.computeSessionMetricsForMachine(exId, machId);
 
@@ -2926,7 +2980,7 @@
 
         if (dataPoints.length === 0) {
           emptyState.classList.remove('hidden');
-          document.getElementById('chartEmptyMsg').textContent = 'Noch keine Arbeitssätze für dieses Gerät gespeichert.';
+          document.getElementById('chartEmptyMsg').textContent = 'Noch keine Daten vorhanden.';
         } else if (typeof Chart === 'undefined') {
           emptyState.classList.remove('hidden');
           document.getElementById('chartEmptyMsg').textContent = 'Chart.js offline nicht verfügbar.';
@@ -2948,7 +3002,7 @@
             labelText = `Top-Set (${unitSuffix.trim()})`;
           } else if (metric === 'volume') {
             values = dataPoints.map(p => p.volume);
-            labelText = `Arbeitsvolumen (${unitSuffix.trim()})`;
+            labelText = `Volumen (${unitSuffix.trim()})`;
           }
 
           document.getElementById('chartTitleLabel').textContent = labelText;
@@ -2961,11 +3015,10 @@
                 label: labelText,
                 data: values,
                 borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.14)',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
                 borderWidth: 2.5,
                 pointBackgroundColor: '#10b981',
                 pointRadius: 4,
-                pointHoverRadius: 6,
                 tension: 0.2,
                 fill: true
               }]
@@ -2977,19 +3030,18 @@
               plugins: {
                 legend: { display: false },
                 tooltip: {
-                  backgroundColor: '#000000',
-                  borderColor: '#3f3f46',
+                  backgroundColor: '#0d0d11',
+                  borderColor: '#22222b',
                   borderWidth: 1,
                   titleColor: '#f4f4f5',
-                  bodyColor: '#10b981',
-                  padding: 10
+                  bodyColor: '#10b981'
                 }
               },
               scales: {
-                x: { ticks: { color: '#a1a1aa', font: { size: 10 } }, grid: { color: '#18181b' } },
+                x: { ticks: { color: '#a1a1aa', font: { size: 9 } }, grid: { color: '#14141a' } },
                 y: {
-                  ticks: { color: '#a1a1aa', font: { size: 11 }, callback: (v) => `${v}${unitSuffix}` },
-                  grid: { color: '#18181b' }
+                  ticks: { color: '#a1a1aa', font: { size: 10 }, callback: (v) => `${v}${unitSuffix}` },
+                  grid: { color: '#14141a' }
                 }
               }
             }
@@ -3005,7 +3057,7 @@
               const typeLabel = s.type === 'warmup' ? 'Warm' : (s.type === 'dropset' ? 'Drop' : 'WS');
               const badgeColor = s.type === 'warmup'
                 ? 'text-amber-400 border-amber-800/60'
-                : (s.type === 'dropset' ? 'text-purple-300 border-purple-800/60' : 'text-zinc-200 border-zinc-700');
+                : (s.type === 'dropset' ? 'text-purple-300 border-purple-800/60' : 'text-zinc-200 border-oled-border');
               const part = s.partials > 0 ? ` +${s.partials}P` : '';
               const drops = (s.type === 'dropset' && s.drops && s.drops.length > 0)
                 ? ` ↳ [${s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join(', ')}]`
@@ -3016,12 +3068,12 @@
             }).join(' ');
 
             return `
-              <div class="bg-black border border-zinc-800 rounded-xl p-3 space-y-1.5">
+              <div class="bg-black border border-oled-border rounded-xl p-2.5 space-y-1">
                 <div class="flex items-center justify-between text-xs">
                   <span class="font-bold font-mono text-zinc-200">${pt.date}</span>
                   <span class="font-mono text-[11px] text-emerald-400">e1RM: ${pt.e1rm}${unitSuffix} | Vol: ${pt.volume}</span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">${setsHtml}</div>
+                <div class="flex flex-wrap gap-1">${setsHtml}</div>
               </div>
             `;
           }).join('');
@@ -3035,7 +3087,7 @@
 
         if (this.state.sessions.length === 0) {
           container.innerHTML = `
-            <div class="bg-oled-card border border-zinc-800 rounded-2xl p-6 text-center text-xs text-zinc-400">
+            <div class="bg-oled-card border border-oled-border rounded-2xl p-6 text-center text-xs text-zinc-400">
               Noch keine abgeschlossenen Einheiten oder Pausentage gespeichert.
             </div>
           `;
@@ -3045,23 +3097,22 @@
         container.innerHTML = this.state.sessions.map(sess => {
           if (sess.isRestDay || !sess.entries || sess.entries.length === 0) {
             return `
-              <div class="bg-oled-card border border-emerald-900/60 rounded-2xl p-3.5 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <span class="text-xl">🛋️</span>
+              <div class="bg-oled-card border border-emerald-950 rounded-2xl p-3 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-2.5">
+                  <span class="text-lg">🛋️</span>
                   <div>
                     <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
-                    <h3 class="text-sm font-extrabold text-zinc-100">${this.escapeHtml(sess.splitName || 'Pausentag')}</h3>
-                    <p class="text-[11px] text-zinc-400">Im Kalender grün abgehakt</p>
+                    <h3 class="text-xs font-black text-zinc-100">${this.escapeHtml(sess.splitName || 'Pausentag')}</h3>
                   </div>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <button onclick="App.editSessionInWorkout('${sess.id}')"
-                    class="touch-target text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-xl font-extrabold">
-                    ✏️ Bearbeiten
+                    class="touch-target text-xs bg-emerald-500 text-black px-2.5 py-1 rounded-xl font-black">
+                    ✏️ Edit
                   </button>
                   <button onclick="App.deleteSession('${sess.id}')"
-                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
-                    Löschen
+                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-2 py-1 border border-oled-border rounded-xl font-bold">
+                    ✕
                   </button>
                 </div>
               </div>
@@ -3078,16 +3129,16 @@
               const drops = (s.type === 'dropset' && s.drops?.length)
                 ? ` ↳ ${s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join('/')}`
                 : '';
-              return `<span class="bg-black border border-zinc-800 px-2 py-0.5 rounded-lg font-mono text-[11px] text-zinc-200">
+              return `<span class="bg-black border border-oled-border px-1.5 py-0.5 rounded-lg font-mono text-[10px] text-zinc-200">
                 <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeLabel}:</strong> ${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}${part}${drops}
               </span>`;
             }).join(' ');
 
             return `
-              <div class="border-l-2 border-zinc-700 pl-2.5 py-0.5 space-y-1">
+              <div class="border-l-2 border-oled-border pl-2 py-0.5 space-y-0.5">
                 <div class="flex flex-wrap items-center justify-between gap-1">
                   <span class="text-xs font-bold text-zinc-200">${this.escapeHtml(ex ? ex.name : entry.exerciseId)}</span>
-                  <span class="text-[11px] font-mono text-emerald-400">⚙ ${this.escapeHtml(mach ? mach.name : 'Standard')} [${isPin ? 'PIN' : 'KG'}]</span>
+                  <span class="text-[10px] font-mono text-emerald-400">⚙ ${this.escapeHtml(mach ? mach.name : 'Standard')} [${isPin ? 'PIN' : 'KG'}]</span>
                 </div>
                 <div class="flex flex-wrap gap-1">${setsPills}</div>
               </div>
@@ -3095,24 +3146,24 @@
           }).join('');
 
           return `
-            <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2.5">
-              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div class="bg-oled-card border border-oled-border rounded-2xl p-3 space-y-2 shadow-sm">
+              <div class="flex items-center justify-between border-b border-oled-border pb-1.5">
                 <div>
                   <span class="text-xs font-mono font-bold text-emerald-400">${sess.date}</span>
-                  <h3 class="text-sm font-extrabold text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
+                  <h3 class="text-xs font-black text-zinc-100">${this.escapeHtml(sess.splitName || 'Training')}</h3>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <button onclick="App.editSessionInWorkout('${sess.id}')"
-                    class="touch-target text-xs bg-emerald-500 text-black px-3 py-1.5 rounded-xl font-extrabold">
-                    ✏️ Bearbeiten
+                    class="touch-target text-xs bg-emerald-500 text-black px-2.5 py-1 rounded-xl font-black">
+                    ✏️ Edit
                   </button>
                   <button onclick="App.deleteSession('${sess.id}')"
-                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-3 py-1.5 border border-zinc-800 rounded-xl font-bold">
-                    Löschen
+                    class="touch-target text-xs text-zinc-400 active:text-red-400 px-2 py-1 border border-oled-border rounded-xl font-bold">
+                    ✕
                   </button>
                 </div>
               </div>
-              <div class="space-y-2">${entriesHtml}</div>
+              <div class="space-y-1.5">${entriesHtml}</div>
             </div>
           `;
         }).join('');
@@ -3140,56 +3191,56 @@
           if (matchingExercises.length === 0) return;
 
           html += `
-            <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-3">
-              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-base">${cat.icon}</span>
-                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-400">${this.escapeHtml(cat.name)}</h3>
+            <div class="bg-oled-card border border-oled-border rounded-2xl p-3 space-y-2.5">
+              <div class="flex items-center justify-between border-b border-oled-border pb-1.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm">${cat.icon}</span>
+                  <h3 class="text-xs font-black uppercase tracking-wider text-emerald-400">${this.escapeHtml(cat.name)}</h3>
                 </div>
-                <span class="text-[11px] font-mono text-zinc-400">${matchingExercises.length} Übungen</span>
+                <span class="text-[10px] font-mono text-zinc-500">${matchingExercises.length} Übungen</span>
               </div>
 
-              <div class="space-y-2.5">
+              <div class="space-y-2">
                 ${matchingExercises.map(ex => {
                   const machines = this.getMachinesForExercise(ex.id);
                   return `
-                    <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
+                    <div class="bg-black border border-oled-border rounded-xl p-2.5 space-y-1.5">
                       <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-extrabold text-zinc-100 truncate">${this.escapeHtml(ex.name)}</span>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="text-xs font-black text-zinc-100 truncate">${this.escapeHtml(ex.name)}</span>
+                        <div class="flex items-center gap-1 shrink-0">
                           <button onclick="App.promptAddMachine('${ex.id}')"
-                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">
+                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-oled-border text-emerald-400 px-2 py-1 rounded-lg font-bold">
                             + Gerät
                           </button>
-                          <button onclick="App.openEditExerciseModal('${ex.id}')" title="Übung & Kategorie bearbeiten"
-                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg font-bold">
+                          <button onclick="App.openEditExerciseModal('${ex.id}')" title="Übung bearbeiten"
+                            class="text-xs bg-oled-surface active:bg-zinc-800 border border-oled-border text-zinc-300 px-2 py-1 rounded-lg font-bold">
                             ✎
                           </button>
-                          <button onclick="App.deleteExercise('${ex.id}')" title="Übung komplett löschen"
-                            class="text-xs bg-oled-surface active:bg-red-950 border border-zinc-800 text-red-400 px-2.5 py-1.5 rounded-lg font-bold">
+                          <button onclick="App.deleteExercise('${ex.id}')" title="Übung löschen"
+                            class="text-xs bg-oled-surface active:bg-red-950 border border-oled-border text-red-400 px-2 py-1 rounded-lg font-bold">
                             🗑️
                           </button>
                         </div>
                       </div>
 
-                      <div class="space-y-1.5 pt-1">
+                      <div class="space-y-1 pt-0.5">
                         ${machines.map(m => `
-                          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-oled-surface border border-zinc-800/80 rounded-xl px-2.5 py-2 text-xs">
+                          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-oled-surface border border-oled-borderSubtle rounded-xl px-2 py-1.5 text-xs">
                             <div class="font-bold text-zinc-200 truncate">⚙ ${this.escapeHtml(m.name)}</div>
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1">
                               <button onclick="App.toggleMachineUnit('${m.id}')"
-                                class="px-2 py-1 bg-black border ${m.unit === 'pin' ? 'border-purple-600/80 text-purple-300' : 'border-zinc-700 text-zinc-300'} rounded-lg text-xs font-extrabold shrink-0">
+                                class="px-2 py-1 bg-black border ${m.unit === 'pin' ? 'border-purple-600/80 text-purple-300' : 'border-oled-border text-zinc-300'} rounded-lg text-xs font-black shrink-0">
                                 ${m.unit === 'pin' ? '📌 PIN' : '⚖️ KG'}
                               </button>
                               <input type="text"
                                 value="${this.escapeAttr(m.setupNote || '')}"
-                                placeholder="Sitz-/Polsternotiz..."
+                                placeholder="Notiz..."
                                 onchange="App.updateMachineSetupNote('${m.id}', this.value)"
-                                class="flex-1 sm:w-44 bg-black border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 placeholder-zinc-600">
+                                class="flex-1 sm:w-40 bg-black border border-oled-border rounded-lg px-2 py-1 text-xs font-mono text-amber-300 placeholder-zinc-600">
                               <button onclick="App.promptRenameMachine('${m.id}')"
-                                class="bg-black border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs">✎</button>
+                                class="bg-black border border-oled-border text-zinc-300 px-2 py-1 rounded-lg text-xs">✎</button>
                               <button onclick="App.deleteMachine('${m.id}')"
-                                class="bg-black border border-zinc-800 text-zinc-400 active:text-red-400 px-2.5 py-1.5 rounded-lg text-xs">🗑</button>
+                                class="bg-black border border-oled-border text-zinc-400 active:text-red-400 px-2 py-1 rounded-lg text-xs">🗑</button>
                             </div>
                           </div>
                         `).join('')}
@@ -3206,34 +3257,34 @@
 
         const splitList = document.getElementById('manageSplitsList');
         splitList.innerHTML = this.state.splits.map((sp, spIdx) => `
-          <div class="bg-black border border-zinc-800/90 rounded-xl p-3 space-y-2">
+          <div class="bg-black border border-oled-border rounded-xl p-3 space-y-2">
             <div class="flex items-center justify-between">
               <div>
-                <h4 class="text-xs font-extrabold text-zinc-100">${this.escapeHtml(sp.name)}</h4>
-                <span class="text-[11px] text-zinc-500">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
+                <h4 class="text-xs font-black text-zinc-100">${this.escapeHtml(sp.name)}</h4>
+                <span class="text-[10px] text-zinc-500">${sp.isRest ? 'Pausentag' : `${sp.items.length} Übungen`}</span>
               </div>
               <div class="flex items-center gap-1">
-                <button onclick="App.moveSplitDay(${spIdx}, -1)" class="text-xs bg-oled-card border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg">↑</button>
-                <button onclick="App.moveSplitDay(${spIdx}, 1)" class="text-xs bg-oled-card border border-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded-lg">↓</button>
-                <button onclick="App.openAddExerciseToSplitModal('${sp.id}')" class="text-xs bg-oled-card border border-zinc-700 text-emerald-400 px-2.5 py-1.5 rounded-lg font-bold">+ Übung</button>
-                <button onclick="App.deleteSplitDay('${sp.id}')" class="text-xs text-zinc-500 active:text-red-400 px-2 py-1.5">✕</button>
+                <button onclick="App.moveSplitDay(${spIdx}, -1)" class="text-xs bg-oled-surface border border-oled-border text-zinc-300 px-2 py-1 rounded-lg">↑</button>
+                <button onclick="App.moveSplitDay(${spIdx}, 1)" class="text-xs bg-oled-surface border border-oled-border text-zinc-300 px-2 py-1 rounded-lg">↓</button>
+                <button onclick="App.openAddExerciseToSplitModal('${sp.id}')" class="text-xs bg-oled-surface border border-oled-border text-emerald-400 px-2.5 py-1 rounded-lg font-bold">+ Übung</button>
+                <button onclick="App.deleteSplitDay('${sp.id}')" class="text-xs text-zinc-500 active:text-red-400 px-2 py-1">✕</button>
               </div>
             </div>
             ${sp.items.length > 0 ? `
-              <div class="space-y-1.5 pt-1">
+              <div class="space-y-1 pt-1">
                 ${sp.items.map((it, itIdx) => {
                   const ex = this.state.exercises.find(e => e.id === it.exerciseId);
                   return `
-                    <div class="flex items-center justify-between gap-1.5 bg-oled-card border border-zinc-800 rounded-xl px-2.5 py-2 text-xs">
+                    <div class="flex items-center justify-between gap-1.5 bg-oled-surface border border-oled-border rounded-xl px-2 py-1.5 text-xs">
                       <span class="text-zinc-200 font-semibold truncate flex-1">${this.escapeHtml(it.labelOverride || ex?.name || it.exerciseId)}</span>
                       <div class="flex items-center gap-1 shrink-0">
                         <span class="text-[10px] font-mono text-zinc-400 mr-1">${this.escapeHtml(it.targetRepRange || `${it.targetSets} WS`)}</span>
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, -1)" ${itIdx === 0 ? 'disabled' : ''}
-                          class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
+                          class="w-6 h-6 bg-black border border-oled-border disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
                         <button onclick="App.moveSplitItem(${spIdx}, ${itIdx}, 1)" ${itIdx === sp.items.length - 1 ? 'disabled' : ''}
-                          class="w-7 h-7 bg-black border border-zinc-800 disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▼</button>
-                        <button onclick="App.openSwapSplitTemplateExerciseModal(${spIdx}, ${itIdx})" title="Im Plan dauerhaft austauschen"
-                          class="px-2 py-1 bg-black active:bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-lg text-xs font-bold">
+                          class="w-6 h-6 bg-black border border-oled-border disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▼</button>
+                        <button onclick="App.openSwapSplitTemplateExerciseModal(${spIdx}, ${itIdx})" title="Dauerhaft austauschen"
+                          class="px-2 py-1 bg-black active:bg-zinc-800 border border-oled-border text-emerald-400 rounded-lg text-xs font-bold">
                           ⇄
                         </button>
                         <button onclick="App.removeSplitItem(${spIdx}, ${itIdx})" class="text-zinc-500 active:text-red-400 text-xs px-1.5 font-bold">✕</button>
@@ -3258,13 +3309,13 @@
             <div>
               <label class="block text-xs font-bold text-zinc-400 mb-1">Name der Übung</label>
               <input type="text" id="newExNameInput" placeholder="z. B. Incline Dumbbell Press"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie / Muskelgruppe</label>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie</label>
               <select id="newExCategorySelect"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                 ${CATEGORIES.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}
               </select>
             </div>
@@ -3272,20 +3323,20 @@
             <div>
               <label class="block text-xs font-bold text-zinc-400 mb-1">Erstes Gerät / Maschine</label>
               <input type="text" id="newExMachineInput" value="Standard-Gerät"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
             </div>
 
             <div>
               <label class="block text-xs font-bold text-zinc-400 mb-1">Einheit</label>
               <select id="newExUnitSelect"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                 <option value="kg">⚖️ Freies Gewicht / Plate-Loaded (kg)</option>
                 <option value="pin">📌 Steckgewichte (Pins / Stufen)</option>
               </select>
             </div>
 
             <button onclick="App.saveNewExerciseModal(${Boolean(addToWorkoutAfter)})"
-              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-black py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
               Speichern & Anlegen
             </button>
           </div>
@@ -3326,7 +3377,7 @@
         } else {
           this.renderManageTab();
         }
-        this.showToast(`Übung „${name}" in ${category} angelegt!`);
+        this.showToast(`Angelegt: ${name}`);
       },
 
       openEditExerciseModal(exerciseId) {
@@ -3344,13 +3395,13 @@
             <div>
               <label class="block text-xs font-bold text-zinc-400 mb-1">Name der Übung</label>
               <input type="text" id="editExNameInput" value="${this.escapeAttr(ex.name)}"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-sm font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie / Muskelgruppe</label>
+              <label class="block text-xs font-bold text-zinc-400 mb-1">Kategorie</label>
               <select id="editExCategorySelect"
-                class="w-full touch-target bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
+                class="w-full touch-target bg-black border border-oled-border rounded-xl px-3 py-2 text-xs font-bold text-zinc-100 focus:outline-none focus:border-emerald-500">
                 ${CATEGORIES.map(c => `
                   <option value="${c.id}" ${c.id === currentCat ? 'selected' : ''}>
                     ${c.icon} ${c.name}
@@ -3360,7 +3411,7 @@
             </div>
 
             <button onclick="App.saveEditExerciseModal('${ex.id}')"
-              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
+              class="w-full touch-target bg-emerald-500 active:bg-emerald-600 text-black font-black py-3.5 rounded-xl text-xs uppercase tracking-wider mt-2">
               Änderungen speichern
             </button>
           </div>
@@ -3388,7 +3439,7 @@
         this.renderManageTab();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
-        this.showToast(`Übung auf ${nextCat} aktualisiert`);
+        this.showToast(`Aktualisiert: ${nextName}`);
       },
 
       moveSplitItem(splitIdx, itemIdx, direction) {
@@ -3428,7 +3479,7 @@
 
           html += `
             <div class="pt-2">
-              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+              <div class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
                 <span>${cat.icon}</span>
                 <span>${cat.name}</span>
               </div>
@@ -3437,7 +3488,7 @@
                   const isCurrent = ex.id === it.exerciseId;
                   return `
                     <button onclick="App.swapSplitTemplateExercise(${spIdx}, ${itIdx}, '${ex.id}')"
-                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-zinc-800 text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
+                      class="w-full touch-target text-left bg-black active:bg-zinc-900 border ${isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-oled-border text-zinc-100'} rounded-xl px-3.5 py-2.5 text-xs font-bold flex items-center justify-between">
                       <span>${this.escapeHtml(ex.name)}</span>
                       <span class="text-xs font-mono text-zinc-500">${this.getMachinesForExercise(ex.id).length} Geräte</span>
                     </button>
@@ -3466,7 +3517,7 @@
         StorageEngine.putAll('splits', this.state.splits);
         this.closeModal();
         this.renderManageTab();
-        this.showToast(`Vorlage aktualisiert: ${newEx.name}`);
+        this.showToast(`Vorlage aktualisiert`);
       },
 
       async deleteExercise(exerciseId) {
@@ -3474,7 +3525,7 @@
         if (!ex) return;
 
         const machinesCount = this.state.machines.filter(m => m.exerciseId === exerciseId).length;
-        if (!confirm(`Übung „${ex.name}" und alle zugehörigen ${machinesCount} Geräte wirklich komplett löschen?`)) {
+        if (!confirm(`Übung „${ex.name}" und alle zugehörigen ${machinesCount} Geräte wirklich löschen?`)) {
           return;
         }
 
@@ -3494,11 +3545,11 @@
         this.renderManageTab();
         if (this.state.currentTab === 'workout') this.renderWorkoutTab();
         if (this.state.currentTab === 'stats') this.renderStatsTab();
-        this.showToast(`Übung „${ex.name}" restlos gelöscht`);
+        this.showToast(`Übung gelöscht`);
       },
 
       promptAddMachine(exerciseId) {
-        const name = prompt('Name des spezifischen Geräts:');
+        const name = prompt('Name des Geräts:');
         if (!name || !name.trim()) return;
         const isPin = confirm('Nutzt dieses Gerät Pins / Steckgewichte?\n\n[OK] = Pins\n[Abbrechen] = kg');
         const note = prompt('Sitz-/Polstereinstellung (optional):', '') || '';
@@ -3533,8 +3584,8 @@
         const exId = machine.exerciseId;
         const siblingMachines = this.state.machines.filter(m => m.exerciseId === exId);
 
-        let confirmMsg = `Gerät „${machine.name}" wirklich löschen?`;
-        if (siblingMachines.length === 1) confirmMsg += `\n\nHinweis: Es wird automatisch ein Ersatz-Gerät angelegt.`;
+        let confirmMsg = `Gerät „${machine.name}" löschen?`;
+        if (siblingMachines.length === 1) confirmMsg += `\n\nEs wird ein Standard-Ersatzgerät angelegt.`;
         if (!confirm(confirmMsg)) return;
 
         this.state.machines = this.state.machines.filter(m => m.id !== machineId);
@@ -3568,7 +3619,7 @@
         if (this.state.currentTab === 'manage') this.renderManageTab();
         if (this.state.currentTab === 'stats') this.renderStatsTab();
         if (this.state.currentTab === 'history') this.renderHistoryTab();
-        this.showToast(`Gerät „${machine.name}" gelöscht`);
+        this.showToast(`Gerät entfernt`);
       },
 
       promptCreateSplitDay() {
@@ -3604,7 +3655,7 @@
         const modal = document.getElementById('modalOverlay');
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
-        title.textContent = 'Übung zum Split-Tag hinzufügen';
+        title.textContent = 'Übung zum Split hinzufügen';
 
         let html = '';
         CATEGORIES.forEach(cat => {
@@ -3616,14 +3667,14 @@
 
           html += `
             <div class="pt-2">
-              <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
+              <div class="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1.5 px-1">
                 <span>${cat.icon}</span>
                 <span>${cat.name}</span>
               </div>
               <div class="space-y-1">
                 ${matching.map(ex => `
                   <button onclick="App.addExerciseToSplitDay('${splitId}', '${ex.id}')"
-                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
+                    class="w-full touch-target text-left bg-black active:bg-zinc-900 border border-oled-border rounded-xl px-3.5 py-2.5 text-xs font-bold text-zinc-100 flex items-center justify-between">
                     <span>${this.escapeHtml(ex.name)}</span>
                     <span class="text-emerald-400 font-mono text-base">+</span>
                   </button>
@@ -3680,7 +3731,7 @@
       },
 
       /***********************************************************************
-       * BACKUP & RESTORE ENGINE (Clipboard & WebView tauglich)
+       * BACKUP ENGINE
        ***********************************************************************/
       exportDatabaseJson() {
         const payload = {
@@ -3697,14 +3748,12 @@
         };
         const jsonStr = JSON.stringify(payload, null, 2);
 
-        // Auto-Kopie in Clipboard versuchen
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(jsonStr).then(() => {
             this.showToast('📋 In Zwischenablage kopiert!');
           }).catch(() => {});
         }
 
-        // Modal mit sichtbarem Text öffnen (damit in jedem Fall Daten gesichert werden können)
         const modal = document.getElementById('modalOverlay');
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
@@ -3712,16 +3761,16 @@
         title.textContent = 'JSON-Backup exportieren';
         body.innerHTML = `
           <div class="space-y-3">
-            <p class="text-xs text-zinc-300 leading-relaxed">
-              Dein Backup wurde <strong class="text-emerald-400">automatisch in die Zwischenablage kopiert</strong>. Du kannst es direkt in Samsung Notes oder einen Chat einfügen.
+            <p class="text-xs text-zinc-300">
+              Dein Backup wurde <strong class="text-emerald-400">automatisch in die Zwischenablage kopiert</strong>.
             </p>
-            <textarea id="backupExportArea" readonly class="w-full h-44 bg-black border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none select-all">${this.escapeHtml(jsonStr)}</textarea>
+            <textarea id="backupExportArea" readonly class="w-full h-44 bg-black border border-oled-border rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none select-all">${this.escapeHtml(jsonStr)}</textarea>
             
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="App.copyBackupTextFromModal()" class="touch-target bg-emerald-500 text-black font-extrabold py-2.5 rounded-xl text-xs">
+              <button onclick="App.copyBackupTextFromModal()" class="touch-target bg-emerald-500 text-black font-black py-2.5 rounded-xl text-xs">
                 📋 Nochmal kopieren
               </button>
-              <button onclick="App.triggerDownloadFile('ironlog_backup_${this.todayIso()}.json', document.getElementById('backupExportArea').value, 'application/json')" class="touch-target bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-2.5 rounded-xl text-xs">
+              <button onclick="App.triggerDownloadFile('ironlog_backup_${this.todayIso()}.json', document.getElementById('backupExportArea').value, 'application/json')" class="touch-target bg-oled-surface border border-oled-border text-zinc-200 font-bold py-2.5 rounded-xl text-xs">
                 ⬇ Datei-Download
               </button>
             </div>
@@ -3748,16 +3797,16 @@
         const title = document.getElementById('modalTitle');
         const body = document.getElementById('modalBody');
 
-        title.textContent = 'JSON-Backup einfügen & laden';
+        title.textContent = 'JSON-Backup einfügen';
         body.innerHTML = `
           <div class="space-y-3">
             <p class="text-xs text-zinc-400">
               Füge den JSON-Code deines Backups hier ein:
             </p>
-            <textarea id="backupImportArea" placeholder='{"app":"IRONLOG_GYM_TRACKER", ...}' class="w-full h-44 bg-black border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-emerald-500"></textarea>
+            <textarea id="backupImportArea" placeholder='{"app":"IRONLOG_GYM_TRACKER", ...}' class="w-full h-44 bg-black border border-oled-border rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-emerald-500"></textarea>
             
             <button onclick="App.processImportJsonString(document.getElementById('backupImportArea').value)"
-              class="w-full touch-target bg-emerald-500 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
+              class="w-full touch-target bg-emerald-500 text-black font-black py-3.5 rounded-xl text-xs uppercase tracking-wider">
               Backup wiederherstellen
             </button>
           </div>
@@ -3767,14 +3816,14 @@
 
       async processImportJsonString(jsonStr) {
         if (!jsonStr || !jsonStr.trim()) {
-          alert('Bitte erst JSON-Daten einfügen.');
+          alert('Bitte JSON-Daten einfügen.');
           return;
         }
         try {
           const parsed = JSON.parse(jsonStr);
           const data = parsed.data || parsed;
           if (!Array.isArray(data.exercises) || !Array.isArray(data.machines) || !Array.isArray(data.splits) || !Array.isArray(data.sessions)) {
-            alert('Ungültiges Backup-Format: Notwendige Tabellen fehlen.');
+            alert('Ungültiges Backup-Format.');
             return;
           }
           this.state.exercises = data.exercises;
@@ -3796,9 +3845,9 @@
           this.populateAnalyticsFilters();
           this.closeModal();
           this.renderWorkoutTab();
-          this.showToast(`✅ Backup erfolgreich importiert (${this.state.sessions.length} Logs)`);
+          this.showToast(`✅ ${this.state.sessions.length} Logs importiert`);
         } catch (err) {
-          alert('Fehler beim Parsen der JSON-Daten: ' + err.message);
+          alert('Fehler beim Import: ' + err.message);
         }
       },
 
@@ -3949,17 +3998,17 @@
 
         document.querySelectorAll('.nav-btn').forEach(btn => {
           const isCurrent = btn.getAttribute('data-tab') === tabName;
-          btn.className = `nav-btn py-3 flex flex-col items-center justify-center text-[11px] font-extrabold border-t-2 ${
+          btn.className = `nav-btn py-2.5 flex flex-col items-center justify-center text-[10px] font-black border-t-2 ${
             isCurrent ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-zinc-400'
           }`;
         });
 
         const headerBackupBtn = document.getElementById('headerBackupBtn');
         if (headerBackupBtn) {
-          headerBackupBtn.className = `px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border min-h-[40px] ${
+          headerBackupBtn.className = `px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border ${
             tabName === 'backup'
               ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-              : 'bg-oled-card border-zinc-800 text-zinc-200'
+              : 'bg-oled-surface border-oled-border text-zinc-300'
           }`;
         }
 
