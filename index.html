@@ -12,6 +12,7 @@
   <link id="pwaManifestLink" rel="manifest" href="">
   <link id="pwaFavicon" rel="icon" type="image/svg+xml" href="">
   <link id="pwaAppleIcon" rel="apple-touch-icon" href="">
+  <!-- Offline-Hinweis: Sobald du die Dateien lokal in assets/ hast, ersetze die src durch ./tailwind.js und ./chart.umd.min.js -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script>
@@ -84,7 +85,6 @@
 
     <!-- TAB 1: WORKOUT -->
     <section id="tab-workout" class="space-y-3.5">
-      <!-- Split Selector Bar with Dynamic Dates -->
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3">
         <div class="flex items-center justify-between mb-2.5">
           <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Trainingstag / Datum</label>
@@ -94,16 +94,13 @@
         <div id="splitSelectorButtons" class="flex gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
       </div>
 
-      <!-- Editing Existing Session Banner -->
       <div id="editingSessionBanner" class="hidden bg-emerald-950/40 border border-emerald-500/70 rounded-xl p-3 flex items-center justify-between text-xs">
         <span class="text-emerald-300 font-bold" id="editingSessionText">✏️ Bearbeite gespeicherte Einheit</span>
         <button onclick="App.cancelSessionEdit()" class="text-zinc-400 active:text-zinc-100 font-bold px-2 py-1 bg-black rounded border border-zinc-800">Abbrechen</button>
       </div>
 
-      <!-- Active Exercises Container -->
       <div id="workoutExercisesContainer" class="space-y-3.5"></div>
 
-      <!-- Quick Add Exercise & Finish Buttons -->
       <div id="workoutFooterActions" class="space-y-3 pt-1">
         <div class="flex gap-2">
           <button onclick="App.openAddExerciseToWorkoutModal()"
@@ -122,7 +119,7 @@
       </div>
     </section>
 
-    <!-- TAB 2: STATS (CALENDAR + PROGRESSION + MACHINE DETAILS) -->
+    <!-- TAB 2: STATS -->
     <section id="tab-stats" class="hidden space-y-4">
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-1.5 grid grid-cols-3 gap-1.5">
         <button id="statsBtnCalendar" onclick="App.switchStatsSubTab('calendar')"
@@ -139,7 +136,6 @@
         </button>
       </div>
 
-      <!-- Weekly Volume Card -->
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
           <div>
@@ -240,7 +236,7 @@
           <div class="relative h-64 w-full">
             <canvas id="progressionChartCanvas"></canvas>
             <div id="progressionEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-oled-card/95">
-              <p class="text-sm text-zinc-300 font-bold">Noch keine Arbeitssätze vorhanden.</p>
+              <p class="text-sm text-zinc-300 font-bold" id="progressionEmptyMsg">Noch keine Arbeitssätze vorhanden.</p>
             </div>
           </div>
         </div>
@@ -316,7 +312,7 @@
           <div class="relative h-64 w-full">
             <canvas id="progressChart"></canvas>
             <div id="chartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-              <p class="text-sm text-zinc-400 font-bold">Noch keine Arbeitssätze für dieses Gerät gespeichert.</p>
+              <p class="text-sm text-zinc-400 font-bold" id="chartEmptyMsg">Noch keine Arbeitssätze für dieses Gerät gespeichert.</p>
             </div>
           </div>
         </div>
@@ -371,34 +367,26 @@
       </div>
     </section>
 
-    <!-- HEADER VIEW: BACKUP & UPDATES -->
+    <!-- TAB 5: BACKUP & UPDATES -->
     <section id="tab-backup" class="hidden space-y-4">
-      <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <div>
-            <h2 class="text-sm font-extrabold text-zinc-100">App-Version & Updates</h2>
-            <p class="text-xs text-zinc-400">Installiert: <span id="currentVersionLabel" class="text-emerald-400 font-mono font-bold">Lade...</span></p>
-          </div>
-          <button onclick="App.checkForUpdates()"
-            class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5">
-            <span>🔄</span>
-            <span>Auf Update prüfen</span>
-          </button>
-        </div>
-      </div>
-
       <div class="bg-oled-card border border-zinc-800/90 rounded-2xl p-4 space-y-3">
         <h2 class="text-sm font-extrabold text-zinc-100">JSON-Backup (Export & Import)</h2>
         <p class="text-xs text-zinc-400 leading-relaxed">
-          Alle Daten liegen lokal in deiner <code class="text-emerald-400">IndexedDB</code>.
+          Alle Daten liegen lokal in deiner persistenten <code class="text-emerald-400 font-mono">IndexedDB</code>.
         </p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
           <button onclick="App.exportDatabaseJson()"
             class="touch-target bg-emerald-500 active:bg-emerald-600 text-black font-extrabold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider">
-            ⬇ Backup exportieren
+            ⬇ Backup anzeigen & kopieren
           </button>
-          <label class="touch-target bg-black active:bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider text-center cursor-pointer flex items-center justify-center">
-            ⬆ Backup importieren
+          <button onclick="App.openImportTextModal()"
+            class="touch-target bg-black active:bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-3.5 px-4 rounded-xl text-xs uppercase tracking-wider text-center flex items-center justify-center">
+            ⬆ Backup einfügen (Text)
+          </button>
+        </div>
+        <div class="pt-2">
+          <label class="touch-target bg-black active:bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold py-2.5 px-4 rounded-xl text-xs text-center cursor-pointer flex items-center justify-center">
+            <span>📁 Datei importieren (Fallback)</span>
             <input type="file" accept=".json,application/json" onchange="App.importDatabaseJson(event)" class="hidden">
           </label>
         </div>
@@ -602,6 +590,9 @@
       }
     ];
 
+    /***********************************************************************
+     * ROBUSTE STORAGE ENGINE (IndexedDB Exklusiv – Kein 5MB Quota Absturz)
+     ***********************************************************************/
     const StorageEngine = {
       dbName: 'GymProgressDB',
       dbVersion: 1,
@@ -639,8 +630,15 @@
       },
 
       async putAll(storeName, items) {
-        localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(items));
-        if (!this.db) return;
+        // Falls keine IndexedDB vorhanden ist, Fallback auf localStorage
+        if (!this.db) {
+          try {
+            localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(items));
+          } catch (e) {
+            console.warn('localStorage full:', e);
+          }
+          return;
+        }
         return new Promise((resolve, reject) => {
           const tx = this.db.transaction(storeName, 'readwrite');
           const store = tx.objectStore(storeName);
@@ -665,8 +663,14 @@
       },
 
       async setMeta(key, value) {
-        localStorage.setItem(`ironlog_meta_${key}`, JSON.stringify(value));
-        if (!this.db) return;
+        if (!this.db) {
+          try {
+            localStorage.setItem(`ironlog_meta_${key}`, JSON.stringify(value));
+          } catch (e) {
+            console.warn('localStorage full:', e);
+          }
+          return;
+        }
         return new Promise((resolve) => {
           const tx = this.db.transaction('meta', 'readwrite');
           tx.objectStore('meta').put({ key, value });
@@ -704,16 +708,6 @@
         if (navigator.storage && navigator.storage.persist) {
           navigator.storage.persist().catch(() => {});
         }
-
-        const updateMsg = sessionStorage.getItem('ironlog_update_msg');
-        if (updateMsg) {
-          this.showToast(updateMsg);
-          sessionStorage.removeItem('ironlog_update_msg');
-        }
-
-        const currentVer = localStorage.getItem('ironlog_version') || 'v1.8';
-        const verLabel = document.getElementById('currentVersionLabel');
-        if (verLabel) verLabel.textContent = currentVer;
 
         this.setupPwaEnvironment();
         await StorageEngine.init();
@@ -803,40 +797,6 @@
         return CATEGORIES.find(c => c.id === categoryName) || { id: 'Sonstiges', name: categoryName || 'Sonstiges', icon: '⚙️' };
       },
 
-      async checkForUpdates() {
-        this.showToast('🔍 Prüfe auf Updates...');
-        try {
-          const res = await fetch('./sw.js?t=' + Date.now(), { cache: 'no-store' });
-          if (!res.ok) throw new Error('Server nicht erreichbar');
-          const text = await res.text();
-          const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
-          const remoteVersion = match ? match[1].replace('ironlog-', '').replace('offline-', '') : 'Unbekannt';
-          const currentVersion = localStorage.getItem('ironlog_version') || 'v1.8';
-
-          if (remoteVersion !== currentVersion) {
-            if (confirm(`Neues Update gefunden!\n\nAktuell: ${currentVersion}\nNeu: ${remoteVersion}\n\nJetzt installieren und neu laden?`)) {
-              if ('caches' in window) {
-                const keys = await caches.keys();
-                await Promise.all(keys.map(k => caches.delete(k)));
-              }
-              localStorage.setItem('ironlog_version', remoteVersion);
-              sessionStorage.setItem('ironlog_update_msg', `🚀 Erfolgreich auf ${remoteVersion} aktualisiert!`);
-              window.location.reload();
-            }
-          } else {
-            if (confirm(`Du bist bereits auf dem neuesten Stand (${currentVersion}).\n\nTrotzdem Cache leeren und neu laden?`)) {
-              if ('caches' in window) {
-                const keys = await caches.keys();
-                await Promise.all(keys.map(k => caches.delete(k)));
-              }
-              window.location.reload();
-            }
-          }
-        } catch (err) {
-          this.showToast('⚠️ Offline oder GitHub nicht erreichbar');
-        }
-      },
-
       getWeekdayRank(split) {
         const id = String(split.id || '').toLowerCase();
         const name = String(split.name || '').toLowerCase();
@@ -883,8 +843,10 @@
       setupPwaEnvironment() {
         const svg = this.getAppSvgIcon();
         const svgDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-        document.getElementById('pwaFavicon').href = svgDataUrl;
-        document.getElementById('pwaAppleIcon').href = svgDataUrl;
+        const fav = document.getElementById('pwaFavicon');
+        const appleFav = document.getElementById('pwaAppleIcon');
+        if (fav) fav.href = svgDataUrl;
+        if (appleFav) appleFav.href = svgDataUrl;
 
         const manifestObj = {
           name: 'IRONLOG Gym Progress Tracker',
@@ -899,10 +861,12 @@
         };
 
         const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
-        document.getElementById('pwaManifestLink').href = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.getElementById('pwaManifestLink');
+        if (manifestLink) manifestLink.href = URL.createObjectURL(manifestBlob);
 
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'http:')) {
-          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => { reg.update(); }).catch(() => {});
+        // ServiceWorker nur auf echten HTTP/HTTPS Hosts registrieren
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -923,15 +887,19 @@
       },
 
       triggerDownloadFile(filename, content, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+          const blob = new Blob([content], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (e) {
+          console.warn('Download fehlgeschlagen:', e);
+        }
       },
 
       detectTodaySplitId() {
@@ -989,6 +957,7 @@
 
       showToast(msg) {
         const el = document.getElementById('toastBanner');
+        if (!el) return;
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(this._toastTimer);
@@ -1029,9 +998,6 @@
         return isNaN(num) ? null : num;
       },
 
-      /***********************************************************************
-       * 4. UNIT TOGGLE (PIN VS. KG) & BEAT THE LOGBOOK
-       ***********************************************************************/
       async toggleMachineUnit(machineId, entryIdx = null) {
         const machine = this.state.machines.find(m => m.id === machineId);
         if (!machine) return;
@@ -1150,7 +1116,6 @@
         this.showToast('📋 Letzte Werte in alle Sätze kopiert!');
       },
 
-      // AUTOFILL UPGRADE: Copy values from this set down to the next row
       copySetDown(entryIdx, setIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
         if (!entry || !entry.sets || !entry.sets[setIdx]) return;
@@ -1183,9 +1148,6 @@
         this.showToast('↓ Werte in Folgesatz kopiert');
       },
 
-      /***********************************************************************
-       * 5. EXERCISE SWAP IN ACTIVE WORKOUT
-       ***********************************************************************/
       openSwapExerciseModal(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
         if (!entry) return;
@@ -1252,9 +1214,6 @@
         this.showToast(`⇄ Zu „${newEx.name}" gewechselt!`);
       },
 
-      /***********************************************************************
-       * 6. WORKOUT DRAFT & HISTORY PRE-FILL ENGINE
-       ***********************************************************************/
       getLastPerformance(exerciseId, machineId) {
         for (const sess of this.state.sessions) {
           const entry = (sess.entries || []).find(
@@ -1439,9 +1398,6 @@
         this.showToast('Bearbeitung beendet');
       },
 
-      /***********************************************************************
-       * 7. WORKOUT UI RENDERING
-       ***********************************************************************/
       toggleExerciseCollapse(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
         if (!entry) return;
@@ -1746,7 +1702,6 @@
                           </div>
                         </div>
 
-                        <!-- Status row with Beat-the-Logbook badge AND Auto-Fill Down button -->
                         <div class="flex items-center gap-2 pt-0.5">
                           <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-2.5 py-1 rounded-lg border flex-1 truncate ${btlInfo.cls}">
                             ${this.escapeHtml(btlInfo.text)}
@@ -1907,7 +1862,6 @@
           }
           set.completed = true;
 
-          // AUTO-FILL NACH UNTEN (BEI HÄKCHEN)
           if (setIdx + 1 < entry.sets.length) {
             const nextSet = entry.sets[setIdx + 1];
             if (!nextSet.completed && (nextSet.weight === '' || nextSet.weight === null)) {
@@ -2020,9 +1974,6 @@
         this.renderWorkoutTab();
       },
 
-      /***********************************************************************
-       * 8. FINISH WORKOUT
-       ***********************************************************************/
       async finishWorkout() {
         const draft = this.state.activeDraft;
         if (!draft) return;
@@ -2129,9 +2080,6 @@
         this.showToast(`✅ Training gespeichert & im Kalender abgehakt!`);
       },
 
-      /***********************************************************************
-       * 9. CALENDAR TRACKER
-       ***********************************************************************/
       changeCalendarMonth(delta) {
         let m = this.state.calendarMonth + delta;
         let y = this.state.calendarYear;
@@ -2421,9 +2369,6 @@
         this.showToast(`📅 Datum auf ${dateIso} gesetzt`);
       },
 
-      /***********************************************************************
-       * 10. STATS TAB
-       ***********************************************************************/
       getCurrentWeekDateBounds() {
         const now = new Date();
         const dayOfWeek = now.getDay();
@@ -2576,6 +2521,7 @@
           selectEl.innerHTML = `<option value="">— Noch keine Übung getrackt —</option>`;
           document.getElementById('progressionMachineFilterBar').innerHTML = '';
           emptyOverlay.classList.remove('hidden');
+          document.getElementById('progressionEmptyMsg').textContent = 'Noch keine Arbeitssätze vorhanden.';
           document.getElementById('progStartVal').textContent = '—';
           document.getElementById('progEndVal').textContent = '—';
           document.getElementById('progDeltaVal').textContent = '—';
@@ -2734,13 +2680,12 @@
 
         if (datasets.length === 0) {
           emptyOverlay.classList.remove('hidden');
+          document.getElementById('progressionEmptyMsg').textContent = 'Keine Daten im gewählten Zeitraum.';
           document.getElementById('progStartVal').textContent = '—';
           document.getElementById('progEndVal').textContent = '—';
           document.getElementById('progDeltaVal').textContent = '—';
           return;
         }
-
-        emptyOverlay.classList.add('hidden');
 
         allVisiblePoints.sort((a, b) => a.x - b.x);
         const firstVal = allVisiblePoints[0].y;
@@ -2757,6 +2702,14 @@
           diff > 0 ? 'text-emerald-400' : (diff < 0 ? 'text-red-400' : 'text-zinc-300')
         }`;
 
+        // Schutz gegen fehlendes Chart.js im Offline-Modus
+        if (typeof Chart === 'undefined') {
+          emptyOverlay.classList.remove('hidden');
+          document.getElementById('progressionEmptyMsg').textContent = 'Chart.js offline nicht verfügbar (bitte lokal einbinden).';
+          return;
+        }
+
+        emptyOverlay.classList.add('hidden');
         const canvas = document.getElementById('progressionChartCanvas');
         this.progressionChartInstance = new Chart(canvas.getContext('2d'), {
           type: 'line',
@@ -2828,9 +2781,6 @@
         });
       },
 
-      /***********************************************************************
-       * 11. ANALYTICS SUB-VIEW
-       ***********************************************************************/
       populateAnalyticsFilters() {
         const exSelect = document.getElementById('analyticsExerciseSelect');
         if (!exSelect) return;
@@ -2976,6 +2926,10 @@
 
         if (dataPoints.length === 0) {
           emptyState.classList.remove('hidden');
+          document.getElementById('chartEmptyMsg').textContent = 'Noch keine Arbeitssätze für dieses Gerät gespeichert.';
+        } else if (typeof Chart === 'undefined') {
+          emptyState.classList.remove('hidden');
+          document.getElementById('chartEmptyMsg').textContent = 'Chart.js offline nicht verfügbar.';
         } else {
           emptyState.classList.add('hidden');
           const metric = this.state.analyticsMetric;
@@ -3074,9 +3028,6 @@
         }
       },
 
-      /***********************************************************************
-       * 12. HISTORY TAB
-       ***********************************************************************/
       renderHistoryTab() {
         const badge = document.getElementById('historyCountBadge');
         const container = document.getElementById('historySessionsContainer');
@@ -3176,9 +3127,6 @@
         this.showToast('Eintrag gelöscht');
       },
 
-      /***********************************************************************
-       * 13. MANAGE TAB
-       ***********************************************************************/
       renderManageTab() {
         this.sortSplits();
         const container = document.getElementById('manageExercisesGroupedContainer');
@@ -3732,7 +3680,7 @@
       },
 
       /***********************************************************************
-       * 14. BACKUP & DIAGNOSTICS
+       * BACKUP & RESTORE ENGINE (Clipboard & WebView tauglich)
        ***********************************************************************/
       exportDatabaseJson() {
         const payload = {
@@ -3747,8 +3695,111 @@
             drafts: this.state.drafts
           }
         };
-        this.triggerDownloadFile(`ironlog_backup_${this.todayIso()}.json`, JSON.stringify(payload, null, 2), 'application/json');
-        this.showToast('⬇ JSON-Backup heruntergeladen');
+        const jsonStr = JSON.stringify(payload, null, 2);
+
+        // Auto-Kopie in Clipboard versuchen
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(jsonStr).then(() => {
+            this.showToast('📋 In Zwischenablage kopiert!');
+          }).catch(() => {});
+        }
+
+        // Modal mit sichtbarem Text öffnen (damit in jedem Fall Daten gesichert werden können)
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = 'JSON-Backup exportieren';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-zinc-300 leading-relaxed">
+              Dein Backup wurde <strong class="text-emerald-400">automatisch in die Zwischenablage kopiert</strong>. Du kannst es direkt in Samsung Notes oder einen Chat einfügen.
+            </p>
+            <textarea id="backupExportArea" readonly class="w-full h-44 bg-black border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none select-all">${this.escapeHtml(jsonStr)}</textarea>
+            
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="App.copyBackupTextFromModal()" class="touch-target bg-emerald-500 text-black font-extrabold py-2.5 rounded-xl text-xs">
+                📋 Nochmal kopieren
+              </button>
+              <button onclick="App.triggerDownloadFile('ironlog_backup_${this.todayIso()}.json', document.getElementById('backupExportArea').value, 'application/json')" class="touch-target bg-zinc-900 border border-zinc-700 text-zinc-200 font-bold py-2.5 rounded-xl text-xs">
+                ⬇ Datei-Download
+              </button>
+            </div>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+      },
+
+      copyBackupTextFromModal() {
+        const area = document.getElementById('backupExportArea');
+        if (!area) return;
+        area.select();
+        try {
+          document.execCommand('copy');
+          this.showToast('📋 Text kopiert!');
+        } catch (e) {
+          navigator.clipboard?.writeText(area.value);
+          this.showToast('📋 In Zwischenablage!');
+        }
+      },
+
+      openImportTextModal() {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = 'JSON-Backup einfügen & laden';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-zinc-400">
+              Füge den JSON-Code deines Backups hier ein:
+            </p>
+            <textarea id="backupImportArea" placeholder='{"app":"IRONLOG_GYM_TRACKER", ...}' class="w-full h-44 bg-black border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-emerald-500"></textarea>
+            
+            <button onclick="App.processImportJsonString(document.getElementById('backupImportArea').value)"
+              class="w-full touch-target bg-emerald-500 text-black font-extrabold py-3.5 rounded-xl text-xs uppercase tracking-wider">
+              Backup wiederherstellen
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+      },
+
+      async processImportJsonString(jsonStr) {
+        if (!jsonStr || !jsonStr.trim()) {
+          alert('Bitte erst JSON-Daten einfügen.');
+          return;
+        }
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const data = parsed.data || parsed;
+          if (!Array.isArray(data.exercises) || !Array.isArray(data.machines) || !Array.isArray(data.splits) || !Array.isArray(data.sessions)) {
+            alert('Ungültiges Backup-Format: Notwendige Tabellen fehlen.');
+            return;
+          }
+          this.state.exercises = data.exercises;
+          this.state.machines = data.machines;
+          this.state.splits = data.splits;
+          this.state.sessions = data.sessions;
+          this.state.drafts = data.drafts || {};
+
+          this.state.exercises.forEach(ex => {
+            if (!ex.category) ex.category = this.inferCategory(ex.name);
+          });
+          this.state.machines.forEach(m => { if (!m.unit) m.unit = 'kg'; });
+
+          this.sortSplits();
+          this.sortSessions();
+          this.state.activeSplitId = this.state.splits[0]?.id || '';
+          this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
+          await this.persistAll();
+          this.populateAnalyticsFilters();
+          this.closeModal();
+          this.renderWorkoutTab();
+          this.showToast(`✅ Backup erfolgreich importiert (${this.state.sessions.length} Logs)`);
+        } catch (err) {
+          alert('Fehler beim Parsen der JSON-Daten: ' + err.message);
+        }
       },
 
       importDatabaseJson(event) {
@@ -3756,37 +3807,8 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-          try {
-            const parsed = JSON.parse(e.target.result);
-            const data = parsed.data || parsed;
-            if (!Array.isArray(data.exercises) || !Array.isArray(data.machines) || !Array.isArray(data.splits) || !Array.isArray(data.sessions)) {
-              alert('Ungültiges Backup-Format.');
-              return;
-            }
-            this.state.exercises = data.exercises;
-            this.state.machines = data.machines;
-            this.state.splits = data.splits;
-            this.state.sessions = data.sessions;
-            this.state.drafts = data.drafts || {};
-
-            this.state.exercises.forEach(ex => {
-              if (!ex.category) ex.category = this.inferCategory(ex.name);
-            });
-            this.state.machines.forEach(m => { if (!m.unit) m.unit = 'kg'; });
-
-            this.sortSplits();
-            this.sortSessions();
-            this.state.activeSplitId = this.state.splits[0]?.id || '';
-            this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
-            await this.persistAll();
-            this.populateAnalyticsFilters();
-            this.renderWorkoutTab();
-            this.showToast(`✅ Backup importiert (${this.state.sessions.length} Logs)`);
-          } catch (err) {
-            alert('Fehler beim Lesen der Datei: ' + err.message);
-          } finally {
-            event.target.value = '';
-          }
+          this.processImportJsonString(e.target.result);
+          event.target.value = '';
         };
         reader.readAsText(file);
       },
@@ -3918,9 +3940,6 @@
         this.showToast('Datenbank zurückgesetzt');
       },
 
-      /***********************************************************************
-       * 15. NAVIGATION
-       ***********************************************************************/
       switchTab(tabName) {
         this.state.currentTab = tabName;
         ['workout', 'stats', 'history', 'manage', 'backup'].forEach(t => {
