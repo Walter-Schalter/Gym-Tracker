@@ -284,12 +284,18 @@
 
       <!-- Weekly Working Sets Volume Radar -->
       <div class="luxury-card rounded-3xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <div>
             <h2 class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Wochenvolumen (Arbeitssätze)</h2>
-            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono mt-0.5 tabular-nums">Aktuelle KW (ohne Warmups)</p>
+            <p id="weeklyVolumeDateLabel" class="text-[11px] text-zinc-400 font-mono mt-0.5 tabular-nums">Tippe auf eine Muskelgruppe für dein Satz-Ziel</p>
           </div>
-          <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-extrabold recessed-well px-3 py-1.5 rounded-xl text-emerald-400 border border-emerald-500/20 tabular-nums">0 WS</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="App.openVolumeTargetsModal()" class="btn-press recessed-well hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400 px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1" title="Wochenziele anpassen">
+              <span>🎯</span>
+              <span class="hidden sm:inline">Ziele</span>
+            </button>
+            <span id="weeklyTotalSetsBadge" class="text-xs font-mono font-extrabold recessed-well px-3 py-1.5 rounded-xl text-emerald-400 border border-emerald-500/20 tabular-nums">0 WS</span>
+          </div>
         </div>
         <div id="weeklyVolumeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1"></div>
       </div>
@@ -335,7 +341,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
               <h2 class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">Progression & Zeitachse</h2>
-              <p class="text-[11px] text-zinc-400 mt-0.5">Warmups exklusive • Chronologische Entwicklung</p>
+              <p class="text-[11px] text-zinc-400 mt-0.5">KG & PIN strikt getrennt • Partials = 0,5 Reps</p>
             </div>
             <div class="grid grid-cols-3 recessed-well rounded-xl p-1 gap-1">
               <button onclick="App.setProgressionRange('1M')" data-range="1M" class="prog-range-btn btn-press px-3 py-1.5 rounded-lg text-xs font-bold">1M</button>
@@ -354,9 +360,9 @@
               <label class="block text-[10px] uppercase font-extrabold tracking-wider text-zinc-400 mb-1.5">Metrik</label>
               <select id="progressionMetricSelect" onchange="App.renderProgressionTab()"
                 class="custom-select w-full touch-target tactical-input rounded-xl px-3.5 py-2 text-xs font-bold text-zinc-100">
-                <option value="e1rm">Est. 1RM (Epley / Pins)</option>
-                <option value="maxWeight">Max Last (kg/Pin)</option>
-                <option value="volume">Volumen (WS)</option>
+                <option value="e1rm">Est. 1RM (Brzycki/Epley)</option>
+                <option value="maxWeight">Max Last (kg / Pin)</option>
+                <option value="volume">Volumen (inkl. 0,5×Part.)</option>
               </select>
             </div>
           </div>
@@ -593,16 +599,28 @@
 
   <script>
     const CATEGORIES = [
-      { id: 'Brust', name: 'Brust', icon: '🛡️' },
-      { id: 'Rücken', name: 'Rücken', icon: '🦅' },
-      { id: 'Schultern', name: 'Schultern', icon: '💥' },
-      { id: 'Bizeps', name: 'Bizeps', icon: '💪' },
-      { id: 'Trizeps', name: 'Trizeps', icon: '⚡' },
-      { id: 'Beine', name: 'Beine', icon: '🦵' },
-      { id: 'Po', name: 'Po', icon: '🍑' },
-      { id: 'Bauch', name: 'Bauch', icon: '🍫' },
-      { id: 'Sonstiges', name: 'Sonstiges', icon: '⚙️' }
+      { id: 'Brust', name: 'Brust', icon: '🛡️', defaultTarget: 6 },
+      { id: 'Rücken', name: 'Rücken', icon: '🦅', defaultTarget: 8 },
+      { id: 'Schultern', name: 'Schultern', icon: '💥', defaultTarget: 12 },
+      { id: 'Bizeps', name: 'Bizeps', icon: '💪', defaultTarget: 8 },
+      { id: 'Trizeps', name: 'Trizeps', icon: '⚡', defaultTarget: 8 },
+      { id: 'Beine', name: 'Beine', icon: '🦵', defaultTarget: 10 },
+      { id: 'Po', name: 'Po', icon: '🍑', defaultTarget: 4 },
+      { id: 'Bauch', name: 'Bauch', icon: '🍫', defaultTarget: 4 },
+      { id: 'Sonstiges', name: 'Sonstiges', icon: '⚙️', defaultTarget: 4 }
     ];
+
+    const DEFAULT_VOLUME_TARGETS = {
+      'Brust': 6,
+      'Rücken': 8,
+      'Schultern': 12,
+      'Bizeps': 8,
+      'Trizeps': 8,
+      'Beine': 10,
+      'Po': 4,
+      'Bauch': 4,
+      'Sonstiges': 4
+    };
 
     const INITIAL_EXERCISES = [
       { id: 'ex_shoulder_press', name: 'Schulterdrücken Maschine', category: 'Schultern' },
@@ -732,7 +750,7 @@
     ];
 
     /***********************************************************************
-     * ROBUSTE STORAGE ENGINE (IndexedDB Exklusiv – Kein 5MB Quota Absturz)
+     * HIGH-SPEED STORAGE ENGINE (IndexedDB mit Einzel-Put & Instant-Flush)
      ***********************************************************************/
     const StorageEngine = {
       dbName: 'GymProgressDB',
@@ -767,6 +785,42 @@
           const req = store.getAll();
           req.onsuccess = () => resolve(req.result || []);
           req.onerror = () => reject(req.error);
+        });
+      },
+
+      async putOne(storeName, item) {
+        if (!this.db) {
+          try {
+            const raw = localStorage.getItem(`ironlog_${storeName}`);
+            const list = raw ? JSON.parse(raw) : [];
+            const idx = list.findIndex(x => x.id === item.id);
+            if (idx >= 0) list[idx] = item; else list.push(item);
+            localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(list));
+          } catch(e){}
+          return;
+        }
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          tx.objectStore(storeName).put(item);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      },
+
+      async deleteOne(storeName, id) {
+        if (!this.db) {
+          try {
+            const raw = localStorage.getItem(`ironlog_${storeName}`);
+            const list = raw ? JSON.parse(raw) : [];
+            localStorage.setItem(`ironlog_${storeName}`, JSON.stringify(list.filter(x => x.id !== id)));
+          } catch(e){}
+          return;
+        }
+        return new Promise((resolve, reject) => {
+          const tx = this.db.transaction(storeName, 'readwrite');
+          tx.objectStore(storeName).delete(id);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
         });
       },
 
@@ -818,11 +872,12 @@
         splits: [],
         sessions: [],
         drafts: {},
+        volumeTargets: { ...DEFAULT_VOLUME_TARGETS },
         activeSplitId: 'day_mon_push',
         activeDraft: null,
         analyticsMetric: 'e1rm',
         progressionRange: '1M',
-        progressionMachineFilter: 'ALL',
+        progressionMachineFilter: 'ALL_KG',
         statsSubTab: 'calendar',
         calendarYear: new Date().getFullYear(),
         calendarMonth: new Date().getMonth(),
@@ -831,9 +886,47 @@
       chartInstance: null,
       progressionChartInstance: null,
       deferredPwaPrompt: null,
+      _draftSaveTimer: null,
+      _draftDirty: false,
 
       getDraftKey(splitId, dateStr) {
         return `${dateStr || this.todayIso()}_${splitId || 'default'}`;
+      },
+
+      /***********************************************************************
+       * PRÄZISE E1RM & VOLUMEN BERECHNUNG (Partials = Faktor 0.5, Hybrid Brzycki/Epley)
+       ***********************************************************************/
+      getEffectiveReps(reps, partials = 0) {
+        const r = Number(reps) || 0;
+        const p = Number(partials) || 0;
+        if (r <= 0) return 0;
+        return r + (p * 0.5);
+      },
+
+      calcE1RM(weight, reps, partials = 0) {
+        const w = Number(weight) || 0;
+        const effR = this.getEffectiveReps(reps, partials);
+        if (w <= 0 || effR <= 0) return 0;
+        if (effR === 1) return w;
+        // Im Hypertrophie-Bereich (<= 10 Reps) präzise Brzycki-Formel, darüber sanfter Übergang auf Epley
+        if (effR <= 10) {
+          return w * (36 / (37 - effR));
+        }
+        return w * (1 + effR / 30);
+      },
+
+      calcSetVolume(set) {
+        const w = Number(set.weight) || 0;
+        const effR = this.getEffectiveReps(set.reps, set.partials);
+        let vol = w * effR;
+        if (set.type === 'dropset' && Array.isArray(set.drops)) {
+          for (const d of set.drops) {
+            const dw = Number(d.weight) || 0;
+            const dr = Number(d.reps) || 0;
+            if (dw > 0 && dr > 0) vol += dw * dr;
+          }
+        }
+        return vol;
       },
 
       async init() {
@@ -842,6 +935,7 @@
         }
 
         this.setupPwaEnvironment();
+        this.setupLifecycleListeners();
         await StorageEngine.init();
         const initialized = await StorageEngine.getMeta('initialized');
 
@@ -851,15 +945,26 @@
           this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
           this.state.sessions = [];
           this.state.drafts = {};
+          this.state.volumeTargets = { ...DEFAULT_VOLUME_TARGETS };
           this.sortSplits();
           await this.persistAll();
           await StorageEngine.setMeta('initialized', true);
         } else {
-          this.state.exercises = await StorageEngine.getAll('exercises');
-          this.state.machines = await StorageEngine.getAll('machines');
-          this.state.splits = await StorageEngine.getAll('splits');
-          this.state.sessions = await StorageEngine.getAll('sessions');
-          this.state.drafts = (await StorageEngine.getMeta('draftsMap')) || {};
+          const [exercises, machines, splits, sessions, draftsMap, savedTargets] = await Promise.all([
+            StorageEngine.getAll('exercises'),
+            StorageEngine.getAll('machines'),
+            StorageEngine.getAll('splits'),
+            StorageEngine.getAll('sessions'),
+            StorageEngine.getMeta('draftsMap'),
+            StorageEngine.getMeta('volumeTargets')
+          ]);
+
+          this.state.exercises = exercises;
+          this.state.machines = machines;
+          this.state.splits = splits;
+          this.state.sessions = sessions;
+          this.state.drafts = draftsMap || {};
+          this.state.volumeTargets = { ...DEFAULT_VOLUME_TARGETS, ...(savedTargets || {}) };
 
           let needsUpdate = false;
           this.state.exercises.forEach(ex => {
@@ -875,13 +980,14 @@
             }
           });
 
-          if (needsUpdate) {
-            await StorageEngine.putAll('exercises', this.state.exercises);
-            await StorageEngine.putAll('machines', this.state.machines);
-          }
-
           this.sortSplits();
-          await StorageEngine.putAll('splits', this.state.splits);
+          if (needsUpdate) {
+            await Promise.all([
+              StorageEngine.putAll('exercises', this.state.exercises),
+              StorageEngine.putAll('machines', this.state.machines),
+              StorageEngine.putAll('splits', this.state.splits)
+            ]);
+          }
         }
 
         this.sortSessions();
@@ -890,7 +996,6 @@
         const savedDraft = await StorageEngine.getMeta('activeDraft');
         const targetDate = savedDraft?.date || todayIsoStr;
 
-        // Prüfen, ob für den Start-Tag bereits eine abgeschlossene Einheit existiert
         const existingSessionForDate = this.findPreferredSessionForDate(targetDate);
 
         if (existingSessionForDate) {
@@ -913,10 +1018,24 @@
           }
         }
 
-        await this.saveDraft();
+        await this.flushDraftImmediate();
         this.updateHeaderStatus();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
+      },
+
+      // Garantiert sofortiges Speichern beim Raus-Tabben, Sperren oder Schließen der App
+      setupLifecycleListeners() {
+        const flushNow = () => {
+          if (this._draftDirty) {
+            this.flushDraftImmediate();
+          }
+        };
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') flushNow();
+        });
+        window.addEventListener('pagehide', flushNow);
+        window.addEventListener('beforeunload', flushNow);
       },
 
       findPreferredSessionForDate(dateIso, preferredSplitId = null) {
@@ -955,7 +1074,7 @@
                 weight: String(s.weight ?? ''),
                 reps: String(s.reps ?? ''),
                 type: s.type || 'normal',
-                partials: s.partials || 0,
+                partials: (s.partials !== undefined && s.partials !== null) ? Number(s.partials) : null,
                 drops: (s.drops || []).map(d => ({ weight: String(d.weight ?? ''), reps: String(d.reps ?? '') })),
                 completed: true
               }))
@@ -978,7 +1097,7 @@
       },
 
       getCategoryObj(categoryName) {
-        return CATEGORIES.find(c => c.id === categoryName) || { id: 'Sonstiges', name: categoryName || 'Sonstiges', icon: '⚙️' };
+        return CATEGORIES.find(c => c.id === categoryName) || { id: 'Sonstiges', name: categoryName || 'Sonstiges', icon: '⚙️', defaultTarget: 4 };
       },
 
       getWeekdayRank(split) {
@@ -1114,21 +1233,43 @@
           StorageEngine.putAll('splits', this.state.splits),
           StorageEngine.putAll('sessions', this.state.sessions),
           StorageEngine.setMeta('draftsMap', this.state.drafts),
-          StorageEngine.setMeta('activeDraft', this.state.activeDraft)
+          StorageEngine.setMeta('activeDraft', this.state.activeDraft),
+          StorageEngine.setMeta('volumeTargets', this.state.volumeTargets)
         ]);
+        this._draftDirty = false;
         this.updateHeaderStatus();
       },
 
-      async saveDraft() {
-        if (this.state.activeDraft) {
-          if (!this.state.activeDraft.editingSessionId) {
-            const key = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
-            if (!this.state.drafts) this.state.drafts = {};
-            this.state.drafts[key] = this.state.activeDraft;
-            await StorageEngine.setMeta('draftsMap', this.state.drafts);
-          }
-          await StorageEngine.setMeta('activeDraft', this.state.activeDraft);
+      // Debounced Draft Save für flüssiges Tippen + sofortiger Flush bei App-Wechsel
+      saveDraft(immediate = false) {
+        if (!this.state.activeDraft) return;
+        if (!this.state.activeDraft.editingSessionId) {
+          const key = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[key] = this.state.activeDraft;
         }
+        this._draftDirty = true;
+        clearTimeout(this._draftSaveTimer);
+        if (immediate) {
+          return this.flushDraftImmediate();
+        }
+        this._draftSaveTimer = setTimeout(() => {
+          this.flushDraftImmediate();
+        }, 250);
+      },
+
+      async flushDraftImmediate() {
+        clearTimeout(this._draftSaveTimer);
+        if (!this.state.activeDraft) return;
+        this._draftDirty = false;
+        const promises = [StorageEngine.setMeta('activeDraft', this.state.activeDraft)];
+        if (!this.state.activeDraft.editingSessionId) {
+          const key = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
+          if (!this.state.drafts) this.state.drafts = {};
+          this.state.drafts[key] = this.state.activeDraft;
+          promises.push(StorageEngine.setMeta('draftsMap', this.state.drafts));
+        }
+        await Promise.all(promises);
       },
 
       sortSessions() {
@@ -1238,13 +1379,22 @@
       },
 
       /***********************************************************************
-       * BEAT THE LOGBOOK
+       * EINHEITEN (KG / PIN) & KOPIER-FUNKTIONEN
        ***********************************************************************/
       async toggleMachineUnit(machineId, entryIdx = null) {
         const machine = this.state.machines.find(m => m.id === machineId);
         if (!machine) return;
         machine.unit = (machine.unit === 'pin') ? 'kg' : 'pin';
-        await StorageEngine.putAll('machines', this.state.machines);
+        await StorageEngine.putOne('machines', machine);
+
+        // Wenn im laufenden Training die Einheit umgeschaltet wird und noch kein Satz abgehakt ist, Vorwerte passend neu aufbauen
+        if (entryIdx !== null && this.state.activeDraft?.entries?.[entryIdx]) {
+          const entry = this.state.activeDraft.entries[entryIdx];
+          if (!entry.sets.some(s => s.completed)) {
+            entry.sets = this.buildSetRowsForExercise(entry.exerciseId, machine.id, entry.targetSets || 2);
+            this.saveDraft();
+          }
+        }
 
         if (this.state.currentTab === 'workout') this.renderWorkoutTab();
         if (this.state.currentTab === 'manage') this.renderManageTab();
@@ -1252,93 +1402,12 @@
         this.showToast(`Einheit: ${machine.unit.toUpperCase()}`);
       },
 
-      computeBeatLogbookInfo(entry, set, setIdx) {
-        if (set.type === 'warmup') {
-          return {
-            text: 'Warmup (zählt nicht ins Volumen)',
-            cls: 'text-amber-300/90 bg-amber-950/25 border-amber-500/30'
-          };
-        }
-
-        const machine = this.state.machines.find(m => m.id === entry.machineId);
-        const isPin = machine?.unit === 'pin';
-        const unitLabel = isPin ? 'Pin' : 'kg';
-
-        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
-        const prevSet = lastPerf && lastPerf.sets && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
-
-        if (!prevSet || prevSet.type === 'warmup') {
-          return {
-            text: 'Kein Vorwert für Satz ' + (setIdx + 1),
-            cls: 'text-zinc-500 bg-black/60 border-white/[0.05]'
-          };
-        }
-
-        const prevW = Number(prevSet.weight) || 0;
-        const prevR = Number(prevSet.reps) || 0;
-        const currW = this.parseNum(set.weight);
-        const currR = this.parseNum(set.reps);
-
-        if (currW === null || currR === null || currR <= 0) {
-          return {
-            text: `🎯 Vorwert: ${isPin ? 'Pin ' : ''}${prevW} ${isPin ? '' : 'kg '}× ${prevR} Reps`,
-            cls: 'text-zinc-400 bg-black/80 border-white/[0.07]'
-          };
-        }
-
-        const diffW = Number((currW - prevW).toFixed(2));
-        const diffR = currR - prevR;
-        const prevE1rm = prevW * (1 + prevR / 30);
-        const currE1rm = currW * (1 + currR / 30);
-        const diffE1rm = currE1rm - prevE1rm;
-
-        if (currW > prevW && currR >= prevR) {
-          const repBonus = diffR > 0 ? ` & +${diffR} Rep${diffR > 1 ? 's' : ''}` : '';
-          return {
-            text: `🔥 BEAT THE LOGBOOK: +${diffW} ${unitLabel}${repBonus}!`,
-            cls: 'text-emerald-300 bg-emerald-950/60 border-emerald-500/60 font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-          };
-        }
-        if (currW === prevW && currR > prevR) {
-          return {
-            text: `🔥 BEAT THE LOGBOOK: +${diffR} Rep${diffR > 1 ? 's' : ''} bei ${isPin ? 'Pin ' : ''}${currW}${isPin ? '' : ' kg'}!`,
-            cls: 'text-emerald-300 bg-emerald-950/60 border-emerald-500/60 font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-          };
-        }
-        if (diffE1rm > 0.15) {
-          return {
-            text: `▲ Progression (+${diffE1rm.toFixed(1)} Index vs. ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : 'kg'}×${prevR})`,
-            cls: 'text-emerald-400 bg-emerald-950/35 border-emerald-500/40 font-bold'
-          };
-        }
-        if (currW === prevW && currR === prevR) {
-          return {
-            text: `= Leistung gehalten (${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : ' kg'} × ${prevR})`,
-            cls: 'text-zinc-300 bg-oled-surface border-white/10'
-          };
-        }
-        return {
-          text: `▼ Unter Vorwert (Letztes Mal: ${isPin ? 'Pin ' : ''}${prevW}${isPin ? '' : ' kg'} × ${prevR})`,
-          cls: 'text-red-300 bg-red-950/35 border-red-500/40'
-        };
-      },
-
-      updateBeatLogbookBadgeDOM(entryIdx, setIdx) {
-        const entry = this.state.activeDraft?.entries?.[entryIdx];
-        const set = entry?.sets?.[setIdx];
-        const el = document.getElementById(`btl-badge-${entryIdx}-${setIdx}`);
-        if (!entry || !set || !el) return;
-        const info = this.computeBeatLogbookInfo(entry, set, setIdx);
-        el.className = `text-[11px] font-mono px-3 py-1.5 rounded-xl border transition-none flex-1 truncate ${info.cls}`;
-        el.textContent = info.text;
-      },
-
       copyLastPerformanceToEntry(entryIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
         if (!entry) return;
         const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
         if (!lastPerf || !lastPerf.sets || lastPerf.sets.length === 0) {
-          this.showToast('⚠️ Keine Vorwerte vorhanden');
+          this.showToast('⚠️ Keine Vorwerte an diesem Gerät');
           return;
         }
 
@@ -1346,31 +1415,36 @@
           weight: String(prevSet.weight ?? ''),
           reps: String(prevSet.reps ?? ''),
           type: prevSet.type || 'normal',
-          partials: prevSet.partials || 0,
+          partials: (prevSet.partials !== undefined && prevSet.partials !== null) ? Number(prevSet.partials) : 0,
           drops: (prevSet.type === 'dropset' && Array.isArray(prevSet.drops))
             ? prevSet.drops.map(d => ({ weight: String(d.weight ?? ''), reps: String(d.reps ?? '') }))
             : [],
           completed: false
         }));
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
-        this.showToast('📋 Letzte Werte übernommen');
+        this.showToast('📋 Vorwerte eingetragen');
       },
 
       copySetDown(entryIdx, setIdx) {
         const entry = this.state.activeDraft?.entries?.[entryIdx];
         if (!entry || !entry.sets || !entry.sets[setIdx]) return;
         const cur = entry.sets[setIdx];
-        const w = cur.weight;
-        const r = cur.reps;
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+
+        // Falls im aktuellen Satz nichts getippt wurde, übernimmt Kopie die grauen Vorwerte
+        const w = (cur.weight !== '' && cur.weight !== null) ? cur.weight : (prevSet ? String(prevSet.weight ?? '') : '');
+        const r = (cur.reps !== '' && cur.reps !== null) ? cur.reps : (prevSet ? String(prevSet.reps ?? '') : '');
+        const p = (cur.partials !== null && cur.partials !== undefined) ? cur.partials : (prevSet ? (Number(prevSet.partials) || 0) : null);
 
         if (setIdx + 1 < entry.sets.length) {
           const next = entry.sets[setIdx + 1];
           next.weight = w !== '' ? String(w) : '';
           next.reps = r !== '' ? String(r) : '';
           next.type = cur.type || 'normal';
-          next.partials = cur.partials || 0;
+          next.partials = p;
           if (cur.type === 'dropset' && Array.isArray(cur.drops)) {
             next.drops = JSON.parse(JSON.stringify(cur.drops));
           }
@@ -1379,7 +1453,7 @@
             weight: w !== '' ? String(w) : '',
             reps: r !== '' ? String(r) : '',
             type: cur.type || 'normal',
-            partials: cur.partials || 0,
+            partials: p,
             drops: cur.type === 'dropset' && Array.isArray(cur.drops) ? JSON.parse(JSON.stringify(cur.drops)) : [],
             completed: false
           });
@@ -1387,7 +1461,7 @@
 
         this.saveDraft();
         this.renderWorkoutTab();
-        this.showToast('↓ Nach unten kopiert');
+        this.showToast('↓ Satz nach unten kopiert');
       },
 
       openSwapExerciseModal(entryIdx) {
@@ -1450,7 +1524,7 @@
         entry.machineId = validMachineId;
         entry.sets = this.buildSetRowsForExercise(newExerciseId, validMachineId, entry.targetSets || 2);
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.closeModal();
         this.renderWorkoutTab();
         this.showToast(`⇄ ${newEx.name}`);
@@ -1461,9 +1535,7 @@
         const currentDraftDate = this.state.activeDraft?.date || null;
 
         for (const sess of this.state.sessions) {
-          // Sich selbst überspringen, wenn eine bereits abgeschlossene Einheit betrachtet wird
           if (currentEditingId && sess.id === currentEditingId) continue;
-          // Falls eine vergangene Einheit betrachtet wird, nur ältere oder gleich alte Einheiten als Vorwert heranziehen
           if (currentEditingId && currentDraftDate && sess.date > currentDraftDate) continue;
 
           const entry = (sess.entries || []).find(
@@ -1485,13 +1557,14 @@
         if (list.length === 0) {
           const fallback = { id: this.uid('m'), exerciseId, name: 'Standard-Gerät', setupNote: '', unit: 'kg' };
           this.state.machines.push(fallback);
-          StorageEngine.putAll('machines', this.state.machines);
+          StorageEngine.putOne('machines', fallback);
           list = [fallback];
         }
         list.sort((a, b) => a.name.localeCompare(b.name, 'de'));
         return list;
       },
 
+      // Baut leere Sätze auf, damit Gewicht, Reps und Partials als ausgegraute Vorschau (Placeholder) erscheinen
       buildSetRowsForExercise(exerciseId, machineId, targetSets = 2) {
         const lastPerf = this.getLastPerformance(exerciseId, machineId);
         const count = Math.max(targetSets || 2, lastPerf ? lastPerf.sets.length : 0);
@@ -1502,7 +1575,7 @@
             weight: '',
             reps: '',
             type: prevSet ? prevSet.type : 'normal',
-            partials: 0,
+            partials: null, // null = nicht aktiv gesetzt -> zeigt Vorwert ausgegraut an
             drops: prevSet && prevSet.type === 'dropset' && Array.isArray(prevSet.drops)
               ? prevSet.drops.map(() => ({ weight: '', reps: '' }))
               : [],
@@ -1563,24 +1636,21 @@
       onManualDateChange(newVal) {
         if (!newVal) return;
 
-        // 1. Laufenden ungespeicherten Entwurf des vorherigen Tages sichern
         if (this.state.activeDraft && !this.state.activeDraft.editingSessionId) {
           const oldKey = this.getDraftKey(this.state.activeDraft.splitId, this.state.activeDraft.date);
           if (!this.state.drafts) this.state.drafts = {};
           this.state.drafts[oldKey] = this.state.activeDraft;
         }
 
-        // 2. Prüfen, ob an diesem Tag bereits eine abgeschlossene Einheit existiert -> automatisch laden!
         const loggedSession = this.findPreferredSessionForDate(newVal);
         if (loggedSession) {
           this.state.activeDraft = this.buildDraftFromSession(loggedSession);
           this.state.activeSplitId = this.state.activeDraft.splitId;
-          this.saveDraft();
+          this.saveDraft(true);
           this.renderWorkoutTab();
           return;
         }
 
-        // 3. Falls noch nicht abgeschlossen: prüfen, ob für diesen Tag bereits ein Entwurf existiert, sonst Wochentags-Split wählen
         const naturalSplitId = this.detectSplitIdForDate(newVal);
         const naturalKey = this.getDraftKey(naturalSplitId, newVal);
 
@@ -1602,7 +1672,7 @@
           }
         }
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
       },
 
@@ -1616,13 +1686,12 @@
         const targetDate = targetDateIso || this.state.activeDraft?.date || this.todayIso();
         this.state.activeSplitId = splitId;
 
-        // Falls an diesem Tag genau dieser Split bereits abgeschlossen wurde, zeige die geloggten Daten
         const matchingLoggedSession = this.state.sessions.find(
           s => s.date === targetDate && s.splitId === splitId
         );
         if (matchingLoggedSession) {
           this.state.activeDraft = this.buildDraftFromSession(matchingLoggedSession);
-          this.saveDraft();
+          this.saveDraft(true);
           this.renderWorkoutTab();
           return;
         }
@@ -1636,14 +1705,14 @@
           this.state.drafts[nextKey] = this.state.activeDraft;
         }
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
       },
 
       startFreshDraftForCurrentDate() {
         const curDate = this.state.activeDraft?.date || this.todayIso();
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, curDate);
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
         this.showToast(`Neuer Entwurf für ${curDate}`);
       },
@@ -1655,7 +1724,7 @@
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, curDate);
         if (!this.state.drafts) this.state.drafts = {};
         this.state.drafts[key] = this.state.activeDraft;
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
         this.showToast('Entwurf zurückgesetzt');
       },
@@ -1840,47 +1909,21 @@
           const machines = this.getMachinesForExercise(entry.exerciseId);
           const selectedMachine = machines.find(m => m.id === entry.machineId) || machines[0];
           const isPin = selectedMachine.unit === 'pin';
-          const unitHeader = isPin ? 'Pin' : 'Gewicht (kg)';
+          const unitHeader = isPin ? 'Pin' : 'kg';
           const lastPerf = this.getLastPerformance(entry.exerciseId, selectedMachine.id);
+          const hasLastPerf = Boolean(lastPerf && lastPerf.sets && lastPerf.sets.length > 0);
 
           const totalSetsCount = entry.sets.length;
           const completedSetsCount = entry.sets.filter(s => s.completed).length;
           const isAllCompleted = totalSetsCount > 0 && entry.sets.every(s => s.completed);
           const isCollapsed = !!entry.collapsed;
 
-          let lastPerfHtml = `<span class="text-zinc-500 text-xs font-medium">Noch keine Vorwerte an diesem Gerät</span>`;
-          if (lastPerf && lastPerf.sets.length > 0) {
-            const pills = lastPerf.sets.map((s) => {
-              const typeTag = s.type === 'warmup' ? 'Warm' : (s.type === 'dropset' ? 'Drop' : 'WS');
-              const partStr = s.partials > 0 ? `+${s.partials}P` : '';
-              const dropStr = (s.type === 'dropset' && s.drops && s.drops.length > 0)
-                ? ' ↳ ' + s.drops.map(d => `${isPin ? 'Pin ' : ''}${d.weight}${isPin ? '' : 'kg'}×${d.reps}`).join('/')
-                : '';
-              return `<span class="inline-flex items-center gap-1 bg-black/90 border border-white/[0.08] rounded-lg px-2.5 py-1 text-[11px] font-mono text-zinc-200 tabular-nums">
-                <strong class="${s.type === 'warmup' ? 'text-amber-400' : (s.type === 'dropset' ? 'text-purple-400' : 'text-emerald-400')}">${typeTag}:</strong> ${isPin ? 'Pin ' : ''}${s.weight}${isPin ? '' : 'kg'} × ${s.reps}${partStr}${dropStr}
-              </span>`;
-            }).join(' ');
-            lastPerfHtml = `
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 tabular-nums">Vorheriges Mal (${lastPerf.date})</span>
-                  <button type="button" onclick="App.copyLastPerformanceToEntry(${entryIdx})"
-                    class="btn-press bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1">
-                    <span>📋</span>
-                    <span>Werte übernehmen</span>
-                  </button>
-                </div>
-                <div class="flex flex-wrap items-center gap-1.5">${pills}</div>
-              </div>
-            `;
-          }
-
           htmlParts.push(`
             <div id="workout-card-${entryIdx}" class="${isAllCompleted ? 'luxury-card-completed' : 'luxury-card'} rounded-3xl overflow-hidden transition-all duration-300 scroll-mt-20">
               <div class="p-3.5 ${isCollapsed ? '' : 'border-b border-white/[0.06] bg-white/[0.015]'} space-y-2.5">
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center justify-between gap-1.5">
                   <button type="button" onclick="App.toggleExerciseCollapse(${entryIdx})"
-                    class="flex-1 flex items-center gap-2.5 text-left min-w-0 py-0.5">
+                    class="flex-1 flex items-center gap-2 text-left min-w-0 py-0.5">
                     <span class="w-6 h-6 rounded-lg recessed-well flex items-center justify-center text-xs font-mono text-zinc-400 shrink-0">${isCollapsed ? '▸' : '▾'}</span>
                     <h3 class="text-sm font-extrabold tracking-tight truncate ${isAllCompleted ? 'text-emerald-400' : 'text-white'}">
                       ${isAllCompleted ? '✓ ' : ''}${this.escapeHtml(displayTitle)}
@@ -1895,10 +1938,16 @@
                   </button>
 
                   <div class="flex items-center gap-1 shrink-0">
+                    ${hasLastPerf ? `
+                      <button type="button" onclick="App.copyLastPerformanceToEntry(${entryIdx})" title="Vorwerte vom ${lastPerf.date} eintragen"
+                        class="btn-press px-2.5 py-1 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 rounded-xl text-[11px] font-extrabold flex items-center gap-1">
+                        <span>📋</span>
+                        <span class="hidden sm:inline">Vorwerte</span>
+                      </button>
+                    ` : ''}
                     <button type="button" onclick="App.openSwapExerciseModal(${entryIdx})" title="Übung austauschen"
-                      class="btn-press touch-target px-2.5 py-1 recessed-well hover:border-emerald-500/40 text-emerald-400 rounded-xl text-xs font-extrabold flex items-center gap-1">
+                      class="btn-press px-2 py-1 recessed-well hover:border-emerald-500/40 text-emerald-400 rounded-xl text-xs font-extrabold flex items-center gap-1">
                       <span>⇄</span>
-                      <span class="hidden sm:inline">Tauschen</span>
                     </button>
                     <button type="button" onclick="App.moveDraftExercise(${entryIdx}, -1)" ${entryIdx === 0 ? 'disabled' : ''}
                       class="btn-press w-7 h-7 recessed-well disabled:opacity-20 text-zinc-300 rounded-lg text-xs font-mono">▲</button>
@@ -1938,10 +1987,6 @@
                         class="w-full bg-transparent text-xs text-amber-300 placeholder-zinc-600 focus:outline-none font-mono">
                     </div>
                   </div>
-
-                  <div class="recessed-well border-l-2 border-l-emerald-500/60 rounded-2xl p-3">
-                    ${lastPerfHtml}
-                  </div>
                 ` : `
                   <div onclick="App.toggleExerciseCollapse(${entryIdx})" class="flex items-center justify-between text-xs text-zinc-400 font-mono px-1 pt-0.5 cursor-pointer">
                     <span class="truncate">⚙ ${this.escapeHtml(selectedMachine.name)} [${(selectedMachine.unit || 'kg').toUpperCase()}]${selectedMachine.setupNote ? ` • 📌 ${this.escapeHtml(selectedMachine.setupNote)}` : ''}</span>
@@ -1951,26 +1996,39 @@
               </div>
 
               ${!isCollapsed ? `
-                <div class="p-3.5 space-y-2.5">
-                  <div class="grid grid-cols-12 gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 px-1.5">
+                <div class="p-3.5 space-y-2">
+                  <div class="grid grid-cols-12 gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 px-1">
                     <div class="col-span-2">Satz</div>
                     <div class="col-span-3 text-center ${isPin ? 'text-purple-400' : ''}">${unitHeader}</div>
-                    <div class="col-span-3 text-center">Reps</div>
+                    <div class="col-span-2 text-center">Reps</div>
                     <div class="col-span-2 text-center">+Part.</div>
-                    <div class="col-span-2 text-right">Check</div>
+                    <div class="col-span-3 text-right pr-1">Aktion</div>
                   </div>
 
                   ${entry.sets.map((s, setIdx) => {
                     const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
                     const weightPlaceholder = prevSet ? `${prevSet.weight}` : (isPin ? 'Pin' : 'kg');
                     const repsPlaceholder = prevSet ? `${prevSet.reps}` : 'Reps';
+                    const prevPartials = prevSet ? (Number(prevSet.partials) || 0) : 0;
+                    const hasExplicitPartials = s.partials !== null && s.partials !== undefined;
+                    const shownPartials = hasExplicitPartials ? Number(s.partials) : prevPartials;
+
+                    let partialsBtnStyle = 'text-zinc-600 border-white/[0.04]';
+                    if (hasExplicitPartials && shownPartials > 0) {
+                      partialsBtnStyle = 'text-amber-400 border-amber-500/60 bg-amber-950/25 font-extrabold';
+                    } else if (hasExplicitPartials && shownPartials === 0) {
+                      partialsBtnStyle = 'text-zinc-300 border-white/15';
+                    } else if (!hasExplicitPartials && prevPartials > 0) {
+                      // Ausgegraute Vorschau der Partials vom letzten Mal
+                      partialsBtnStyle = 'text-zinc-500 border-dashed border-zinc-700/80';
+                    }
+
                     const rowBg = s.completed
                       ? 'bg-emerald-950/25 border-emerald-500/50 shadow-[inset_0_1px_0_rgba(52,211,153,0.15)]'
                       : 'recessed-well';
-                    const btlInfo = this.computeBeatLogbookInfo(entry, s, setIdx);
 
                     return `
-                      <div class="border rounded-2xl p-2.5 space-y-2 transition-colors ${rowBg}">
+                      <div class="border rounded-2xl p-2 space-y-2 transition-colors ${rowBg}">
                         <div class="grid grid-cols-12 gap-1.5 items-center">
                           <div class="col-span-2">
                             <select onchange="App.onSetTypeChange(${entryIdx}, ${setIdx}, this.value)"
@@ -1988,51 +2046,43 @@
                               value="${s.weight !== '' && s.weight !== null ? s.weight : ''}"
                               placeholder="${weightPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'weight', this.value)"
-                              class="w-full touch-target tactical-input rounded-xl px-2 text-center text-base font-mono font-extrabold text-white placeholder-zinc-600 tabular-nums">
+                              class="w-full touch-target tactical-input rounded-xl px-1.5 text-center text-base font-mono font-extrabold text-white placeholder-zinc-600 tabular-nums">
                           </div>
 
-                          <div class="col-span-3">
+                          <div class="col-span-2">
                             <input type="number" inputmode="numeric" onfocus="this.select()"
                               value="${s.reps !== '' && s.reps !== null ? s.reps : ''}"
                               placeholder="${repsPlaceholder}"
                               oninput="App.onSetFieldInput(${entryIdx}, ${setIdx}, 'reps', this.value)"
-                              class="w-full touch-target tactical-input rounded-xl px-2 text-center text-base font-mono font-extrabold text-white placeholder-zinc-600 tabular-nums">
+                              class="w-full touch-target tactical-input rounded-xl px-1 text-center text-base font-mono font-extrabold text-white placeholder-zinc-600 tabular-nums">
                           </div>
 
                           <div class="col-span-2">
                             <button type="button" onclick="App.cyclePartials(${entryIdx}, ${setIdx})"
-                              class="btn-press w-full touch-target tactical-input rounded-xl text-xs font-mono font-extrabold tabular-nums ${
-                                (s.partials || 0) > 0 ? 'text-amber-400 border-amber-500/60 bg-amber-950/20' : 'text-zinc-500'
-                              }">
-                              +${s.partials || 0}P
+                              title="${!hasExplicitPartials && prevPartials > 0 ? `Vorschau letztes Mal: +${prevPartials}P (Antippen zum Aktivieren)` : 'Partials (zählen 0,5×)'}"
+                              class="btn-press w-full touch-target tactical-input rounded-xl text-xs font-mono font-bold tabular-nums ${partialsBtnStyle}">
+                              +${shownPartials}P
                             </button>
                           </div>
 
-                          <div class="col-span-2 flex items-center gap-1">
+                          <div class="col-span-3 flex items-center gap-1">
                             <button type="button" onclick="App.toggleSetComplete(${entryIdx}, ${setIdx})"
                               class="btn-press flex-1 touch-target rounded-xl font-black text-sm ${
                                 s.completed ? 'emerald-cta' : 'bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 border border-white/10'
                               }">
                               ✓
                             </button>
-                            <button type="button" onclick="App.removeSetRow(${entryIdx}, ${setIdx})"
+                            <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Satz nach unten kopieren"
+                              class="btn-press touch-target w-8 rounded-xl bg-oled-surface hover:bg-oled-elevated border border-white/10 text-zinc-400 hover:text-white text-xs font-mono font-bold flex items-center justify-center">
+                              ↓
+                            </button>
+                            <button type="button" onclick="App.removeSetRow(${entryIdx}, ${setIdx})" title="Satz entfernen"
                               class="btn-press touch-target text-zinc-500 hover:text-red-400 px-1 text-sm font-bold">×</button>
                           </div>
                         </div>
 
-                        <div class="flex items-center gap-1.5 pt-0.5">
-                          <div id="btl-badge-${entryIdx}-${setIdx}" class="text-[11px] font-mono px-3 py-1.5 rounded-xl border flex-1 truncate ${btlInfo.cls}">
-                            ${this.escapeHtml(btlInfo.text)}
-                          </div>
-                          <button type="button" onclick="App.copySetDown(${entryIdx}, ${setIdx})" title="Werte nach unten übernehmen"
-                            class="btn-press px-2.5 py-1.5 bg-oled-surface hover:bg-oled-elevated border border-white/10 text-zinc-300 rounded-xl text-xs font-mono font-bold shrink-0 flex items-center gap-1">
-                            <span>↓</span>
-                            <span>Kopie</span>
-                          </button>
-                        </div>
-
                         ${s.type === 'dropset' ? `
-                          <div class="pl-3 border-l-2 border-purple-500/70 space-y-2 pt-1.5">
+                          <div class="pl-3 border-l-2 border-purple-500/70 space-y-2 pt-1">
                             <div class="flex items-center justify-between">
                               <span class="text-[10px] font-extrabold uppercase tracking-widest text-purple-400">↳ Dropset-Stufen</span>
                               <button type="button" onclick="App.addDropStage(${entryIdx}, ${setIdx})"
@@ -2101,7 +2151,7 @@
         const machine = this.state.machines.find(m => m.id === machineId);
         if (!machine) return;
         machine.setupNote = noteText.trim();
-        StorageEngine.putAll('machines', this.state.machines);
+        StorageEngine.putOne('machines', machine);
         this.showToast('📌 Notiz gespeichert');
       },
 
@@ -2119,12 +2169,21 @@
         const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
         set[field] = value;
         this.saveDraft();
-        this.updateBeatLogbookBadgeDOM(entryIdx, setIdx);
       },
 
+      // Beim ersten Antippen einer grauen Partials-Vorschau (>0) wird genau dieser Vorwert aktiv übernommen, danach hochgezählt
       cyclePartials(entryIdx, setIdx) {
-        const set = this.state.activeDraft.entries[entryIdx].sets[setIdx];
-        set.partials = ((set.partials || 0) + 1) % 6;
+        const entry = this.state.activeDraft.entries[entryIdx];
+        const set = entry.sets[setIdx];
+        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
+        const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
+        const prevPartials = prevSet ? (Number(prevSet.partials) || 0) : 0;
+
+        if (set.partials === null || set.partials === undefined) {
+          set.partials = prevPartials > 0 ? prevPartials : 1;
+        } else {
+          set.partials = (Number(set.partials) + 1) % 6;
+        }
         this.saveDraft();
         this.renderWorkoutTab();
       },
@@ -2152,43 +2211,25 @@
         this.saveDraft();
       },
 
-      // AUTO-COLLAPSE & AUTO-SCROLL TO NEXT EXERCISE
+      // KEIN AUTO-FILL IN DEN NÄCHSTEN SATZ MEHR
       toggleSetComplete(entryIdx, setIdx) {
         const entry = this.state.activeDraft.entries[entryIdx];
         const wasAllCompleted = entry.sets.length > 0 && entry.sets.every(s => s.completed);
         const set = entry.sets[setIdx];
-        const lastPerf = this.getLastPerformance(entry.exerciseId, entry.machineId);
-        const prevSet = lastPerf && lastPerf.sets[setIdx] ? lastPerf.sets[setIdx] : null;
 
         if (!set.completed) {
-          if ((set.weight === '' || set.weight === null) && prevSet) set.weight = String(prevSet.weight);
-          if ((set.reps === '' || set.reps === null) && prevSet) set.reps = String(prevSet.reps);
-
           const w = this.parseNum(set.weight);
           const r = this.parseNum(set.reps);
           if (w === null || r === null || r <= 0) {
-            alert('Bitte Last (kg/Pin) und Wiederholungen (Reps) eingeben.');
+            this.showToast('⚠️ Bitte Last & Reps eintragen (oder 📋 Vorwerte nutzen)');
             return;
           }
           set.weight = w;
           set.reps = r;
-
-          if (set.type === 'dropset' && Array.isArray(set.drops)) {
-            set.drops.forEach((d, dIdx) => {
-              const prevDrop = prevSet && prevSet.drops && prevSet.drops[dIdx] ? prevSet.drops[dIdx] : null;
-              if (d.weight === '' && prevDrop) d.weight = prevDrop.weight;
-              if (d.reps === '' && prevDrop) d.reps = prevDrop.reps;
-            });
+          if (set.partials === null || set.partials === undefined) {
+            set.partials = 0;
           }
           set.completed = true;
-
-          // Auto-Fill nach unten
-          if (setIdx + 1 < entry.sets.length) {
-            const nextSet = entry.sets[setIdx + 1];
-            if (!nextSet.completed && (nextSet.weight === '' || nextSet.weight === null)) {
-              nextSet.weight = String(set.weight);
-            }
-          }
         } else {
           set.completed = false;
         }
@@ -2201,7 +2242,7 @@
           shouldAutoAdvance = true;
         }
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.renderWorkoutTab();
 
         if (shouldAutoAdvance) {
@@ -2226,7 +2267,7 @@
           weight: '',
           reps: '',
           type: prevSet ? prevSet.type : 'normal',
-          partials: 0,
+          partials: null,
           drops: [],
           completed: false
         });
@@ -2310,7 +2351,7 @@
           collapsed: false,
           sets: this.buildSetRowsForExercise(exerciseId, machineId, 2)
         });
-        this.saveDraft();
+        this.saveDraft(true);
         this.closeModal();
         this.renderWorkoutTab();
       },
@@ -2337,7 +2378,7 @@
                 weight: w,
                 reps: r,
                 type: s.type || 'normal',
-                partials: parseInt(s.partials || 0, 10) || 0,
+                partials: (s.partials !== null && s.partials !== undefined) ? (parseInt(s.partials, 10) || 0) : 0,
                 drops: cleanDrops
               });
             }
@@ -2385,7 +2426,11 @@
           this.state.activeDraft = this.buildDraftFromSession(restSessionRecord);
           this.state.activeSplitId = this.state.activeDraft.splitId;
 
-          await this.persistAll();
+          await Promise.all([
+            StorageEngine.putOne('sessions', restSessionRecord),
+            this.flushDraftImmediate()
+          ]);
+          this.updateHeaderStatus();
           this.renderWorkoutTab();
           this.showToast(`✅ ${targetDate} abgehakt!`);
           return;
@@ -2411,11 +2456,14 @@
         const key = this.getDraftKey(draft.splitId, targetDate);
         if (this.state.drafts) delete this.state.drafts[key];
 
-        // Abgeschlossene Einheit direkt auf dem aktuellen Tag geöffnet lassen
         this.state.activeDraft = this.buildDraftFromSession(sessionRecord);
         this.state.activeSplitId = this.state.activeDraft.splitId;
 
-        await this.persistAll();
+        await Promise.all([
+          StorageEngine.putOne('sessions', sessionRecord),
+          this.flushDraftImmediate()
+        ]);
+        this.updateHeaderStatus();
         this.renderWorkoutTab();
         this.showToast(`✅ Training gespeichert!`);
       },
@@ -2594,7 +2642,11 @@
             this.state.activeDraft = this.buildDraftFromSession(record);
             this.state.activeSplitId = this.state.activeDraft.splitId;
           }
-          await this.persistAll();
+          await Promise.all([
+            StorageEngine.putOne('sessions', record),
+            this.flushDraftImmediate()
+          ]);
+          this.updateHeaderStatus();
           this.closeModal();
           this.renderStatsTab();
           this.renderWorkoutTab();
@@ -2617,7 +2669,7 @@
               weight: Number(s.weight) || 0,
               reps: Number(s.reps) || 0,
               type: s.type || 'normal',
-              partials: s.partials || 0,
+              partials: Number(s.partials) || 0,
               drops: Array.isArray(s.drops) ? s.drops.map(d => ({ weight: Number(d.weight) || 0, reps: Number(d.reps) || 0 })) : []
             }));
           } else {
@@ -2650,7 +2702,11 @@
           this.state.activeDraft = this.buildDraftFromSession(record);
           this.state.activeSplitId = this.state.activeDraft.splitId;
         }
-        await this.persistAll();
+        await Promise.all([
+          StorageEngine.putOne('sessions', record),
+          this.flushDraftImmediate()
+        ]);
+        this.updateHeaderStatus();
         this.closeModal();
         this.renderStatsTab();
         this.renderWorkoutTab();
@@ -2664,7 +2720,7 @@
         this.state.activeDraft = this.buildDraftFromSession(sess);
         this.state.activeSplitId = this.state.activeDraft.splitId;
 
-        this.saveDraft();
+        this.saveDraft(true);
         this.closeModal();
         this.switchTab('workout');
         this.showToast(`📅 Geladen: ${sess.date}`);
@@ -2675,7 +2731,8 @@
         if (this.state.activeDraft?.editingSessionId === sessionId) {
           this.onManualDateChange(dateIso);
         }
-        await this.persistAll();
+        await StorageEngine.deleteOne('sessions', sessionId);
+        this.updateHeaderStatus();
         this.renderStatsTab();
         this.renderWorkoutTab();
         this.openCalendarDayModal(dateIso);
@@ -2688,6 +2745,9 @@
         this.switchTab('workout');
       },
 
+      /***********************************************************************
+       * ANPASSBARES WOCHENVOLUMEN PRO MUSKELGRUPPE
+       ***********************************************************************/
       getCurrentWeekDateBounds() {
         const now = new Date();
         const dayOfWeek = now.getDay();
@@ -2708,12 +2768,99 @@
         };
       },
 
+      getCategoryTargetSets(catId) {
+        const val = this.state.volumeTargets?.[catId];
+        if (typeof val === 'number' && val >= 0) return val;
+        return DEFAULT_VOLUME_TARGETS[catId] ?? 8;
+      },
+
+      openVolumeTargetsModal(focusCategoryId = null) {
+        const modal = document.getElementById('modalOverlay');
+        const title = document.getElementById('modalTitle');
+        const body = document.getElementById('modalBody');
+
+        title.textContent = '🎯 Wochenvolumen-Ziele (Arbeitssätze)';
+        const cats = CATEGORIES.filter(c => c.id !== 'Sonstiges');
+
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-zinc-400">
+              Lege für jede Muskelgruppe individuell fest, wie viele Arbeitssätze (WS) du pro Woche anpeilst:
+            </p>
+            <div class="space-y-2">
+              ${cats.map(cat => {
+                const curTarget = this.getCategoryTargetSets(cat.id);
+                const isFocused = focusCategoryId === cat.id;
+                return `
+                  <div class="recessed-well ${isFocused ? 'border-emerald-500/60 bg-emerald-950/15' : ''} rounded-2xl p-2.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span class="text-sm">${cat.icon}</span>
+                      <span class="text-xs font-extrabold text-zinc-100 truncate">${this.escapeHtml(cat.name)}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button type="button" onclick="App.stepVolumeTargetInput('${cat.id}', -1)"
+                        class="btn-press w-8 h-8 rounded-xl bg-oled-surface border border-white/10 text-zinc-300 font-mono font-bold text-sm">−</button>
+                      <input type="number" id="vol-target-input-${cat.id}" inputmode="numeric" min="0" max="60"
+                        value="${curTarget}"
+                        class="w-14 h-8 tactical-input rounded-xl text-center text-xs font-mono font-extrabold text-emerald-400 tabular-nums">
+                      <button type="button" onclick="App.stepVolumeTargetInput('${cat.id}', 1)"
+                        class="btn-press w-8 h-8 rounded-xl bg-oled-surface border border-white/10 text-zinc-300 font-mono font-bold text-sm">+</button>
+                      <span class="text-[10px] font-mono text-zinc-500 w-6">WS</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <button onclick="App.saveVolumeTargetsFromModal()"
+              class="btn-press w-full touch-target emerald-cta font-extrabold py-3.5 rounded-2xl text-xs uppercase tracking-wider mt-2">
+              Ziele speichern
+            </button>
+          </div>
+        `;
+        modal.classList.remove('hidden');
+        if (focusCategoryId) {
+          setTimeout(() => {
+            const el = document.getElementById(`vol-target-input-${focusCategoryId}`);
+            if (el) { el.focus(); el.select(); }
+          }, 50);
+        }
+      },
+
+      stepVolumeTargetInput(catId, delta) {
+        const el = document.getElementById(`vol-target-input-${catId}`);
+        if (!el) return;
+        const cur = parseInt(el.value, 10) || 0;
+        el.value = String(Math.max(0, Math.min(60, cur + delta)));
+      },
+
+      async saveVolumeTargetsFromModal() {
+        const nextTargets = { ...this.state.volumeTargets };
+        CATEGORIES.filter(c => c.id !== 'Sonstiges').forEach(cat => {
+          const el = document.getElementById(`vol-target-input-${cat.id}`);
+          if (el) {
+            const val = parseInt(el.value, 10);
+            nextTargets[cat.id] = (!isNaN(val) && val >= 0) ? val : DEFAULT_VOLUME_TARGETS[cat.id];
+          }
+        });
+        this.state.volumeTargets = nextTargets;
+        await StorageEngine.setMeta('volumeTargets', this.state.volumeTargets);
+        this.closeModal();
+        this.renderWeeklyVolume();
+        this.showToast('🎯 Wochenziele gespeichert');
+      },
+
       renderWeeklyVolume() {
         const { mondayIso, sundayIso, mondayShort, sundayShort } = this.getCurrentWeekDateBounds();
         const counts = {};
         CATEGORIES.forEach(c => { counts[c.id] = 0; });
 
         let totalWorkingSets = 0;
+        let totalTargetSets = 0;
+        CATEGORIES.filter(c => c.id !== 'Sonstiges').forEach(c => {
+          totalTargetSets += this.getCategoryTargetSets(c.id);
+        });
+
         for (const sess of this.state.sessions) {
           if (sess.date >= mondayIso && sess.date <= sundayIso) {
             for (const entry of (sess.entries || [])) {
@@ -2729,26 +2876,29 @@
         }
 
         const dateLabel = document.getElementById('weeklyVolumeDateLabel');
-        if (dateLabel) dateLabel.textContent = `KW (${mondayShort} – ${sundayShort}) • Warmups exkl.`;
+        if (dateLabel) dateLabel.textContent = `KW (${mondayShort} – ${sundayShort}) • Tippe zum Anpassen`;
         const totalBadge = document.getElementById('weeklyTotalSetsBadge');
-        if (totalBadge) totalBadge.textContent = `${totalWorkingSets} WS`;
+        if (totalBadge) totalBadge.textContent = `${totalWorkingSets} / ${totalTargetSets} WS`;
 
         const gridEl = document.getElementById('weeklyVolumeGrid');
         if (!gridEl) return;
 
         gridEl.innerHTML = CATEGORIES.filter(c => c.id !== 'Sonstiges').map(cat => {
           const count = counts[cat.id] || 0;
-          const pct = Math.min(100, Math.round((count / 12) * 100));
+          const target = this.getCategoryTargetSets(cat.id);
+          const pct = target > 0 ? Math.min(100, Math.round((count / target) * 100)) : (count > 0 ? 100 : 0);
+          const reached = target > 0 && count >= target;
           return `
-            <div class="recessed-well rounded-2xl p-3 space-y-1.5">
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-zinc-200 truncate pr-1">${cat.icon} ${this.escapeHtml(cat.name)}</span>
-                <span class="font-mono font-extrabold ${count > 0 ? 'text-emerald-400' : 'text-zinc-600'} shrink-0 tabular-nums">${count} WS</span>
+            <button type="button" onclick="App.openVolumeTargetsModal('${cat.id}')"
+              class="btn-press text-left recessed-well hover:border-emerald-500/40 ${reached ? 'border-emerald-500/40 bg-emerald-950/15' : ''} rounded-2xl p-3 space-y-1.5 w-full">
+              <div class="flex items-center justify-between text-xs gap-1">
+                <span class="font-bold text-zinc-200 truncate">${cat.icon} ${this.escapeHtml(cat.name)}</span>
+                <span class="font-mono font-extrabold ${reached ? 'text-emerald-300' : (count > 0 ? 'text-emerald-400' : 'text-zinc-500')} shrink-0 tabular-nums">${count}/${target}</span>
               </div>
               <div class="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
                 <div class="h-full transition-all duration-300 ${count > 0 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-zinc-800'}" style="width: ${pct}%"></div>
               </div>
-            </div>
+            </button>
           `;
         }).join('');
       },
@@ -2820,10 +2970,13 @@
       },
 
       onProgressionExerciseChange() {
-        this.state.progressionMachineFilter = 'ALL';
+        this.state.progressionMachineFilter = 'AUTO';
         this.renderProgressionTab();
       },
 
+      /***********************************************************************
+       * PROGRESSION & ZEITACHSE (STRIKT GETRENNT NACH KG UND PIN + 0,5 PARTIALS)
+       ***********************************************************************/
       renderProgressionTab() {
         document.querySelectorAll('.prog-range-btn').forEach(btn => {
           const active = btn.getAttribute('data-range') === this.state.progressionRange;
@@ -2884,16 +3037,10 @@
 
             for (const s of workingSets) {
               const w = Number(s.weight) || 0;
-              const r = Number(s.reps) || 0;
-              const e1rm = w * (1 + r / 30);
+              const e1rm = this.calcE1RM(w, s.reps, s.partials);
               if (e1rm > bestE1rm) bestE1rm = e1rm;
               if (w > maxWeight) maxWeight = w;
-              totalVolume += w * r;
-              if (s.type === 'dropset' && Array.isArray(s.drops)) {
-                for (const d of s.drops) {
-                  totalVolume += (Number(d.weight) || 0) * (Number(d.reps) || 0);
-                }
-              }
+              totalVolume += this.calcSetVolume(s);
             }
 
             if (!usedMachinesMap.has(entry.machineId)) {
@@ -2925,36 +3072,76 @@
         document.getElementById('progressionDateSpanLabel').textContent = `${this.formatShortDateFromTs(minTs, true)} – Heute`;
 
         const machineGroups = Array.from(usedMachinesMap.values());
-        const filterBar = document.getElementById('progressionMachineFilterBar');
-        if (machineGroups.length > 1) {
-          filterBar.innerHTML = [
-            `<button onclick="App.setProgressionMachineFilter('ALL')"
-              class="btn-press px-3 py-1 rounded-xl text-xs font-bold border ${
-                this.state.progressionMachineFilter === 'ALL'
-                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                  : 'recessed-well text-zinc-400'
-              }">Alle (${machineGroups.length})</button>`,
-            ...machineGroups.map(mg => `
-              <button onclick="App.setProgressionMachineFilter('${mg.machineId}')"
-                class="btn-press px-3 py-1 rounded-xl text-xs font-bold border ${
-                  this.state.progressionMachineFilter === mg.machineId
-                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
-                    : 'recessed-well text-zinc-400'
-                }">⚙ ${this.escapeHtml(mg.machineName)} [${mg.unit.toUpperCase()}]</button>
-            `)
-          ].join('');
-        } else {
-          filterBar.innerHTML = machineGroups.length === 1
-            ? `<span class="text-xs font-mono text-zinc-400">⚙ ${this.escapeHtml(machineGroups[0].machineName)} [${machineGroups[0].unit.toUpperCase()}]</span>`
-            : '';
+        const kgGroups = machineGroups.filter(g => g.unit !== 'pin');
+        const pinGroups = machineGroups.filter(g => g.unit === 'pin');
+
+        // Niemals KG und PIN zusammenwerfen!
+        let curFilter = this.state.progressionMachineFilter;
+        const validMachineFilter = machineGroups.some(g => g.machineId === curFilter);
+        if (!validMachineFilter) {
+          if (curFilter === 'ALL_KG' && kgGroups.length > 0) {
+            // ok
+          } else if (curFilter === 'ALL_PIN' && pinGroups.length > 0) {
+            // ok
+          } else {
+            // Standardmäßig die Einheit wählen, die mehr / aktuellere Daten hat
+            if (pinGroups.length > 0 && kgGroups.length === 0) curFilter = pinGroups.length > 1 ? 'ALL_PIN' : pinGroups[0].machineId;
+            else if (kgGroups.length > 0 && pinGroups.length === 0) curFilter = kgGroups.length > 1 ? 'ALL_KG' : kgGroups[0].machineId;
+            else if (pinGroups.length > 0 && kgGroups.length > 0) {
+              const lastKgTs = Math.max(...kgGroups.flatMap(g => g.points.map(p => p.x)), 0);
+              const lastPinTs = Math.max(...pinGroups.flatMap(g => g.points.map(p => p.x)), 0);
+              curFilter = lastPinTs >= lastKgTs
+                ? (pinGroups.length > 1 ? 'ALL_PIN' : pinGroups[0].machineId)
+                : (kgGroups.length > 1 ? 'ALL_KG' : kgGroups[0].machineId);
+            }
+          }
+          this.state.progressionMachineFilter = curFilter;
         }
 
+        const filterBar = document.getElementById('progressionMachineFilterBar');
+        const filterButtons = [];
+
+        if (kgGroups.length > 1) {
+          filterButtons.push(`
+            <button onclick="App.setProgressionMachineFilter('ALL_KG')"
+              class="btn-press px-3 py-1 rounded-xl text-xs font-bold border ${
+                curFilter === 'ALL_KG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'recessed-well text-zinc-400'
+              }">⚖️ Alle KG (${kgGroups.length})</button>
+          `);
+        }
+        if (pinGroups.length > 1) {
+          filterButtons.push(`
+            <button onclick="App.setProgressionMachineFilter('ALL_PIN')"
+              class="btn-press px-3 py-1 rounded-xl text-xs font-bold border ${
+                curFilter === 'ALL_PIN' ? 'bg-purple-500/20 border-purple-500 text-purple-300' : 'recessed-well text-zinc-400'
+              }">📌 Alle PIN (${pinGroups.length})</button>
+          `);
+        }
+
+        machineGroups.forEach(mg => {
+          const isPinUnit = mg.unit === 'pin';
+          const isSel = curFilter === mg.machineId;
+          const activeCls = isPinUnit
+            ? 'bg-purple-500/20 border-purple-500 text-purple-300'
+            : 'bg-emerald-500/20 border-emerald-500 text-emerald-300';
+          filterButtons.push(`
+            <button onclick="App.setProgressionMachineFilter('${mg.machineId}')"
+              class="btn-press px-3 py-1 rounded-xl text-xs font-bold border ${
+                isSel ? activeCls : 'recessed-well text-zinc-400'
+              }">${isPinUnit ? '📌' : '⚖️'} ${this.escapeHtml(mg.machineName)} [${mg.unit.toUpperCase()}]</button>
+          `);
+        });
+
+        filterBar.innerHTML = filterButtons.join('');
+
+        let filteredGroups = [];
+        if (curFilter === 'ALL_KG') filteredGroups = kgGroups;
+        else if (curFilter === 'ALL_PIN') filteredGroups = pinGroups;
+        else filteredGroups = machineGroups.filter(g => g.machineId === curFilter);
+
+        const activeUnitSuffix = (filteredGroups[0]?.unit === 'pin') ? ' Pin' : ' kg';
         const metric = document.getElementById('progressionMetricSelect').value || 'e1rm';
         const palette = ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#f43f5e'];
-
-        const filteredGroups = this.state.progressionMachineFilter === 'ALL'
-          ? machineGroups
-          : machineGroups.filter(g => g.machineId === this.state.progressionMachineFilter);
 
         const canvas = document.getElementById('progressionChartCanvas');
         const ctx = canvas.getContext('2d');
@@ -2962,7 +3149,7 @@
         const allVisiblePoints = [];
 
         filteredGroups.forEach((group, idx) => {
-          const color = palette[idx % palette.length];
+          const color = group.unit === 'pin' && filteredGroups.length === 1 ? '#a855f7' : palette[idx % palette.length];
           const inWindow = group.points
             .filter(pt => pt.x >= minTs && pt.x <= maxTs)
             .map(pt => ({
@@ -2982,14 +3169,19 @@
             let bgFill = color + '15';
             if (filteredGroups.length === 1) {
               const grad = ctx.createLinearGradient(0, 0, 0, 240);
-              grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
-              grad.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+              if (group.unit === 'pin') {
+                grad.addColorStop(0, 'rgba(168, 85, 247, 0.35)');
+                grad.addColorStop(0.7, 'rgba(168, 85, 247, 0.04)');
+              } else {
+                grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+                grad.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+              }
               grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
               bgFill = grad;
             }
 
             datasets.push({
-              label: `${group.machineName} (${group.unit})`,
+              label: `${group.machineName} (${group.unit.toUpperCase()})`,
               data: inWindow,
               borderColor: color,
               backgroundColor: bgFill,
@@ -3024,8 +3216,8 @@
         const pct = firstVal > 0 ? ((diff / firstVal) * 100).toFixed(1) : '0.0';
         const sign = diff > 0 ? '+' : '';
 
-        document.getElementById('progStartVal').textContent = `${firstVal}`;
-        document.getElementById('progEndVal').textContent = `${lastVal}`;
+        document.getElementById('progStartVal').textContent = `${firstVal}${activeUnitSuffix}`;
+        document.getElementById('progEndVal').textContent = `${lastVal}${activeUnitSuffix}`;
         const deltaEl = document.getElementById('progDeltaVal');
         deltaEl.textContent = `${sign}${diff.toFixed(1)} (${sign}${pct}%)`;
         deltaEl.className = `text-base font-extrabold font-mono mt-1 tabular-nums ${
@@ -3090,7 +3282,11 @@
                 grid: { color: 'rgba(255,255,255,0.04)' }
               },
               y: {
-                ticks: { color: '#a1a1aa', font: { size: 10, family: 'JetBrains Mono' } },
+                ticks: {
+                  color: '#a1a1aa',
+                  font: { size: 10, family: 'JetBrains Mono' },
+                  callback: (v) => `${v}${activeUnitSuffix}`
+                },
                 grid: { color: 'rgba(255,255,255,0.04)' }
               }
             }
@@ -3162,19 +3358,15 @@
 
           for (const s of workingSets) {
             const w = Number(s.weight) || 0;
-            const r = Number(s.reps) || 0;
-            const e1rm = w * (1 + r / 30);
+            const effR = this.getEffectiveReps(s.reps, s.partials);
+            const topEffR = this.getEffectiveReps(topSet.reps, topSet.partials);
+            const e1rm = this.calcE1RM(w, s.reps, s.partials);
 
             if (e1rm > bestE1rm) { bestE1rm = e1rm; bestE1rmSet = s; }
             if (w > maxWeight) maxWeight = w;
-            if (w > topSet.weight || (w === topSet.weight && r > topSet.reps)) topSet = s;
+            if (w > topSet.weight || (w === topSet.weight && effR > topEffR)) topSet = s;
 
-            totalVolume += w * r;
-            if (s.type === 'dropset' && Array.isArray(s.drops)) {
-              for (const d of s.drops) {
-                totalVolume += (Number(d.weight) || 0) * (Number(d.reps) || 0);
-              }
-            }
+            totalVolume += this.calcSetVolume(s);
           }
 
           points.push({
@@ -3256,7 +3448,7 @@
 
           if (metric === 'e1rm') {
             values = dataPoints.map(p => p.e1rm);
-            labelText = `Estimated 1RM (Epley / ${unitSuffix.trim()})`;
+            labelText = `Est. 1RM (Brzycki/Epley • ${unitSuffix.trim()})`;
           } else if (metric === 'maxWeight') {
             values = dataPoints.map(p => p.maxWeight);
             labelText = `Max Last (${unitSuffix.trim()})`;
@@ -3265,15 +3457,17 @@
             labelText = `Top-Set (${unitSuffix.trim()})`;
           } else if (metric === 'volume') {
             values = dataPoints.map(p => p.volume);
-            labelText = `Volumen (${unitSuffix.trim()})`;
+            labelText = `Volumen inkl. 0,5×Part. (${unitSuffix.trim()})`;
           }
 
           document.getElementById('chartTitleLabel').textContent = labelText;
           const ctx = canvas.getContext('2d');
           const grad = ctx.createLinearGradient(0, 0, 0, 240);
-          grad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
-          grad.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+          grad.addColorStop(0, isPin ? 'rgba(168, 85, 247, 0.35)' : 'rgba(16, 185, 129, 0.35)');
+          grad.addColorStop(0.7, isPin ? 'rgba(168, 85, 247, 0.04)' : 'rgba(16, 185, 129, 0.04)');
           grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          const lineColor = isPin ? '#a855f7' : '#10b981';
 
           this.chartInstance = new Chart(ctx, {
             type: 'line',
@@ -3282,10 +3476,10 @@
               datasets: [{
                 label: labelText,
                 data: values,
-                borderColor: '#10b981',
+                borderColor: lineColor,
                 backgroundColor: grad,
                 borderWidth: 2.5,
-                pointBackgroundColor: '#10b981',
+                pointBackgroundColor: lineColor,
                 pointRadius: 4,
                 tension: 0.25,
                 fill: true
@@ -3302,7 +3496,7 @@
                   borderColor: '#222230',
                   borderWidth: 1,
                   titleColor: '#f4f4f5',
-                  bodyColor: '#10b981'
+                  bodyColor: lineColor
                 }
               },
               scales: {
@@ -3406,7 +3600,7 @@
               <div class="border-l-2 border-emerald-500/40 pl-3 py-0.5 space-y-1">
                 <div class="flex flex-wrap items-center justify-between gap-1">
                   <span class="text-xs font-extrabold text-zinc-100">${this.escapeHtml(ex ? ex.name : entry.exerciseId)}</span>
-                  <span class="text-[10px] font-mono text-emerald-400">⚙ ${this.escapeHtml(mach ? mach.name : 'Standard')} [${isPin ? 'PIN' : 'KG'}]</span>
+                  <span class="text-[10px] font-mono ${isPin ? 'text-purple-300' : 'text-emerald-400'}">⚙ ${this.escapeHtml(mach ? mach.name : 'Standard')} [${isPin ? 'PIN' : 'KG'}]</span>
                 </div>
                 <div class="flex flex-wrap gap-1">${setsPills}</div>
               </div>
@@ -3444,7 +3638,7 @@
         if (this.state.activeDraft?.editingSessionId === sessionId && deletedSess) {
           this.onManualDateChange(deletedSess.date);
         }
-        await StorageEngine.putAll('sessions', this.state.sessions);
+        await StorageEngine.deleteOne('sessions', sessionId);
         this.updateHeaderStatus();
         this.renderHistoryTab();
         this.showToast('Eintrag gelöscht');
@@ -3617,7 +3811,7 @@
         setTimeout(() => document.getElementById('newExNameInput')?.focus(), 50);
       },
 
-      saveNewExerciseModal(addToWorkoutAfter) {
+      async saveNewExerciseModal(addToWorkoutAfter) {
         const name = document.getElementById('newExNameInput')?.value.trim();
         const category = document.getElementById('newExCategorySelect')?.value || 'Sonstiges';
         const machineName = document.getElementById('newExMachineInput')?.value.trim() || 'Standard-Gerät';
@@ -3630,17 +3824,23 @@
 
         const exId = this.uid('ex');
         const machId = this.uid('m');
-
-        this.state.exercises.push({ id: exId, name, category });
-        this.state.machines.push({
+        const newEx = { id: exId, name, category };
+        const newMach = {
           id: machId,
           exerciseId: exId,
           name: machineName,
           setupNote: '',
           unit
-        });
+        };
 
-        this.persistAll();
+        this.state.exercises.push(newEx);
+        this.state.machines.push(newMach);
+
+        await Promise.all([
+          StorageEngine.putOne('exercises', newEx),
+          StorageEngine.putOne('machines', newMach)
+        ]);
+        this.updateHeaderStatus();
         this.populateAnalyticsFilters();
         this.closeModal();
 
@@ -3691,7 +3891,7 @@
         modal.classList.remove('hidden');
       },
 
-      saveEditExerciseModal(exerciseId) {
+      async saveEditExerciseModal(exerciseId) {
         const ex = this.state.exercises.find(e => e.id === exerciseId);
         if (!ex) return;
 
@@ -3706,7 +3906,7 @@
         ex.name = nextName;
         ex.category = nextCat;
 
-        this.persistAll();
+        await StorageEngine.putOne('exercises', ex);
         this.closeModal();
         this.renderManageTab();
         this.renderWorkoutTab();
@@ -3724,7 +3924,7 @@
         sp.items[itemIdx] = sp.items[targetIdx];
         sp.items[targetIdx] = temp;
 
-        StorageEngine.putAll('splits', this.state.splits);
+        StorageEngine.putOne('splits', sp);
         this.renderManageTab();
       },
 
@@ -3786,7 +3986,7 @@
         it.labelOverride = newEx.name;
         it.defaultMachineId = machines[0]?.id || '';
 
-        StorageEngine.putAll('splits', this.state.splits);
+        StorageEngine.putOne('splits', sp);
         this.closeModal();
         this.renderManageTab();
         this.showToast(`Vorlage aktualisiert`);
@@ -3825,14 +4025,16 @@
         if (!name || !name.trim()) return;
         const isPin = confirm('Nutzt dieses Gerät Pins / Steckgewichte?\n\n[OK] = Pins\n[Abbrechen] = kg');
         const note = prompt('Sitz-/Polstereinstellung (optional):', '') || '';
-        this.state.machines.push({
+        const newMach = {
           id: this.uid('m'),
           exerciseId,
           name: name.trim(),
           setupNote: note.trim(),
           unit: isPin ? 'pin' : 'kg'
-        });
-        this.persistAll();
+        };
+        this.state.machines.push(newMach);
+        StorageEngine.putOne('machines', newMach);
+        this.updateHeaderStatus();
         this.renderManageTab();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
@@ -3844,7 +4046,7 @@
         const next = prompt('Gerätename bearbeiten:', m.name);
         if (!next || !next.trim()) return;
         m.name = next.trim();
-        this.persistAll();
+        StorageEngine.putOne('machines', m);
         this.renderManageTab();
         this.renderWorkoutTab();
         this.populateAnalyticsFilters();
@@ -3898,14 +4100,16 @@
         const name = prompt('Name des neuen Tags:');
         if (!name || !name.trim()) return;
         const isRest = confirm('Ist dieser Tag ein regulärer Pausentag (Rest Day)?');
-        this.state.splits.push({
+        const newSplit = {
           id: this.uid('day'),
           order: this.state.splits.length + 1,
           name: name.trim(),
           isRest,
           items: []
-        });
-        this.persistAll();
+        };
+        this.state.splits.push(newSplit);
+        this.sortSplits();
+        StorageEngine.putAll('splits', this.state.splits);
         this.renderManageTab();
         this.renderWorkoutTab();
       },
@@ -3918,7 +4122,8 @@
           this.state.activeSplitId = this.state.splits[0].id;
           this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId);
         }
-        this.persistAll();
+        StorageEngine.deleteOne('splits', splitId);
+        this.saveDraft(true);
         this.renderManageTab();
         this.renderWorkoutTab();
       },
@@ -3980,7 +4185,8 @@
         if (this.state.activeSplitId === splitId && !this.state.activeDraft?.editingSessionId) {
           this.state.activeDraft = this.buildDraftForSplit(splitId, this.state.activeDraft?.date);
         }
-        this.persistAll();
+        StorageEngine.putOne('splits', split);
+        this.saveDraft(true);
         this.closeModal();
         this.renderManageTab();
         this.renderWorkoutTab();
@@ -3993,7 +4199,8 @@
         if (this.state.activeSplitId === sp.id && !this.state.activeDraft?.editingSessionId) {
           this.state.activeDraft = this.buildDraftForSplit(sp.id, this.state.activeDraft?.date);
         }
-        this.persistAll();
+        StorageEngine.putOne('splits', sp);
+        this.saveDraft(true);
         this.renderManageTab();
         this.renderWorkoutTab();
       },
@@ -4008,14 +4215,15 @@
       exportDatabaseJson() {
         const payload = {
           app: 'IRONLOG_GYM_TRACKER',
-          version: 7,
+          version: 8,
           exportedAt: new Date().toISOString(),
           data: {
             exercises: this.state.exercises,
             machines: this.state.machines,
             splits: this.state.splits,
             sessions: this.state.sessions,
-            drafts: this.state.drafts
+            drafts: this.state.drafts,
+            volumeTargets: this.state.volumeTargets
           }
         };
         const jsonStr = JSON.stringify(payload, null, 2);
@@ -4103,6 +4311,7 @@
           this.state.splits = data.splits;
           this.state.sessions = data.sessions;
           this.state.drafts = data.drafts || {};
+          this.state.volumeTargets = { ...DEFAULT_VOLUME_TARGETS, ...(data.volumeTargets || {}) };
 
           this.state.exercises.forEach(ex => {
             if (!ex.category) ex.category = this.inferCategory(ex.name);
@@ -4252,6 +4461,7 @@
         this.state.splits = JSON.parse(JSON.stringify(INITIAL_SPLITS));
         this.state.sessions = [];
         this.state.drafts = {};
+        this.state.volumeTargets = { ...DEFAULT_VOLUME_TARGETS };
         this.sortSplits();
         this.state.activeSplitId = this.detectTodaySplitId();
         this.state.activeDraft = this.buildDraftForSplit(this.state.activeSplitId, this.todayIso());
