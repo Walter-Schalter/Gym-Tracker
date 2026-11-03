@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ironlog-dynamic-v1.10';
+const CACHE_NAME = 'ironlog-dynamic-v1.11';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
