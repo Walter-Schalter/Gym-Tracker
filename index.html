@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- Kennung der Fassung – bitte nicht entfernen: daran erkennt sw.js die App (Offline-Start, Updates) -->
-  <meta name="ironlog-build" content="2.1.0-d1858ee913">
+  <meta name="ironlog-build" content="2.1.1-timer">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
@@ -677,9 +677,23 @@
     /* ---------- Training: Wochenleiste -------------------------------------------- */
     .weeknav { display: flex; flex-direction: column; gap: 8px; }
     .weekbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
-    .weekbar-label { display: flex; align-items: baseline; gap: 8px; padding-left: 4px; min-width: 0; }
+    .weekbar-label { display: flex; align-items: center; gap: 8px; padding-left: 4px; min-width: 0; flex-wrap: wrap; }
     .weekbar-label b { font-size: 1rem; font-weight: 700; white-space: nowrap; }
     .weekbar-label span { color: var(--ink-2); font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .workout-timer {
+      display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px;
+      border-radius: var(--r-full); background: var(--surface-2); border: 1px solid var(--line-2);
+      color: var(--ink-2); font-size: 0.8125rem; font-weight: 700; line-height: 1;
+      transition: background-color var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease, transform var(--t-fast) ease;
+    }
+    .workout-timer:active { transform: scale(0.95); }
+    .workout-timer.is-running { background: var(--accent-tint); border-color: var(--accent-line); color: var(--accent); }
+    .workout-timer.is-paused { background: var(--warn-tint); border-color: transparent; color: var(--warn); }
+    .workout-timer.is-saved { background: var(--surface-2); border-color: var(--line-2); color: var(--ink); }
+    .workout-timer .icon { width: 13px; height: 13px; color: var(--ink-2); }
+    .workout-timer-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+    .workout-timer.is-running .workout-timer-dot { animation: timer-pulse 1.4s ease-in-out infinite; }
+    @keyframes timer-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     .weekbar-nav { display: flex; align-items: center; flex: none; margin-right: -8px; }
 
     .datepick { position: relative; overflow: hidden; }
@@ -1503,8 +1517,8 @@
        Datenbanken und Backups bleiben dadurch vollständig kompatibel.
        ========================================================================== */
 
-    const APP_VERSION = '2.1.0';
-    const APP_BUILD = '2.1.0-d1858ee913';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
+    const APP_VERSION = '2.1.1';
+    const APP_BUILD = '2.1.1-timer';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
     const BACKUP_APP_ID = 'IRONLOG_GYM_TRACKER';
     const BACKUP_VERSION = 9;
 
@@ -2199,6 +2213,7 @@
         isRestDay: Boolean(s.isRestDay),
         entries
       };
+      if (Number.isFinite(Number(s.duration)) && Number(s.duration) > 0) out.duration = Math.round(Number(s.duration));
       if (s.demo === true) out.demo = true;
       return out;
     }
@@ -2247,6 +2262,9 @@
       };
       if (d.editingSessionId) out.editingSessionId = str(d.editingSessionId);
       if (d.editDirty) out.editDirty = true;
+      if (Number.isFinite(d.duration) && d.duration > 0) out.duration = Math.round(d.duration);
+      if (Number.isFinite(d.timerStartedAt) && d.timerStartedAt > 0) out.timerStartedAt = d.timerStartedAt;
+      if (Number.isFinite(d.timerElapsed) && d.timerElapsed > 0) out.timerElapsed = Math.round(d.timerElapsed);
       if (Number.isFinite(d.viewTs)) out.viewTs = d.viewTs;
       // Entwürfe der alten Version kennen „touched“ nicht: dort zählt, ob etwas eingetragen wurde
       out.legacy = typeof d.touched !== 'boolean';
@@ -2843,6 +2861,7 @@
       return {
         editingSessionId: sess.id,
         editDirty: false,
+        duration: sess.duration || 0,
         splitId: validSplit ? sess.splitId : (fallback ? fallback.id : ''),
         splitName: sess.splitName || 'Training',
         isRest: Boolean(sess.isRestDay),
@@ -3058,6 +3077,62 @@
       Persist.draftSoon();
     }
 
+    /** Aktuelle Trainingsdauer des Entwurfs in Sekunden. */
+    function draftElapsedSec(d = S.draft) {
+      if (!d) return 0;
+      const base = Number(d.timerElapsed) || 0;
+      const running = Number(d.timerStartedAt) > 0 ? Math.max(0, Math.floor((Date.now() - d.timerStartedAt) / 1000)) : 0;
+      return base + running;
+    }
+
+    /** Formatiert Sekunden als mm:ss bzw. h:mm:ss für den Live-Timer. */
+    function fmtTimer(sec) {
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const r = s % 60;
+      return h > 0 ? `${h}:${pad2(m)}:${pad2(r)}` : `${pad2(m)}:${pad2(r)}`;
+    }
+
+    /** Kompakte Dauer für Verlauf & Kalender (z. B. „48 Min.“ oder „1 Std. 12 Min.“). */
+    function fmtDurationShort(sec) {
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      if (!s) return '';
+      if (s < 60) return `${s} Sek.`;
+      const totalMin = Math.round(s / 60);
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      if (h > 0) return m > 0 ? `${h} Std. ${m} Min.` : `${h} Std.`;
+      return `${totalMin} Min.`;
+    }
+
+    /** Lesbare Dauer für die Abschluss-Meldung (z. B. „48 Min. (48:15)“). */
+    function fmtDurationText(sec) {
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      if (s < 60) return `${s} Sek.`;
+      return `${fmtDurationShort(s)} (${fmtTimer(s)})`;
+    }
+
+    let workoutTimerInterval = null;
+    function syncTimerInterval() {
+      const d = S.draft;
+      const shouldTick = Boolean(d && d.timerStartedAt && S.ui.tab === 'workout');
+      if (shouldTick && !workoutTimerInterval) {
+        workoutTimerInterval = setInterval(() => {
+          const el = document.querySelector('[data-workout-timer]');
+          if (!el || !S.draft || !S.draft.timerStartedAt) {
+            clearInterval(workoutTimerInterval);
+            workoutTimerInterval = null;
+            return;
+          }
+          el.textContent = fmtTimer(draftElapsedSec(S.draft));
+        }, 1000);
+      } else if (!shouldTick && workoutTimerInterval) {
+        clearInterval(workoutTimerInterval);
+        workoutTimerInterval = null;
+      }
+    }
+
     /** Muss nach jeder Nutzereingabe im Entwurf aufgerufen werden. */
     function touchDraft() {
       const d = S.draft;
@@ -3065,6 +3140,10 @@
       if (d.editingSessionId) {
         d.editDirty = true;
       } else {
+        if (!d.touched && !d.timerStartedAt && !(d.timerElapsed > 0) && !isRestView(d)) {
+          d.timerStartedAt = Date.now();
+          syncTimerInterval();
+        }
         d.touched = true;
         S.drafts[draftKey(d.date, d.splitId)] = d;
       }
@@ -3172,20 +3251,23 @@
       String(s.weight ?? '').trim() !== '' || String(s.reps ?? '').trim() !== '' ||
       (s.drops || []).some((d) => String(d.weight ?? '').trim() !== '' || String(d.reps ?? '').trim() !== '');
 
-    /** Zählt die Sätze des Entwurfs: abgehakt vs. vollständig ausgefüllt, aber noch offen. */
+    /** Zählt die Arbeitssätze des Entwurfs (Aufwärmsätze werden ignoriert). */
     function draftSetCounts(draft) {
       let total = 0;
       let checked = 0;
       let filledUnchecked = 0;
+      let anyValid = 0;
       for (const e of draft.entries) {
         for (const s of e.sets) {
-          total++;
           const valid = Boolean(cleanDraftSet(s));
+          if (valid) anyValid++;
+          if (s.type === 'warmup') continue;
+          total++;
           if (s.completed && valid) checked++;
           else if (valid) filledUnchecked++;
         }
       }
-      return { total, checked, filledUnchecked };
+      return { total, checked, filledUnchecked, anyValid };
     }
 
     /**
@@ -3276,6 +3358,9 @@
       const isRestSplit = Boolean((split && split.isRest) || draft.isRest);
       const baseName = String(draft.splitName || (split && split.name) || 'Training').replace(/\s*\(Abgehakt\)\s*$/i, '');
 
+      const durationSec = existing
+        ? (Number.isFinite(draft.duration) && draft.duration >= 0 ? Math.round(draft.duration) : (existing.duration || 0))
+        : draftElapsedSec(draft);
       const rec = {
         id: existing ? existing.id : uid('sess'),
         date: draft.date,
@@ -3285,6 +3370,7 @@
         isRestDay: entries.length === 0,
         entries
       };
+      if (entries.length && durationSec > 0) rec.duration = durationSec;
       if (existing && existing.demo) rec.demo = true;
 
       upsertSession(rec);
@@ -3892,7 +3978,8 @@
         const list = entries.filter(Boolean);
         demo.push({
           id: uid('sess'), date, timestamp: isoTs(date) + offset, splitId, splitName,
-          isRestDay: list.length === 0, entries: list, demo: true
+          isRestDay: list.length === 0, entries: list, demo: true,
+          ...(list.length ? { duration: (44 + ((offset * 7 + list.length * 3) % 18)) * 60 } : {})
         });
       };
       [12, 8, 5, 4, 3, 2, 1, 0].forEach((week, prog) => {
@@ -4984,11 +5071,32 @@
           </div>
         </div>`;
 
+      syncTimerInterval();
+      const elapsedSec = draftElapsedSec(d);
+      const timerRunning = Boolean(d.timerStartedAt);
+      const timerPaused = !timerRunning && elapsedSec > 0;
+      const savedDur = saved ? (Number(d.duration) || 0) : 0;
+      const showTimer = !rest;
+
       return html`
         ${storageNotice}
         <div class="weeknav">
           <div class="weekbar">
-            <div class="weekbar-label"><b>KW ${isoWeek(date)}</b><span class="num">${fmtWeekRange(monday)}</span></div>
+            <div class="weekbar-label">
+              <b>KW ${isoWeek(date)}</b>
+              <span class="num">${fmtWeekRange(monday)}</span>
+              ${showTimer ? (saved ? html`
+                <button type="button" class="workout-timer is-saved num" data-act="timer-menu"
+                        aria-label="${savedDur > 0 ? `Gespeicherte Trainingszeit: ${fmtDurationText(savedDur)}. Tippen zum Anpassen` : 'Trainingszeit nachtragen'}">
+                  ${icon('history')}
+                  <span>${savedDur > 0 ? fmtTimer(savedDur) : 'Zeit +'}</span>
+                </button>` : html`
+                <button type="button" class="${cls('workout-timer num', timerRunning && 'is-running', timerPaused && 'is-paused')}"
+                        data-act="timer-menu" aria-label="Trainings-Timer: ${fmtTimer(elapsedSec)}. Tippen zum Steuern">
+                  <span class="workout-timer-dot" aria-hidden="true"></span>
+                  <span data-workout-timer>${fmtTimer(elapsedSec)}</span>
+                </button>`) : ''}
+            </div>
             <div class="weekbar-nav">
               <button type="button" class="icon-btn" data-act="week-shift" data-dir="-1" aria-label="Vorherige Woche">${icon('chevron-left')}</button>
               <button type="button" class="icon-btn" data-act="week-shift" data-dir="1" aria-label="Nächste Woche">${icon('chevron-right')}</button>
@@ -5004,7 +5112,7 @@
 
         <div class="session-head">
           <div class="session-titles">
-            <p class="overline">${rel ? `${rel} · ` : ''}${fmtDate(date, 'full')}</p>
+            <p class="overline">${rel ? `${rel} · ` : ''}${fmtDate(date, 'full')}${saved && savedDur > 0 ? ` · ${fmtDurationShort(savedDur)}` : ''}</p>
             <h2 class="session-title"><span>${title}</span>${statusBadge}</h2>
           </div>
           ${counts.total > 0 ? html`
@@ -5044,7 +5152,7 @@
             ${icon('check')}${d.editDirty ? 'Änderungen speichern' : 'Gespeichert'}
           </button>`;
       }
-      const none = counts.checked + counts.filledUnchecked === 0;
+      const none = (counts.anyValid || 0) === 0 && counts.checked + counts.filledUnchecked === 0;
       return html`
         <button type="button" class="${cls('btn btn--xl btn--block', none ? 'btn--soft' : 'btn--primary')}" data-act="finish">
           ${icon('flag')}${none ? 'Tag ohne Sätze abhaken' : 'Training abschließen'}
@@ -5077,8 +5185,9 @@
       const machine = Idx.mach(entry.machineId);
       const unit = unitOf(entry.machineId, entry);
       const last = lastPerformance(entry.exerciseId, entry.machineId, d.date, d.editingSessionId || null);
-      const done = entry.sets.filter((s) => s.completed).length;
-      const total = entry.sets.length;
+      const workSets = entry.sets.filter((s) => s.type !== 'warmup');
+      const done = workSets.filter((s) => s.completed).length;
+      const total = workSets.length;
       const allDone = total > 0 && done === total;
       const collapsed = Boolean(entry.collapsed);
       const orphanMachine = !machine;
@@ -5257,6 +5366,97 @@
     Actions['pick-day'] = (el) => { haptic(); return goToDay(el.dataset.date); };
     Actions['week-shift'] = (el) => goToDay(addDays(S.draft.date, 7 * Number(el.dataset.dir)));
     Actions['go-today'] = () => goToDay(todayIso());
+
+    async function editSavedDuration(d) {
+      if (!d) return;
+      const currentMin = d.duration > 0 ? Math.max(1, Math.round(d.duration / 60)) : 45;
+      const values = await formSheet({
+        title: 'Trainingszeit',
+        subtitle: `${fmtDate(d.date, 'full')} · ${shortSplitName(d.splitName)}`,
+        intro: d.duration > 0 ? `Gespeicherte Dauer: ${fmtDurationText(d.duration)}` : 'Für diese Einheit ist noch keine Trainingsdauer hinterlegt.',
+        submitLabel: 'Dauer speichern',
+        fields: [
+          { name: 'minutes', label: 'Trainingsdauer in Minuten', type: 'stepper', value: currentMin, min: 0, max: 360, hint: '0 = Trainingsdauer entfernen' }
+        ]
+      });
+      if (!values) return;
+      const newSec = Math.max(0, Number(values.minutes) || 0) * 60;
+      d.duration = newSec;
+      if (d.editingSessionId) {
+        const sess = S.sessions.find((s) => s.id === d.editingSessionId);
+        if (sess) {
+          if (newSec > 0) sess.duration = newSec;
+          else delete sess.duration;
+          upsertSession(sess);
+        }
+      }
+      Persist.draftNow();
+      renderView();
+      toast(newSec > 0 ? `Trainingszeit gespeichert: ${fmtDurationShort(newSec)}` : 'Trainingszeit entfernt', { type: 'success' });
+    }
+
+    Actions['timer-menu'] = async () => {
+      const d = S.draft;
+      if (!d || isRestView(d)) return;
+      if (d.editingSessionId) {
+        await editSavedDuration(d);
+        return;
+      }
+      const running = Boolean(d.timerStartedAt);
+      const elapsed = draftElapsedSec(d);
+      if (!running && elapsed === 0) {
+        d.timerStartedAt = Date.now();
+        d.touched = true;
+        S.drafts[draftKey(d.date, d.splitId)] = d;
+        Persist.draftSoon();
+        haptic('tap');
+        renderView('workout');
+        toast('Trainings-Timer gestartet', { type: 'info', duration: 2200 });
+        return;
+      }
+      const choice = await actionSheet({
+        title: `Trainings-Timer · ${fmtTimer(elapsed)}`,
+        subtitle: running ? 'Läuft gerade' : 'Pausiert',
+        actions: [
+          running
+            ? { value: 'pause', label: 'Timer pausieren', icon: 'history' }
+            : { value: 'resume', label: 'Timer fortsetzen', icon: 'bolt' },
+          { value: 'set', label: 'Zeit manuell anpassen', icon: 'pencil' },
+          { value: 'reset', label: 'Auf 00:00 zurücksetzen', icon: 'undo', danger: true }
+        ]
+      });
+      if (choice === 'pause' && d.timerStartedAt) {
+        d.timerElapsed = draftElapsedSec(d);
+        delete d.timerStartedAt;
+        Persist.draftSoon();
+        renderView('workout');
+      } else if (choice === 'resume' && !d.timerStartedAt) {
+        d.timerStartedAt = Date.now();
+        Persist.draftSoon();
+        renderView('workout');
+      } else if (choice === 'set') {
+        const curMin = Math.max(1, Math.round(draftElapsedSec(d) / 60));
+        const values = await formSheet({
+          title: 'Timer anpassen',
+          submitLabel: 'Übernehmen',
+          fields: [{ name: 'minutes', label: 'Bisherige Dauer in Minuten', type: 'stepper', value: curMin, min: 0, max: 360 }]
+        });
+        if (values) {
+          d.timerElapsed = Math.max(0, Number(values.minutes) || 0) * 60;
+          if (d.timerStartedAt) d.timerStartedAt = Date.now();
+          d.touched = true;
+          S.drafts[draftKey(d.date, d.splitId)] = d;
+          Persist.draftSoon();
+          renderView('workout');
+        }
+      } else if (choice === 'reset') {
+        delete d.timerStartedAt;
+        delete d.timerElapsed;
+        Persist.draftSoon();
+        renderView('workout');
+        toast('Timer zurückgesetzt');
+      }
+    };
     Actions['pick-split'] = (el) => {
       if (el.dataset.id === S.draft.splitId && !S.draft.editingSessionId) return undefined;
       haptic();
@@ -5441,7 +5641,8 @@
       const { i, j, entry, set } = entryCtx(el);
       if (!entry || !set) return;
       const d = S.draft;
-      const wasAllDone = entry.sets.length > 0 && entry.sets.every((s) => s.completed);
+      const workSetsOf = (ent) => ent.sets.filter((s) => s.type !== 'warmup');
+      const wasAllDone = workSetsOf(entry).length > 0 && workSetsOf(entry).every((s) => s.completed);
 
       if (!set.completed) {
         const res = completeSet(entry, j);
@@ -5463,7 +5664,7 @@
       }
       blurActive();
 
-      const nowAllDone = entry.sets.length > 0 && entry.sets.every((s) => s.completed);
+      const nowAllDone = workSetsOf(entry).length > 0 && workSetsOf(entry).every((s) => s.completed);
       const advance = !wasAllDone && nowAllDone && !d.editingSessionId;
       if (advance) { entry.collapsed = true; haptic('success'); }
 
@@ -5618,8 +5819,9 @@
       const pending = pendingRows(d);
       const blockers = pending.filter((p) => p.kind === 'incomplete');
       const ghostable = pending.filter((p) => p.kind === 'ghostable');
-      counts.filledUnchecked += ghostable.length;
+      counts.filledUnchecked += ghostable.filter((p) => p.entry.sets[p.j].type !== 'warmup').length;
       const valid = counts.checked + counts.filledUnchecked;
+      const hasAnySavable = (counts.anyValid || 0) + ghostable.length > 0;
       const split = splitById(d.splitId);
       const restDay = Boolean((split && split.isRest) || d.isRest);
       let mode = 'all';
@@ -5653,7 +5855,7 @@
         if (!ok) return false;
       }
 
-      if (valid === 0) {
+      if (!hasAnySavable) {
         if (!restDay) {
           const ok = await confirmDialog({
             title: 'Tag ohne Sätze abhaken?',
@@ -5701,10 +5903,12 @@
       haptic('success');
       renderView('workout');
       if (!silentScroll) window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+      syncTimerInterval();
       if (rec.isRestDay) toast(`${fmtDate(rec.date, 'day')} abgehakt`, { type: 'success' });
       else {
         const sum = sessionSummary(rec);
-        toast(`${wasEdit ? 'Änderungen gespeichert' : 'Training gespeichert'} · ${plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze')}`, { type: 'success' });
+        const durInfo = rec.duration > 0 ? ` · Trainingszeit: ${fmtDurationText(rec.duration)}` : '';
+        toast(`${wasEdit ? 'Änderungen gespeichert' : 'Training abgeschlossen'} · ${plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze')}${durInfo}`, { type: 'success', duration: 7500 });
       }
       return true;
     }
@@ -5768,12 +5972,15 @@
         title: fmtDate(d.date, 'full'),
         subtitle: shortSplitName(d.splitName),
         actions: [
+          { value: 'duration', label: d.duration > 0 ? `Trainingszeit ändern (${fmtDurationShort(d.duration)})` : 'Trainingszeit nachtragen', icon: 'history' },
           { value: 'another', label: 'Weitere Einheit an diesem Tag', icon: 'plus',
             hint: startedDraftFor(d.date, d.splitId) ? 'Öffnet den bereits angefangenen Entwurf für diesen Tag' : 'Legt einen zweiten, leeren Entwurf für denselben Tag an' },
           { value: 'delete', label: 'Diese Einheit löschen', icon: 'trash', danger: true }
         ]
       });
-      if (choice === 'another') {
+      if (choice === 'duration') {
+        await editSavedDuration(d);
+      } else if (choice === 'another') {
         if (!(await guardUnsaved())) return;
         const split = splitById(d.splitId) || splitForDate(d.date);
         const splitId = split ? split.id : '';
@@ -5993,7 +6200,7 @@
                       <span class="${cls('row-icon', workout && 'row-icon--accent')}">${icon(workout ? 'dumbbell' : 'moon')}</span>
                       <span class="day-log-main">
                         <b>${workout ? shortSplitName(l.splitName) : (/(abgehakt)/i.test(l.splitName) ? shortSplitName(l.splitName) + ' · ohne Sätze' : 'Pausentag')}</b>
-                        <span class="num">${workout ? `${plural(sum.exercises, 'Übung', 'Übungen')} · ${sum.sets ? plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze') : 'ohne Werte abgehakt'}` : 'Als erledigt abgehakt'}</span>
+                        <span class="num">${workout ? [plural(sum.exercises, 'Übung', 'Übungen'), sum.sets ? plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze') : 'ohne Werte abgehakt', l.duration ? fmtDurationShort(l.duration) : ''].filter(Boolean).join(' · ') : 'Als erledigt abgehakt'}</span>
                       </span>
                       <button type="button" class="btn btn--sm btn--tonal" data-day-open="${l.id}">Öffnen</button>
                       <button type="button" class="icon-btn" data-day-delete="${l.id}" aria-label="Eintrag löschen">${icon('trash')}</button>
@@ -6711,7 +6918,7 @@
       const sum = sessionSummary(sess);
       const title = isWorkout ? shortSplitName(sess.splitName) : restLabel(sess);
       const sub = isWorkout
-        ? [plural(sum.exercises, 'Übung', 'Übungen'), sum.sets ? plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze') : 'ohne Werte abgehakt', sum.volumeKg ? `${fmtNum(sum.volumeKg, 0)} kg` : ''].filter(Boolean).join(' · ')
+        ? [plural(sum.exercises, 'Übung', 'Übungen'), sum.sets ? plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze') : 'ohne Werte abgehakt', sess.duration ? fmtDurationShort(sess.duration) : '', sum.volumeKg ? `${fmtNum(sum.volumeKg, 0)} kg` : ''].filter(Boolean).join(' · ')
         : (/\(abgehakt\)/i.test(sess.splitName) ? 'Ohne Sätze abgehakt' : 'Abgehakt');
 
       return html`
@@ -6734,6 +6941,7 @@
     function logBody(sess) {
       const isWorkout = isWorkoutSession(sess);
       return html`
+        ${isWorkout && sess.duration > 0 ? html`<p class="hint num">Trainingsdauer: ${fmtDurationText(sess.duration)}</p>` : ''}
         ${sess.entries.map((e) => {
           const unit = unitOf(e.machineId, e);
           const real = realSets(e);
