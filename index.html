@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- Kennung der Fassung – bitte nicht entfernen: daran erkennt sw.js die App (Offline-Start, Updates) -->
-  <meta name="ironlog-build" content="2.1.1-timer">
+  <meta name="ironlog-build" content="2.1.2-timer">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
@@ -1030,7 +1030,7 @@
     .log-title { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 650; line-height: 1.3; }
     .log-title > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .log-title .icon { width: 15px; height: 15px; color: var(--ink-2); flex: none; }
-    .log-sub { display: block; margin-top: 1px; color: var(--ink-2); font-size: 0.8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-sub { display: block; margin-top: 2px; color: var(--ink-2); font-size: 0.8125rem; line-height: 1.35; }
     .log-chevron { flex: none; width: 18px; height: 18px; color: var(--ink-3); transition: transform var(--t-med) var(--ease-out); }
     .log.is-open .log-chevron { transform: rotate(180deg); }
     .log-body-wrap { grid-template-rows: 0fr; }
@@ -1517,8 +1517,8 @@
        Datenbanken und Backups bleiben dadurch vollständig kompatibel.
        ========================================================================== */
 
-    const APP_VERSION = '2.1.1';
-    const APP_BUILD = '2.1.1-timer';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
+    const APP_VERSION = '2.1.2';
+    const APP_BUILD = '2.1.2-timer';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
     const BACKUP_APP_ID = 'IRONLOG_GYM_TRACKER';
     const BACKUP_VERSION = 9;
 
@@ -2049,14 +2049,20 @@
           if (!this.sessByDate.has(sess.date)) this.sessByDate.set(sess.date, []);
           this.sessByDate.get(sess.date).push(sess);
           if (!this.firstLogDate || sess.date < this.firstLogDate) this.firstLogDate = sess.date;
+          const mergedInSess = new Map();
           for (const entry of sess.entries) {
             const real = realSets(entry);
             if (!real.length) continue; // Einträge ohne Werte liefern keine Vorwerte
             const key = `${entry.exerciseId}|${entry.machineId}`;
-            if (!this.perf.has(key)) this.perf.set(key, []);
-            this.perf.get(key).push({ date: sess.date, sessionId: sess.id, splitName: sess.splitName, sets: real });
-            if (!this.usedByEx.has(entry.exerciseId)) this.usedByEx.set(entry.exerciseId, []);
-            this.usedByEx.get(entry.exerciseId).push({ date: sess.date, machineId: entry.machineId });
+            if (!mergedInSess.has(key)) {
+              const rec = { date: sess.date, sessionId: sess.id, splitName: sess.splitName, sets: [] };
+              mergedInSess.set(key, rec);
+              if (!this.perf.has(key)) this.perf.set(key, []);
+              this.perf.get(key).push(rec);
+              if (!this.usedByEx.has(entry.exerciseId)) this.usedByEx.set(entry.exerciseId, []);
+              this.usedByEx.get(entry.exerciseId).push({ date: sess.date, machineId: entry.machineId });
+            }
+            mergedInSess.get(key).sets.push(...real);
           }
         }
         this.dirty = false;
@@ -2265,6 +2271,7 @@
       if (Number.isFinite(d.duration) && d.duration > 0) out.duration = Math.round(d.duration);
       if (Number.isFinite(d.timerStartedAt) && d.timerStartedAt > 0) out.timerStartedAt = d.timerStartedAt;
       if (Number.isFinite(d.timerElapsed) && d.timerElapsed > 0) out.timerElapsed = Math.round(d.timerElapsed);
+      if (d.timerManual) out.timerManual = true;
       if (Number.isFinite(d.viewTs)) out.viewTs = d.viewTs;
       // Entwürfe der alten Version kennen „touched“ nicht: dort zählt, ob etwas eingetragen wurde
       out.legacy = typeof d.touched !== 'boolean';
@@ -2519,7 +2526,9 @@
         this._watchUnload(true);
         if (S.draft) {
           S.draft.viewTs = Date.now();
-          Storage.bg(Storage.saveActiveDraft(S.draft));
+          if (!Storage.changedElsewhere()) {
+            Storage.bg(Storage.saveActiveDraft(S.draft));
+          }
         }
         clearTimeout(this._timer);
         this._timer = setTimeout(() => { this.draftNow(); }, 300);
@@ -2558,10 +2567,19 @@
         if (this.frozen || !S.draft) return Promise.resolve();
         S.draft.viewTs = Date.now();
         const { changes, now } = this._changes();
-        // Sofort als übergeben vermerken: ein direkt folgender Aufruf sieht nur noch neue Änderungen. Die Datenbank
-        // führt die Schreibvorgänge in dieser Reihenfolge aus; schlägt einer fehl, werden seine Schlüssel wiederholt.
         this._synced = now;
         const keys = Object.keys(changes);
+        // Wenn ein anderes Fenster inzwischen geschrieben hat, nur die eigenen geänderten Entwürfe in draftsMap
+        // einarbeiten und activeDraft nur aktualisieren, wenn dieser Entwurf tatsächlich bearbeitet wurde.
+        if (Storage.changedElsewhere()) {
+          const writeJob = S.draft.touched || hasUnsavedEdits()
+            ? Storage.saveDrafts(changes, S.draft)
+            : Storage.mergeDrafts(changes);
+          return Storage.bg(writeJob.then(
+            () => { for (const k of keys) this._retry.delete(k); Storage.syncRev(); },
+            (err) => { for (const k of keys) this._retry.add(k); throw err; }
+          ));
+        }
         return Storage.bg(Storage.saveDrafts(changes, S.draft).then(
           () => { for (const k of keys) this._retry.delete(k); },
           (err) => { for (const k of keys) this._retry.add(k); throw err; }
@@ -2757,12 +2775,20 @@
        Vorlage: so lässt sich wie in der bisherigen Version jeder Tag nachtragen. */
     function lastPerformance(exerciseId, machineId, onOrBefore = null, excludeSessionId = null) {
       let nearestLater = null;
+      let nearestLaterWarmupOnly = null;
+      let warmupOnlyFallback = null;
       for (const p of Idx.perfList(exerciseId, machineId)) {     // neueste zuerst
         if (excludeSessionId && p.sessionId === excludeSessionId) continue;
-        if (onOrBefore && p.date > onOrBefore) { nearestLater = p; continue; }
-        return p;
+        const hasWork = p.sets.some(isWorkingSet);
+        if (onOrBefore && p.date > onOrBefore) {
+          if (hasWork) nearestLater = p;
+          else if (!nearestLaterWarmupOnly) nearestLaterWarmupOnly = p;
+          continue;
+        }
+        if (hasWork) return p;
+        if (!warmupOnlyFallback) warmupOnlyFallback = p;
       }
-      return nearestLater;
+      return warmupOnlyFallback || nearestLater || nearestLaterWarmupOnly;
     }
 
     function lastUsedMachineId(exerciseId, onOrBefore = null) {
@@ -3072,9 +3098,10 @@
       if (!d) return;
       if (d === S.draft) { touchDraft(); return; }
       if (d.editingSessionId) return;                              // verlassene Bearbeitung: wurde beim Verlassen gespeichert oder verworfen
-      if (S.drafts[draftKey(d.date, d.splitId)] !== d) return;     // Entwurf gibt es nicht mehr (abgeschlossen, zurückgesetzt)
+      const key = draftKey(d.date, d.splitId);
+      if (S.drafts[key] !== d) return;                             // Entwurf gibt es nicht mehr (abgeschlossen, zurückgesetzt)
       d.touched = true;
-      Persist.draftSoon();
+      Persist.listNow([key]);
     }
 
     /** Aktuelle Trainingsdauer des Entwurfs in Sekunden. */
@@ -3133,6 +3160,16 @@
       }
     }
 
+    /** Setzt die automatisch gestartete Startzeit zurück, wenn kein Satz mehr abgehakt ist. */
+    function reconcileTimerAfterUncheck(d = S.draft) {
+      if (!d || d.editingSessionId || d.timerManual || (Number(d.timerElapsed) || 0) > 0) return;
+      const anyChecked = (d.entries || []).some((e) => (e.sets || []).some((s) => s.completed));
+      if (!anyChecked && d.timerStartedAt) {
+        delete d.timerStartedAt;
+        if (d === S.draft) syncTimerInterval();
+      }
+    }
+
     /** Muss nach jeder Nutzereingabe im Entwurf aufgerufen werden. */
     function touchDraft() {
       const d = S.draft;
@@ -3140,10 +3177,6 @@
       if (d.editingSessionId) {
         d.editDirty = true;
       } else {
-        if (!d.touched && !d.timerStartedAt && !(d.timerElapsed > 0) && !isRestView(d)) {
-          d.timerStartedAt = Date.now();
-          syncTimerInterval();
-        }
         d.touched = true;
         S.drafts[draftKey(d.date, d.splitId)] = d;
       }
@@ -3162,8 +3195,18 @@
 
     /* ---------- Sätze ----------------------------------------------------------- */
     function ghostSet(entry, setIdx) {
+      const set = entry && entry.sets ? entry.sets[setIdx] : null;
+      if (!set) return null;
       const last = lastPerformance(entry.exerciseId, entry.machineId, S.draft.date, S.draft.editingSessionId || null);
-      return last && last.sets[setIdx] ? last.sets[setIdx] : null;
+      if (!last || !Array.isArray(last.sets) || !last.sets.length) return null;
+      if (set.type === 'warmup') {
+        const prevWarmups = last.sets.filter((s) => s.type === 'warmup');
+        const warmupIdx = entry.sets.slice(0, setIdx).filter((s) => s.type === 'warmup').length;
+        return prevWarmups[warmupIdx] || null;
+      }
+      const prevWork = last.sets.filter((s) => s.type !== 'warmup');
+      const workIdx = entry.sets.slice(0, setIdx).filter((s) => s.type !== 'warmup').length;
+      return prevWork[workIdx] || null;
     }
 
     /**
@@ -3371,6 +3414,7 @@
         entries
       };
       if (entries.length && durationSec > 0) rec.duration = durationSec;
+      else delete rec.duration;
       if (existing && existing.demo) rec.demo = true;
 
       upsertSession(rec);
@@ -3681,7 +3725,7 @@
         }
         d.entries = d.entries.filter((e) => {
           if (e.exerciseId !== exerciseId) return true;
-          if (!entryHasInput(e)) return false;
+          if (!d.touched && !entryHasInput(e)) return false;
           stampSnapshot(e);
           return true;
         });
@@ -5076,7 +5120,8 @@
       const timerRunning = Boolean(d.timerStartedAt);
       const timerPaused = !timerRunning && elapsedSec > 0;
       const savedDur = saved ? (Number(d.duration) || 0) : 0;
-      const showTimer = !rest;
+      const hasCompletedSets = d.entries.some((e) => e.sets.some((s) => s.completed));
+      const showTimer = !rest && (!saved || hasCompletedSets);
 
       return html`
         ${storageNotice}
@@ -5252,7 +5297,7 @@
                   <span>Satz</span><span>${unitLabel(unit)}</span><span>Wdh.</span><span>Part.</span><span>${icon('check')}</span>
                 </div>
                 <div class="set-rows" data-animate-children>
-                  ${entry.sets.map((s, j) => setRow(s, j, chipTexts[j], unit, last))}
+                  ${entry.sets.map((s, j) => setRow(entry, s, j, chipTexts[j], unit))}
                 </div>
               </div>
 
@@ -5262,8 +5307,8 @@
         </article>`;
     }
 
-    function setRow(s, j, chipText, unit, last) {
-      const ghost = last && last.sets[j] ? last.sets[j] : null;
+    function setRow(entry, s, j, chipText, unit) {
+      const ghost = ghostSet(entry, j);
       const explicitP = s.partials !== null && s.partials !== undefined;
       const ghostP = ghost ? (Number(ghost.partials) || 0) : 0;
       const shownP = explicitP ? Number(s.partials) : ghostP;
@@ -5406,6 +5451,7 @@
       const elapsed = draftElapsedSec(d);
       if (!running && elapsed === 0) {
         d.timerStartedAt = Date.now();
+        d.timerManual = true;
         d.touched = true;
         S.drafts[draftKey(d.date, d.splitId)] = d;
         Persist.draftSoon();
@@ -5432,6 +5478,7 @@
         renderView('workout');
       } else if (choice === 'resume' && !d.timerStartedAt) {
         d.timerStartedAt = Date.now();
+        d.timerManual = true;
         Persist.draftSoon();
         renderView('workout');
       } else if (choice === 'set') {
@@ -5444,6 +5491,7 @@
         if (values) {
           d.timerElapsed = Math.max(0, Number(values.minutes) || 0) * 60;
           if (d.timerStartedAt) d.timerStartedAt = Date.now();
+          d.timerManual = true;
           d.touched = true;
           S.drafts[draftKey(d.date, d.splitId)] = d;
           Persist.draftSoon();
@@ -5452,6 +5500,7 @@
       } else if (choice === 'reset') {
         delete d.timerStartedAt;
         delete d.timerElapsed;
+        delete d.timerManual;
         Persist.draftSoon();
         renderView('workout');
         toast('Timer zurückgesetzt');
@@ -5508,6 +5557,7 @@
         renderView('workout');
       } else if (choice === 'remove') {
         const removed = d.entries.splice(i, 1)[0];
+        reconcileTimerAfterUncheck(d);
         touchDraft();
         renderView('workout');
         toast('Übung entfernt', {
@@ -5611,7 +5661,7 @@
       const { set } = entryCtx(el);
       if (!set) return;
       set[el.dataset.field] = el.value;
-      if (set.completed && !cleanDraftSet(set)) set.completed = false; // Haken ohne gültige Werte ergibt keinen Sinn
+      if (set.completed && !cleanDraftSet(set)) { set.completed = false; reconcileTimerAfterUncheck(); } // Haken ohne gültige Werte ergibt keinen Sinn
       touchDraft();
       renderWorkoutSoon();
     };
@@ -5658,9 +5708,14 @@
             : (res.missing === 'weight' ? 'Bitte zuerst die Last eintragen.' : 'Bitte zuerst die Wiederholungen eintragen.'), { type: 'warn' });
           return;
         }
+        if (!d.editingSessionId && !d.timerStartedAt && !(d.timerElapsed > 0) && !isRestView(d)) {
+          d.timerStartedAt = Date.now();
+          syncTimerInterval();
+        }
         haptic('tap');
       } else {
         uncompleteSet(set);
+        reconcileTimerAfterUncheck(d);
       }
       blurActive();
 
@@ -5721,6 +5776,7 @@
         copySetDown(entry, j);
       } else if (choice === 'remove') {
         const removed = entry.sets.splice(j, 1)[0];
+        reconcileTimerAfterUncheck(d);
         touchDraft();
         renderView('workout');
         toast('Satz entfernt', {
@@ -5741,6 +5797,7 @@
         const next = entry.sets[j + 1];
         Object.assign(next, { weight, reps, type: cur.type || 'normal', partials, completed: false });
         if (cur.type === 'dropset') next.drops = drops;
+        reconcileTimerAfterUncheck();
       } else {
         entry.sets.push({ sid: uid('s'), weight, reps, type: cur.type || 'normal', partials, drops, completed: false });
       }
@@ -5752,7 +5809,10 @@
     Actions['add-set'] = (el) => {
       const { entry } = entryCtx(el);
       if (!entry) return;
-      const ghost = ghostSet(entry, entry.sets.length);
+      const last = lastPerformance(entry.exerciseId, entry.machineId, S.draft.date, S.draft.editingSessionId || null);
+      const prevWork = last ? last.sets.filter((s) => s.type !== 'warmup') : [];
+      const workCount = entry.sets.filter((s) => s.type !== 'warmup').length;
+      const ghost = prevWork[workCount] || null;
       entry.sets.push(newDraftSet(ghost ? ghost.type : 'normal', ghost && ghost.type === 'dropset' ? (ghost.drops || []).length : 0));
       haptic();
       touchDraft();
@@ -5907,8 +5967,12 @@
       if (rec.isRestDay) toast(`${fmtDate(rec.date, 'day')} abgehakt`, { type: 'success' });
       else {
         const sum = sessionSummary(rec);
+        const warmupCount = rec.entries.reduce((n, e) => n + e.sets.filter((s) => s.type === 'warmup' && Number(s.reps) > 0).length, 0);
+        const setLabel = sum.sets > 0
+          ? plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze')
+          : (warmupCount > 0 ? plural(warmupCount, 'Aufwärmsatz', 'Aufwärmsätze') : 'ohne Werte abgehakt');
         const durInfo = rec.duration > 0 ? ` · Trainingszeit: ${fmtDurationText(rec.duration)}` : '';
-        toast(`${wasEdit ? 'Änderungen gespeichert' : 'Training abgeschlossen'} · ${plural(sum.sets, 'Arbeitssatz', 'Arbeitssätze')}${durInfo}`, { type: 'success', duration: 7500 });
+        toast(`${wasEdit ? 'Änderungen gespeichert' : 'Training abgeschlossen'} · ${setLabel}${durInfo}`, { type: 'success', duration: 7500 });
       }
       return true;
     }

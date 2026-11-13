@@ -1,4 +1,4 @@
-/* IRONLOG · Service Worker · Build 2.1.1-timer
+/* IRONLOG · Service Worker · Build 2.1.2-timer
    ----------------------------------------------------------------------------
    Aufgabe: Die App startet auch ohne Netz (Studio-Keller) und aktualisiert
    sich selbst, sobald eine neue index.html auf dem Server liegt.
@@ -26,7 +26,7 @@
    ---------------------------------------------------------------------------- */
 'use strict';
 
-const BUILD = '2.1.1-timer';
+const BUILD = '2.1.2-timer';
 const SW_MARK = 'IRONLOG · Service Worker';
 const SCOPE = self.registration.scope;                       // z. B. https://name.github.io/gym/
 const CACHE = 'ironlog-app:' + new URL(SCOPE).pathname;      // je Installationsort ein eigener Cache
