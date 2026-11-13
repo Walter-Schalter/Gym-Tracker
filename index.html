@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!-- Kennung der Fassung – bitte nicht entfernen: daran erkennt sw.js die App (Offline-Start, Updates) -->
-  <meta name="ironlog-build" content="2.1.2-timer">
+  <meta name="ironlog-build" content="2.1.3-timer">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
@@ -17,7 +17,7 @@
   <title>IRONLOG</title>
   <link rel="manifest" id="manifest-link" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%20%3Crect%20width%3D%22512%22%20height%3D%22512%22%20rx%3D%22116%22%20fill%3D%22%230a0a0c%22%2F%3E%20%3Crect%20x%3D%2214%22%20y%3D%2214%22%20width%3D%22484%22%20height%3D%22484%22%20rx%3D%22102%22%20fill%3D%22none%22%20stroke%3D%22%2334d399%22%20stroke-opacity%3D%22.22%22%20stroke-width%3D%224%22%2F%3E%20%3Cpath%20d%3D%22M176%20256h160M176%20172v168M112%20212v88M336%20172v168M400%20212v88%22%20fill%3D%22none%22%20stroke%3D%22%2334d399%22%20stroke-width%3D%2240%22%20stroke-linecap%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
-  <link rel="apple-touch-icon" href="data:image/png;base64,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">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <style>
     /* ==========================================================================
        IRONLOG · Design-System
@@ -801,6 +801,11 @@
     .machine-note span { flex: 1; min-width: 0; overflow-wrap: break-word; overflow-wrap: anywhere; color: var(--ink); }
     .machine-note.is-empty span { color: var(--ink-3); }
     .machine-note.is-empty .icon { color: var(--ink-3); }
+    .machine-last {
+      padding: 0 6px 2px; color: var(--ink-3); font-size: 0.75rem; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .machine-last b { color: var(--ink-2); font-weight: 600; }
 
     /* Satz-Tabelle: Marke · Last · Wdh. · Partials · Haken (der Haken ist das größte Ziel) */
     .set-table { --chip-w: 44px; --set-cols: var(--chip-w) minmax(0, 1.25fr) minmax(0, 1fr) 48px 54px; --set-gap: 8px; }
@@ -1517,8 +1522,8 @@
        Datenbanken und Backups bleiben dadurch vollständig kompatibel.
        ========================================================================== */
 
-    const APP_VERSION = '2.1.2';
-    const APP_BUILD = '2.1.2-timer';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
+    const APP_VERSION = '2.1.3';
+    const APP_BUILD = '2.1.3-timer';        // wird beim Bauen eingesetzt; daran erkennt der Service Worker neue Fassungen
     const BACKUP_APP_ID = 'IRONLOG_GYM_TRACKER';
     const BACKUP_VERSION = 9;
 
@@ -2839,10 +2844,15 @@
 
     function buildSetRows(exerciseId, machineId, targetSets, date, excludeSessionId = null) {
       const last = lastPerformance(exerciseId, machineId, date, excludeSessionId);
-      const count = Math.max(targetSets || 2, last ? last.sets.length : 0);
+      const prevWarmups = last ? last.sets.filter((s) => s.type === 'warmup') : [];
+      const prevWork = last ? last.sets.filter((s) => s.type !== 'warmup') : [];
+      const workCount = Math.max(targetSets || 2, prevWork.length);
       const rows = [];
-      for (let i = 0; i < count; i++) {
-        const prev = last && last.sets[i] ? last.sets[i] : null;
+      for (let i = 0; i < prevWarmups.length; i++) {
+        rows.push(newDraftSet('warmup', 0));
+      }
+      for (let i = 0; i < workCount; i++) {
+        const prev = prevWork[i] || null;
         rows.push(newDraftSet(prev ? prev.type : 'normal', prev && prev.type === 'dropset' ? (prev.drops || []).length : 0));
       }
       return rows;
@@ -3104,9 +3114,23 @@
       Persist.listNow([key]);
     }
 
+    const MAX_TIMER_SEC = 12600; // 3,5 Stunden – schützt vor vergessenem Timer über Nacht
+
+    /** Pausiert und deckelt einen vergessenen Timer automatisch bei 3:30:00. */
+    function capForgottenTimer(d = S.draft) {
+      if (!d || !d.timerStartedAt) return false;
+      const base = Number(d.timerElapsed) || 0;
+      const running = Math.max(0, Math.floor((Date.now() - d.timerStartedAt) / 1000));
+      if (base + running <= MAX_TIMER_SEC) return false;
+      d.timerElapsed = Math.max(base, MAX_TIMER_SEC);
+      delete d.timerStartedAt;
+      return true;
+    }
+
     /** Aktuelle Trainingsdauer des Entwurfs in Sekunden. */
     function draftElapsedSec(d = S.draft) {
       if (!d) return 0;
+      if (capForgottenTimer(d) && d === S.draft) Persist.draftSoon();
       const base = Number(d.timerElapsed) || 0;
       const running = Number(d.timerStartedAt) > 0 ? Math.max(0, Math.floor((Date.now() - d.timerStartedAt) / 1000)) : 0;
       return base + running;
@@ -3152,7 +3176,9 @@
             workoutTimerInterval = null;
             return;
           }
-          el.textContent = fmtTimer(draftElapsedSec(S.draft));
+          const sec = draftElapsedSec(S.draft);
+          if (!S.draft.timerStartedAt) { renderView('workout'); return; }
+          el.textContent = fmtTimer(sec);
         }, 1000);
       } else if (!shouldTick && workoutTimerInterval) {
         clearInterval(workoutTimerInterval);
@@ -3294,23 +3320,27 @@
       String(s.weight ?? '').trim() !== '' || String(s.reps ?? '').trim() !== '' ||
       (s.drops || []).some((d) => String(d.weight ?? '').trim() !== '' || String(d.reps ?? '').trim() !== '');
 
-    /** Zählt die Arbeitssätze des Entwurfs (Aufwärmsätze werden ignoriert). */
+    /** Zählt die Arbeitssätze des Entwurfs (Aufwärmsätze werden für 0/X ignoriert, aber fürs Speichern erfasst). */
     function draftSetCounts(draft) {
       let total = 0;
       let checked = 0;
       let filledUnchecked = 0;
-      let anyValid = 0;
+      let totalChecked = 0;
+      let totalUnchecked = 0;
       for (const e of draft.entries) {
         for (const s of e.sets) {
           const valid = Boolean(cleanDraftSet(s));
-          if (valid) anyValid++;
+          if (valid) {
+            if (s.completed) totalChecked++;
+            else totalUnchecked++;
+          }
           if (s.type === 'warmup') continue;
           total++;
           if (s.completed && valid) checked++;
           else if (valid) filledUnchecked++;
         }
       }
-      return { total, checked, filledUnchecked, anyValid };
+      return { total, checked, filledUnchecked, totalChecked, totalUnchecked, anyValid: totalChecked + totalUnchecked };
     }
 
     /**
@@ -5289,6 +5319,12 @@
                     <button type="button" class="${cls('machine-note', !machine.setupNote && 'is-empty')}" data-act="machine-note">
                       ${icon('sliders')}<span>${machine.setupNote || 'Einstellung notieren (Sitz, Polster …)'}</span>
                     </button>` : ''}
+                  ${(() => {
+                    if (!last || !last.sets.length) return '';
+                    const prevWork = last.sets.filter((s) => s.type !== 'warmup');
+                    const shownSets = prevWork.length ? prevWork : last.sets;
+                    return html`<p class="machine-last num">Zuletzt (${fmtDate(last.date, 'short')}): <b>${shownSets.map(fmtSetShort).join(' · ')}</b></p>`;
+                  })()}
                 </div>` : html`
                 <div class="machine"><p class="hint">${machineName(entry.machineId, entry)} · ${unitLabel(unit)}</p></div>`}
 
@@ -5454,7 +5490,7 @@
         d.timerManual = true;
         d.touched = true;
         S.drafts[draftKey(d.date, d.splitId)] = d;
-        Persist.draftSoon();
+        Persist.draftNow();
         haptic('tap');
         renderView('workout');
         toast('Trainings-Timer gestartet', { type: 'info', duration: 2200 });
@@ -5474,12 +5510,12 @@
       if (choice === 'pause' && d.timerStartedAt) {
         d.timerElapsed = draftElapsedSec(d);
         delete d.timerStartedAt;
-        Persist.draftSoon();
+        Persist.draftNow();
         renderView('workout');
       } else if (choice === 'resume' && !d.timerStartedAt) {
         d.timerStartedAt = Date.now();
         d.timerManual = true;
-        Persist.draftSoon();
+        Persist.draftNow();
         renderView('workout');
       } else if (choice === 'set') {
         const curMin = Math.max(1, Math.round(draftElapsedSec(d) / 60));
@@ -5494,14 +5530,14 @@
           d.timerManual = true;
           d.touched = true;
           S.drafts[draftKey(d.date, d.splitId)] = d;
-          Persist.draftSoon();
+          Persist.draftNow();
           renderView('workout');
         }
       } else if (choice === 'reset') {
         delete d.timerStartedAt;
         delete d.timerElapsed;
         delete d.timerManual;
-        Persist.draftSoon();
+        Persist.draftNow();
         renderView('workout');
         toast('Timer zurückgesetzt');
       }
@@ -5879,9 +5915,9 @@
       const pending = pendingRows(d);
       const blockers = pending.filter((p) => p.kind === 'incomplete');
       const ghostable = pending.filter((p) => p.kind === 'ghostable');
-      counts.filledUnchecked += ghostable.filter((p) => p.entry.sets[p.j].type !== 'warmup').length;
-      const valid = counts.checked + counts.filledUnchecked;
-      const hasAnySavable = (counts.anyValid || 0) + ghostable.length > 0;
+      const totalUnchecked = counts.totalUnchecked + ghostable.length;
+      const valid = counts.totalChecked + totalUnchecked;
+      const hasAnySavable = valid > 0;
       const split = splitById(d.splitId);
       const restDay = Boolean((split && split.isRest) || d.isRest);
       let mode = 'all';
@@ -5925,12 +5961,12 @@
           });
           if (!ok) return false;
         }
-      } else if (counts.filledUnchecked > 0) {
+      } else if (totalUnchecked > 0) {
         const allLabel = valid === 1 ? 'Diesen Satz speichern' : `Alle ${valid} Sätze speichern`;
-        const options = counts.checked > 0
+        const options = counts.totalChecked > 0
           ? [
             { value: 'all', label: allLabel, kind: 'primary' },
-            { value: 'checked', label: counts.checked === 1 ? 'Nur den abgehakten Satz speichern' : `Nur die ${counts.checked} abgehakten speichern`, kind: 'soft' },
+            { value: 'checked', label: counts.totalChecked === 1 ? 'Nur den abgehakten Satz speichern' : `Nur die ${counts.totalChecked} abgehakten speichern`, kind: 'soft' },
             { value: 'cancel', label: 'Zurück zum Training', kind: 'ghost' }
           ]
           : [
@@ -5938,10 +5974,10 @@
             { value: 'cancel', label: 'Zurück zum Training', kind: 'ghost' }
           ];
         const choice = await choiceDialog({
-          title: counts.checked > 0 ? `${plural(counts.filledUnchecked, 'Satz ist', 'Sätze sind')} nicht abgehakt` : 'Kein Satz ist abgehakt',
+          title: counts.totalChecked > 0 ? `${plural(totalUnchecked, 'Satz ist', 'Sätze sind')} nicht abgehakt` : 'Kein Satz ist abgehakt',
           iconName: 'flag',
-          message: counts.checked > 0
-            ? (counts.filledUnchecked === 1
+          message: counts.totalChecked > 0
+            ? (totalUnchecked === 1
               ? 'Dieser Satz ist ausgefüllt, aber nicht als erledigt markiert. Soll er mitgespeichert werden?'
               : 'Diese Sätze sind ausgefüllt, aber nicht als erledigt markiert. Sollen sie mitgespeichert werden?')
             : (valid === 1
@@ -8138,14 +8174,7 @@
       if (res.ok) {
         try { const m = await res.json(); valid = Boolean(m && Array.isArray(m.icons) && m.icons.length); } catch (_) { valid = false; }
       }
-      if (valid) {
-        try {
-          const png = await fetch('icons/apple-touch-icon.png', { cache: 'no-cache' });
-          const link = document.querySelector('link[rel="apple-touch-icon"]');
-          if (png.ok && /image\//.test(png.headers.get('Content-Type') || '') && link) link.href = 'icons/apple-touch-icon.png';
-        } catch (_) { /* eingebettetes Icon bleibt */ }
-        return;
-      }
+      if (valid) return;
       if (res.ok || res.status === 404 || res.status === 410) {
         try {
           const manifest = {
@@ -8160,6 +8189,8 @@
           };
           const link = document.getElementById('manifest-link');
           if (link) link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' }));
+          const appleLink = document.querySelector('link[rel="apple-touch-icon"]');
+          if (appleLink) appleLink.href = iconPngDataUrl(180, false);
         } catch (_e) { /* ohne Manifest weiter */ }
       }
     }
